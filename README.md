@@ -139,6 +139,37 @@ cargo build --release
 cargo run --release
 ```
 
+### Flatpak
+
+A standalone Flatpak bundle is published as a [GitHub Release asset](https://github.com/JadeJitsu/Calendar/releases) — download the latest `dev.xarbit.apps.Calendar.flatpak` and install it:
+
+```bash
+flatpak install --user dev.xarbit.apps.Calendar.flatpak
+flatpak run dev.xarbit.apps.Calendar
+```
+
+To build the bundle yourself from the manifest `dev.xarbit.apps.Calendar.yml` (runtime `org.freedesktop.Platform` 25.08 + `rust-stable` SDK extension):
+
+```bash
+just flatpak-bundle          # → dev.xarbit.apps.Calendar.flatpak
+```
+
+The Flatpak build is self-contained (it vendors its own Rust toolchain and system libraries), so it is the recommended way to run the app on a distribution other than the one it was built on.
+
+## Distribution Compatibility
+
+The app is a standard iced/libcosmic (winit) application, so it runs on any Wayland compositor — it is not COSMIC-only.
+
+| Feature | COSMIC | Pop!_OS (GNOME) | Notes |
+|---|---|---|---|
+| Core app (views, CalDAV, SQLite, keyring, file dialogs) | ✅ | ✅ | iced/winit is compositor-agnostic; `rfd`/keyring use XDG portals + Secret Service, which Pop has |
+| Dock icon | ✅ | ✅ | Both docks match a running window to its `.desktop` launcher by app-id (`dev.xarbit.apps.Calendar`) |
+| System tray icon (Wayland session) | ✅ | ✅ | libappindicator registers a StatusNotifierItem; GNOME 40+ hosts SNI natively. Needs `libappindicator3` + `gtk3` |
+| System tray icon (X11 session) | n/a | ⚠️ | libappindicator falls back to XEmbed on X11, which GNOME has no host for — the tray icon (and close-to-tray) won't appear. Use a Wayland session |
+| Theming | ✅ | ⚠️ | Reads COSMIC theme config v2; on non-COSMIC desktops it falls back to the built-in `cosmic-dark` (functional, just not themed to the desktop) |
+
+**Easiest path to Pop!_OS (or any other distro):** the Flatpak — it carries its own runtime and sidesteps per-distro packaging. The `package/PKGBUILD` is Arch/CachyOS-only.
+
 ## Architecture
 
 Calendar follows the **Elm/MVU (Model-View-Update)** architecture pattern, which is standard for libcosmic applications:

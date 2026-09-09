@@ -8,7 +8,7 @@ repository = "https://github.com/JadeJitsu/Calendar"
 
 [dependencies]
 # COSMIC framework with all recommended features
-libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "19f4a289e500a554cb3faabb8fbc427904e56e1c", default-features = false, features = [
+libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "822d3b2a0f", default-features = false, features = [
     "a11y",           # Accessibility support
     "about",          # About dialog widget
     "dbus-config",    # Config file change watching via cosmic-settings-daemon
@@ -98,6 +98,22 @@ clap = { version = "4.5", features = ["derive"] }
 # The libcosmic rev bump to 19f4a28 moved cosmic-text 0.15 -> 0.19 and the iced
 # API (calendar() now uses jiff, text_input callbacks are closures, AbsoluteOffset
 # fields are Option). Do not update libcosmic without re-verifying these.
+#
+# The pin was bumped 19f4a28 -> 822d3b2a0f (2026-07-01, "chore: update
+# cosmic-protocols") because 19f4a28 pulled cosmic-client-toolkit at cosmic-protocols
+# rev a7d2d7a while its iced crates pulled cosmic-protocols at 32283d7 — two revs of
+# the same git repo, which the Flatpak vendor step cannot represent (it maps both to
+# one cargo/vendor dir and fails). 822d3b2a0f aligns the root cctk pin to 32283d7,
+# collapsing the graph to a single rev. That bump dropped the `Task` re-export the
+# dbus_activation method relied on, so it now imports `cosmic::app::Task` explicitly.
+
+# `dpi` is pulled from two sources at the same name+version: crates.io (via
+# `muda`) and the pop-os/winit git repo (winit's path dep). The Flatpak vendor
+# step keys packages by name+version and can't hold both, so redirect the
+# crates.io copy to the git source (same upstream crate, same 0.1.2) to collapse
+# the graph to a single `dpi`.
+[patch.crates-io]
+dpi = { git = "https://github.com/pop-os/winit.git", tag = "cosmic-0.14" }
 
 [features]
 # Single-instance support via D-Bus (disabled by default due to system compatibility issues)

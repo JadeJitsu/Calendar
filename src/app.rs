@@ -659,7 +659,8 @@ impl Application for CosmicCalendar {
     fn dbus_activation(
         &mut self,
         msg: cosmic::dbus_activation::Message,
-    ) -> Task<Self::Message> {
+    ) -> cosmic::app::Task<Self::Message> {
+        use cosmic::app::Task;
         use cosmic::dbus_activation::Details;
         use log::{debug, info};
 

@@ -91,19 +91,13 @@ vendor:
 clean:
     cargo clean
 
-# Generate Flatpak cargo dependencies manifest
-flatpak-deps:
-    python3 scripts/flatpak-cargo-generator.py Cargo.lock -o cargo-sources.json
-    @echo "✅ Generated cargo-sources.json"
-
 # Build Flatpak locally
 flatpak-build:
     bash scripts/build-flatpak.sh
 
-# Build standalone Flatpak bundle (.flatpak file)
+# Build standalone Flatpak bundle (.flatpak file).
+# Deps are fetched live in the sandbox (see manifest comment) — no vendoring step.
 flatpak-bundle:
-    python3 scripts/flatpak-cargo-generator.py Cargo.lock -o cargo-sources.json
-    @echo "✅ Generated cargo-sources.json"
     bash scripts/build-flatpak-bundle.sh
 
 # Install standalone Flatpak bundle (.flatpak file)

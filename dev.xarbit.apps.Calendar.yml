@@ -20,6 +20,10 @@ finish-args:
   - --talk-name=com.system76.CosmicTheme
   - --talk-name=com.system76.CosmicTheme.*
 
+  # System tray icon (StatusNotifierItem): libappindicator must be able to
+  # register with the desktop's StatusNotifierWatcher over the session bus.
+  - --talk-name=org.kde.StatusNotifierWatcher
+
   # COSMIC config access for theme switching
   - --filesystem=xdg-config/cosmic:ro
 
@@ -43,6 +47,10 @@ build-options:
 modules:
   - name: xcalendar
     buildsystem: simple
+    # Dependencies are vendored via cargo-sources.json (generated from Cargo.lock
+    # by scripts/flatpak-cargo-generator.py) so the build is fully offline —
+    # no in-sandbox network, which is both faster and avoids libgit2's DNS
+    # failures and GitHub's refusal to serve arbitrary commit SHAs.
     build-commands:
       - cargo --offline fetch --manifest-path Cargo.toml --verbose
       - cargo --offline build --release --verbose --features single-instance
@@ -54,4 +62,13 @@ modules:
     sources:
       - type: dir
         path: .
+        # The `dir` source copies the raw directory (no .gitignore awareness),
+        # so exclude the local build artifacts — `target/` alone is ~23 GB and
+        # the sandbox compiles fresh anyway.
+        skip:
+          - target
+          - .git
+          - build-dir
+          - flatpak-repo
+          - .flatpak-builder
       - cargo-sources.json
