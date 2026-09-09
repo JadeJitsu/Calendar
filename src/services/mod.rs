@@ -11,12 +11,14 @@
 //! - `ExportHandler` - Import/Export (iCalendar import/export)
 
 mod calendar_handler;
+mod credentials;
 mod event_handler;
 mod export_handler;
 mod settings_handler;
 mod sync_handler;
 
 pub use calendar_handler::{CalendarHandler, NewCalendarData, UpdateCalendarData};
+pub use credentials::{CalDavCredentials, host_of};
 pub use event_handler::EventHandler;
 pub use export_handler::ExportHandler;
 pub use settings_handler::SettingsHandler;

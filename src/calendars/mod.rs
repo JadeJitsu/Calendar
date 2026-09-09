@@ -4,6 +4,7 @@ mod config;
 mod local_calendar;
 
 pub use calendar_source::{CalendarSource, CalendarType};
+pub use caldav_calendar::CalDavCalendar;
 pub use config::{CalendarConfig, CalendarManagerConfig};
 pub use local_calendar::LocalCalendar;
 
@@ -73,6 +74,27 @@ impl CalendarManager {
             // Load calendars from config
             for cal_config in &config.calendars {
                 debug!("CalendarManager: Loading calendar '{}' ({})", cal_config.name, cal_config.id);
+                if cal_config.calendar_type == "caldav" {
+                    // CalDAV: password lives only in the keyring. A missing
+                    // credential or construct failure logs (host only) and
+                    // skips the calendar rather than failing startup.
+                    match Self::load_caldav_source(cal_config) {
+                        Ok(mut calendar) => {
+                            calendar.info_mut().color = cal_config.color.clone();
+                            calendar.info_mut().enabled = cal_config.enabled;
+                            manager.add_source(Box::new(calendar));
+                        }
+                        Err(e) => {
+                            log::warn!(
+                                "CalendarManager: Skipping CalDAV calendar '{}' ({}): {}",
+                                cal_config.name,
+                                cal_config.id,
+                                e
+                            );
+                        }
+                    }
+                    continue;
+                }
                 let mut calendar = LocalCalendar::new(
                     cal_config.id.clone(),
                     cal_config.name.clone(),
@@ -87,6 +109,38 @@ impl CalendarManager {
 
         info!("CalendarManager: Initialized with {} calendars", manager.sources.len());
         manager
+    }
+
+    /// Construct a CalDAV calendar source from its saved config.
+    ///
+    /// The password is loaded from the keyring (never stored in the config
+    /// file). Any failure — missing config fields, keyring miss, client
+    /// construction error — is returned to the caller, which logs and skips
+    /// the calendar rather than failing startup.
+    fn load_caldav_source(
+        cal_config: &CalendarConfig,
+    ) -> Result<CalDavCalendar, Box<dyn Error>> {
+        use crate::services::CalDavCredentials;
+
+        let server_url = cal_config
+            .server_url
+            .as_ref()
+            .ok_or_else(|| "missing server_url".to_string())?;
+        let username = cal_config
+            .username
+            .as_ref()
+            .ok_or_else(|| "missing username".to_string())?;
+
+        let password = CalDavCredentials::load(server_url, username)?;
+
+        CalDavCalendar::new(
+            cal_config.id.clone(),
+            cal_config.name.clone(),
+            server_url.clone(),
+            username.clone(),
+            password,
+        )
+        .map_err(|e| e.into())
     }
 
     /// Add a new local calendar
@@ -249,7 +303,7 @@ impl CalendarManager {
             }
 
             // Advance to next occurrence based on repeat frequency
-            current_date = match event.repeat {
+            current_date = match &event.repeat {
                 RepeatFrequency::Daily => current_date + Duration::days(1),
                 RepeatFrequency::Weekly => current_date + Duration::weeks(1),
                 RepeatFrequency::Biweekly => current_date + Duration::weeks(2),
@@ -263,15 +317,50 @@ impl CalendarManager {
                     current_date.checked_add_months(Months::new(12))
                         .unwrap_or(current_date + Duration::days(365))
                 },
-                RepeatFrequency::Custom(_) => {
-                    // TODO: Parse RRULE for custom recurrence
-                    break;
+                RepeatFrequency::Custom(rrule) => {
+                    match Self::next_custom_occurrence(current_date, rrule) {
+                        Some(next) => next,
+                        None => break,
+                    }
                 },
                 RepeatFrequency::Never => break,
             };
         }
 
         occurrences
+    }
+
+    /// Compute the next occurrence date for a `Custom` RRULE string, or `None`
+    /// if the rule is unparseable (which stops the expansion loop). Supports
+    /// the common `FREQ` values with an optional `INTERVAL`; anything else
+    /// (e.g. `BYDAY`/`BYMONTHDAY` week-by-week rules) is not modelled and stops
+    /// expansion rather than guessing.
+    fn next_custom_occurrence(current_date: NaiveDate, rrule: &str) -> Option<NaiveDate> {
+        let upper = rrule.to_ascii_uppercase();
+        let parts: Vec<&str> = upper.split(';').collect();
+        let freq = parts
+            .iter()
+            .find(|p| p.starts_with("FREQ="))
+            .and_then(|p| p.strip_prefix("FREQ="))?;
+        let interval = parts
+            .iter()
+            .find(|p| p.starts_with("INTERVAL="))
+            .and_then(|p| p.strip_prefix("INTERVAL="))
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(1)
+            .max(1);
+
+        match freq {
+            "DAILY" => Some(current_date + Duration::days(interval as i64)),
+            "WEEKLY" => Some(current_date + Duration::weeks(interval as i64)),
+            "MONTHLY" => current_date
+                .checked_add_months(Months::new(interval))
+                .or_else(|| Some(current_date + Duration::days(30 * interval as i64))),
+            "YEARLY" => current_date
+                .checked_add_months(Months::new(12 * interval))
+                .or_else(|| Some(current_date + Duration::days(365 * interval as i64))),
+            _ => None,
+        }
     }
 
     /// Get events for a specific month grouped by date, with calendar colors.
@@ -501,12 +590,18 @@ impl CalendarManager {
 
         for source in &self.sources {
             let info = source.info();
+            let (server_url, username) = match source.remote_config() {
+                Some((url, user)) => (Some(url), Some(user)),
+                None => (None, None),
+            };
             config.update_calendar(CalendarConfig {
                 id: info.id.clone(),
                 name: info.name.clone(),
                 color: info.color.clone(),
                 enabled: info.enabled,
                 calendar_type: format!("{:?}", info.calendar_type),
+                server_url,
+                username,
             });
         }
 
@@ -518,5 +613,107 @@ impl CalendarManager {
 impl Default for CalendarManager {
     fn default() -> Self {
         Self::with_defaults()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::caldav::{AlertTime, TravelTime};
+
+    fn custom_event(rrule: &str, exceptions: Vec<NaiveDate>) -> CalendarEvent {
+        CalendarEvent {
+            uid: "expand-test".to_string(),
+            summary: "Expand Test".to_string(),
+            location: None,
+            all_day: false,
+            start: chrono::DateTime::parse_from_rfc3339("2026-09-01T10:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            end: chrono::DateTime::parse_from_rfc3339("2026-09-01T11:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            travel_time: TravelTime::None,
+            repeat: RepeatFrequency::Custom(rrule.to_string()),
+            repeat_until: None,
+            exception_dates: exceptions,
+            invitees: vec![],
+            alert: AlertTime::None,
+            alert_second: None,
+            attachments: vec![],
+            url: None,
+            notes: None,
+        }
+    }
+
+    /// `FREQ=DAILY;INTERVAL=2` over 2026-09-01..2026-09-09 must yield
+    /// 09-01, 09-03, 09-05, 09-07, 09-09 — every other day from the event's
+    /// own start date.
+    #[test]
+    fn test_expand_custom_daily_interval_2() {
+        let event = custom_event("FREQ=DAILY;INTERVAL=2", vec![]);
+        let range_start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let range_end = NaiveDate::from_ymd_opt(2026, 9, 9).unwrap();
+        let occurrences = CalendarManager::expand_recurring_event(&event, range_start, range_end);
+        let dates: Vec<NaiveDate> = occurrences.iter().map(|(d, _)| *d).collect();
+        assert_eq!(
+            dates,
+            vec![
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 3).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 5).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 7).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 9).unwrap(),
+            ]
+        );
+        // Occurrence times shift with the date, duration preserved.
+        let (_, first) = &occurrences[0];
+        assert_eq!(
+            first.start,
+            chrono::DateTime::parse_from_rfc3339("2026-09-01T10:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc)
+        );
+        assert_eq!(first.end - first.start, chrono::Duration::hours(1));
+        // Per-occurrence UIDs are date-suffixed for view dedup.
+        assert_eq!(first.uid, "expand-test_20260901");
+    }
+
+    /// An exception date removes just that occurrence.
+    #[test]
+    fn test_expand_custom_skips_exception_dates() {
+        let event = custom_event(
+            "FREQ=DAILY;INTERVAL=2",
+            vec![NaiveDate::from_ymd_opt(2026, 9, 5).unwrap()],
+        );
+        let range_start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let range_end = NaiveDate::from_ymd_opt(2026, 9, 9).unwrap();
+        let occurrences = CalendarManager::expand_recurring_event(&event, range_start, range_end);
+        let dates: Vec<NaiveDate> = occurrences.iter().map(|(d, _)| *d).collect();
+        assert_eq!(
+            dates,
+            vec![
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 3).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 7).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 9).unwrap(),
+            ]
+        );
+    }
+
+    /// A rule without a FREQ component (e.g. `COUNT=5`) can't be advanced, so
+    /// expansion stops after the first occurrence rather than guessing — the
+    /// event still shows on its own start date.
+    #[test]
+    fn test_expand_custom_unmodelled_rule_stops() {
+        let event = custom_event("COUNT=5", vec![]);
+        let range_start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let range_end = NaiveDate::from_ymd_opt(2026, 9, 30).unwrap();
+        let occurrences = CalendarManager::expand_recurring_event(&event, range_start, range_end);
+        assert_eq!(occurrences.len(), 1);
+        assert_eq!(
+            occurrences[0].0,
+            NaiveDate::from_ymd_opt(2026, 9, 1).unwrap()
+        );
     }
 }

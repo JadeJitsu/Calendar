@@ -21,14 +21,21 @@ libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "f2e965c76c
 ] }
 
 # Async runtime
-tokio = { version = "1", features = ["sync"] }
+tokio = { version = "1", features = ["sync", "rt"] }
 futures-util = "0.3"
 
 # Date/Time handling
 chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.10"
 
 # Calendar formats
-icalendar = "0.16"
+icalendar = { version = "0.16", features = ["chrono-tz"] }
+
+# System keyring for CalDAV credentials (secret-service / GNOME Keyring / KWallet)
+keyring = "4"
+
+# XML parsing for CalDAV multistatus responses
+roxmltree = "0.20"
 
 # HTTP client for CalDAV and URL downloads
 reqwest = { version = "0.12", features = ["blocking", "rustls-tls", "charset", "http2"] }

@@ -22,7 +22,6 @@ mod protocols;
 mod selection;
 mod services;
 mod settings;
-mod storage;
 mod styles;
 mod ui_constants;
 mod update;

@@ -38,6 +38,9 @@ pub fn render_header_start<'a>(
                     (fl!("menu-file"), vec![
                         menu::Item::Button(fl!("menu-new-event"), None, MenuAction::NewEvent),
                         menu::Item::Button(fl!("menu-new-calendar"), None, MenuAction::NewCalendar),
+                        menu::Item::Button(fl!("menu-add-caldav"), None, MenuAction::AddCalDav),
+                        menu::Item::Divider,
+                        menu::Item::Button(fl!("menu-sync"), None, MenuAction::SyncCalendars),
                         menu::Item::Divider,
                         menu::Item::Button(fl!("menu-import-ical"), None, MenuAction::ImportICal),
                         menu::Item::Button(fl!("menu-export-ical"), None, MenuAction::ExportICal),

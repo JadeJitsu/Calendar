@@ -150,4 +150,8 @@ impl CalendarSource for LocalCalendar {
     fn supports_write(&self) -> bool {
         true
     }
+
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
 }

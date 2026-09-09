@@ -1,5 +1,5 @@
 use cosmic::iced::Length;
-use cosmic::widget::{button, column, container, dialog, row, text_input};
+use cosmic::widget::{button, column, container, dialog, row, secure_input, text_input};
 use cosmic::{widget, Element};
 
 use crate::components::color_picker::{parse_hex_color, QUICK_PICKER_COLORS};
@@ -102,6 +102,77 @@ pub fn render_calendar_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
         )
         .primary_action(primary_btn)
         .width(Length::Fixed(350.0))
+        .into()
+}
+
+/// Render the add CalDAV account dialog (server URL + username + password).
+/// Takes the active dialog state which should be the AddCalDav variant.
+pub fn render_add_caldav_dialog(active_dialog: &ActiveDialog) -> Element<'_, Message> {
+    // Extract the three fields from the AddCalDav variant
+    let (url, username, password) = match active_dialog {
+        ActiveDialog::AddCalDav {
+            url,
+            username,
+            password,
+        } => (url.as_str(), username.as_str(), password.as_str()),
+        _ => return widget::text("").into(), // Should not happen
+    };
+
+    // Server URL input (must be https://)
+    let url_control = column()
+        .spacing(8)
+        .push(widget::text(fl!("dialog-add-caldav-url")))
+        .push(
+            text_input(fl!("dialog-add-caldav-url-placeholder"), url)
+                .on_input(Message::CalDavDialogUrlChanged)
+                .on_submit(|_| Message::ConfirmAddCalDav)
+                .width(Length::Fill),
+        );
+
+    // Username input
+    let user_control = column()
+        .spacing(8)
+        .push(widget::text(fl!("dialog-add-caldav-username")))
+        .push(
+            text_input(fl!("dialog-add-caldav-username-placeholder"), username)
+                .on_input(Message::CalDavDialogUserChanged)
+                .on_submit(|_| Message::ConfirmAddCalDav)
+                .width(Length::Fill),
+        );
+
+    // Password input (masked)
+    let password_control = column()
+        .spacing(8)
+        .push(widget::text(fl!("dialog-add-caldav-password")))
+        .push(
+            secure_input(fl!("dialog-add-caldav-password-placeholder"), password, None, true)
+                .on_input(Message::CalDavDialogPasswordChanged)
+                .on_submit(|_| Message::ConfirmAddCalDav)
+                .width(Length::Fill),
+        );
+
+    // Note about HTTPS-only + keyring storage
+    let note = widget::text(fl!("dialog-add-caldav-https-note")).size(12);
+
+    // Connect button is only enabled when URL and username are non-empty.
+    // (The password may legitimately be empty for servers that use other
+    // auth, but our Basic-auth scope requires it — the confirm handler
+    // validates and the button stays enabled so the user gets a clear
+    // error rather than a mysteriously-dead button.)
+    let primary_btn = button::suggested(fl!("button-connect")).on_press(Message::ConfirmAddCalDav);
+
+    dialog()
+        .title(fl!("dialog-add-caldav-title"))
+        .icon(widget::icon::from_name("emblem-web-symbolic").size(64))
+        .control(url_control)
+        .control(user_control)
+        .control(password_control)
+        .control(note)
+        .secondary_action(
+            button::text(fl!("button-cancel")).on_press(Message::CancelAddCalDav),
+        )
+        .primary_action(primary_btn)
+        .width(Length::Fixed(420.0))
         .into()
 }
 

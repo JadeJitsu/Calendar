@@ -15,11 +15,13 @@ pub fn render_sidebar<'a>(
     selected_day: Option<u32>,
     active_dialog: &'a ActiveDialog,
     selected_calendar_id: Option<&'a String>,
+    sync_status: Option<&'a (String, bool)>,
 ) -> Element<'a, Message> {
     let mini_calendar = render_mini_calendar(calendar_state, selected_day);
 
     // Use the calendar list component
-    let calendars_section = render_calendar_list(calendars, active_dialog, selected_calendar_id);
+    let calendars_section =
+        render_calendar_list(calendars, active_dialog, selected_calendar_id, sync_status);
 
     // Scrollable top section with calendars
     let scrollable_content = scrollable(

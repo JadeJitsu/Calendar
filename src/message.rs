@@ -1,6 +1,6 @@
 use chrono::{NaiveDate, NaiveTime};
 use crate::app::EventDialogField;
-use crate::caldav::{AlertTime, CalendarEvent, RepeatFrequency, TravelTime};
+use crate::caldav::{AlertTime, CalendarEvent, DiscoveredCalendar, RepeatFrequency, TravelTime};
 use crate::dialogs::DialogAction;
 use crate::views::CalendarView;
 use cosmic::iced::widget::scrollable::Viewport;
@@ -270,6 +270,44 @@ pub enum Message {
 
     /// Cancel subscription
     CancelSubscription,
+
+    // CalDAV account management
+    /// Open the add CalDAV account dialog
+    OpenAddCalDavDialog,
+    /// Update the CalDAV server URL while typing in the dialog
+    CalDavDialogUrlChanged(String),
+    /// Update the CalDAV username while typing in the dialog
+    CalDavDialogUserChanged(String),
+    /// Update the CalDAV password while typing in the dialog
+    CalDavDialogPasswordChanged(String),
+    /// Confirm adding the CalDAV account (stores credentials, runs discovery)
+    ConfirmAddCalDav,
+    /// Cancel the add CalDAV dialog
+    CancelAddCalDav,
+    /// Discovery finished: (server_url, username, discovered calendars)
+    CalDavDiscovered(String, String, Vec<DiscoveredCalendar>),
+    /// Discovery failed with an error message
+    CalDavDiscoveryFailed(String),
+
+    // CalDAV sync
+    /// Sync all enabled CalDAV calendars (startup + manual)
+    SyncCalendars,
+    /// Sync started for a calendar (calendar_id)
+    CalDavSyncStarted(String),
+    /// Sync finished for a calendar (calendar_id, fetched events, uid→href map)
+    CalDavSynced(String, Vec<CalendarEvent>, Vec<(String, String)>),
+    /// Sync failed for a calendar (calendar_id, error_message)
+    CalDavSyncFailed(String, String),
+
+    // CalDAV event write-back results
+    /// Event created on the server (calendar_id, event, href)
+    CalDavEventCreated(String, CalendarEvent, String),
+    /// Event updated on the server (calendar_id, event, href)
+    CalDavEventUpdated(String, CalendarEvent, String),
+    /// Event deleted on the server (calendar_id, uid)
+    CalDavEventDeleted(String, String),
+    /// A CalDAV write operation failed (calendar_id, error_message)
+    CalDavWriteFailed(String, String),
 
     /// No-op message for cancelled operations
     None,

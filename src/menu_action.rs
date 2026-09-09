@@ -8,6 +8,8 @@ use crate::views::CalendarView;
 pub enum MenuAction {
     NewEvent,
     NewCalendar,
+    AddCalDav,
+    SyncCalendars,
     ImportICal,
     ExportICal,
     Settings,
@@ -37,6 +39,8 @@ impl menu::action::MenuAction for MenuAction {
         match self {
             MenuAction::NewEvent => Message::NewEvent,
             MenuAction::NewCalendar => Message::OpenNewCalendarDialog,
+            MenuAction::AddCalDav => Message::OpenAddCalDavDialog,
+            MenuAction::SyncCalendars => Message::SyncCalendars,
             MenuAction::ImportICal => Message::ImportICal,
             MenuAction::ExportICal => Message::ExportICal,
             MenuAction::Settings => Message::Settings,

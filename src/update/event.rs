@@ -4,14 +4,18 @@
 //! This ensures consistent validation, routing, and cache management.
 
 use chrono::{NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
+use cosmic::app::Task;
 use cosmic::widget::{calendar::CalendarModel, text_editor};
 use log::{debug, error, info, warn};
 use uuid::Uuid;
 
 use crate::app::{CosmicCalendar, EventDialogState};
 use crate::caldav::{AlertTime, CalendarEvent, RepeatFrequency, TravelTime};
+use crate::calendars::CalendarType;
 use crate::dialogs::{DialogAction, DialogManager, QuickEventResult};
+use crate::message::Message;
 use crate::services::EventHandler;
+use crate::update::caldav::{delete_caldav_event, write_caldav_event};
 
 /// Extract the master UID from an occurrence UID
 /// Occurrence UIDs have format "master-uid_YYYYMMDD" for recurring events
@@ -51,7 +55,12 @@ pub fn extract_occurrence_date(uid: &str) -> Option<NaiveDate> {
 /// Uses DialogManager to get the event data from ActiveDialog::QuickEvent
 /// Supports both single-day and multi-day events (from drag selection)
 /// Also supports timed events (from time slot selection in week/day view)
-pub fn handle_commit_quick_event(app: &mut CosmicCalendar) {
+///
+/// Returns a `Task` that, for CalDAV calendars, PUTs the new event to the
+/// server off-thread (posting `CalDavEventCreated`/`CalDavWriteFailed`); for
+/// local calendars the event is written synchronously and `Task::none()` is
+/// returned.
+pub fn handle_commit_quick_event(app: &mut CosmicCalendar) -> Task<Message> {
     debug!("handle_commit_quick_event: Starting");
 
     // Get the event data from DialogManager and clear the dialog state
@@ -62,20 +71,20 @@ pub fn handle_commit_quick_event(app: &mut CosmicCalendar) {
 
     let Some(QuickEventResult { start_date, end_date, start_time: evt_start_time, end_time: evt_end_time, text }) = result else {
         debug!("handle_commit_quick_event: No quick event editing state");
-        return;
+        return Task::none();
     };
 
     // Don't create empty events
     let text = text.trim();
     if text.is_empty() {
         debug!("handle_commit_quick_event: Empty text, ignoring");
-        return;
+        return Task::none();
     }
 
     // Get the selected calendar ID
     let Some(calendar_id) = app.selected_calendar_id.clone() else {
         warn!("handle_commit_quick_event: No calendar selected for new event");
-        return;
+        return Task::none();
     };
 
     // Determine if this is a timed event or all-day event
@@ -132,22 +141,45 @@ pub fn handle_commit_quick_event(app: &mut CosmicCalendar) {
         notes: None,
     };
 
-    // Use EventHandler to add the event (handles validation, storage, and sync)
+    // CalDAV calendars: write to the server off-thread; the write-result
+    // handler (CalDavEventCreated) updates the cache.
+    if is_caldav_calendar(&app.calendar_manager, &calendar_id) {
+        info!("handle_commit_quick_event: Writing quick event to CalDAV calendar '{}'", calendar_id);
+        return write_caldav_event(app, calendar_id, event, false);
+    }
+
+    // Local calendars: use EventHandler (handles validation, storage, and sync)
     if let Err(e) = EventHandler::add_event(&mut app.calendar_manager, &calendar_id, event) {
         error!("handle_commit_quick_event: Failed to add event: {}", e);
-        return;
+        return Task::none();
     }
 
     info!("handle_commit_quick_event: Event created successfully");
     // Refresh the cached events to show the new event
     app.refresh_cached_events();
+    Task::none()
+}
+
+/// Returns true if the calendar with the given id is a CalDAV source.
+fn is_caldav_calendar(calendar_manager: &crate::calendars::CalendarManager, calendar_id: &str) -> bool {
+    calendar_manager
+        .sources()
+        .iter()
+        .find(|s| s.info().id == calendar_id)
+        .map(|s| s.info().calendar_type == CalendarType::CalDav)
+        .unwrap_or(false)
 }
 
 /// Delete an event by its UID from all calendars
 /// This implements a robust deletion with verification and guaranteed UI refresh
 /// For recurring events, the occurrence UID (format: master-uid_YYYYMMDD) is converted
 /// to the master UID before deletion, which deletes all occurrences.
-pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) {
+///
+/// Returns a `Task` that, when the event lives in a CalDAV calendar, DELETEs it
+/// from the server off-thread (posting `CalDavEventDeleted`/`CalDavWriteFailed`);
+/// for local calendars the event is deleted synchronously and `Task::none()` is
+/// returned.
+pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) -> Task<Message> {
     // Extract master UID for recurring events (occurrence UIDs have format master-uid_YYYYMMDD)
     let master_uid = extract_master_uid(&uid);
     info!("handle_delete_event: Deleting event uid={} (master_uid={})", uid, master_uid);
@@ -160,7 +192,19 @@ pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) {
         }
     }
 
-    // Use EventHandler to delete the event (searches all calendars)
+    // CalDAV: find which CalDAV calendar holds the event and DELETE it from the
+    // server off-thread. The write-result handler (CalDavEventDeleted) updates
+    // the cache; we also clear the UI caches now so the event disappears
+    // immediately.
+    if let Some(calendar_id) = find_caldav_calendar_for_event(&app.calendar_manager, master_uid) {
+        info!("handle_delete_event: Deleting event from CalDAV calendar '{}'", calendar_id);
+        app.cached_week_events.clear();
+        app.cached_month_events.clear();
+        app.refresh_cached_events();
+        return delete_caldav_event(app, calendar_id, master_uid.to_string());
+    }
+
+    // Local calendars: use EventHandler to delete the event (searches all calendars)
     // Use master_uid to find the actual event in the database
     // Now returns Result<bool> with verification
     match EventHandler::delete_event(&mut app.calendar_manager, master_uid) {
@@ -184,6 +228,26 @@ pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) {
     app.refresh_cached_events();
 
     info!("handle_delete_event: UI cache refreshed");
+    Task::none()
+}
+
+/// Returns the id of the CalDAV calendar that contains the event with the given
+/// master UID, if any.
+fn find_caldav_calendar_for_event(
+    calendar_manager: &crate::calendars::CalendarManager,
+    master_uid: &str,
+) -> Option<String> {
+    for source in calendar_manager.sources() {
+        if source.info().calendar_type != CalendarType::CalDav {
+            continue;
+        }
+        if let Ok(events) = source.fetch_events() {
+            if events.iter().any(|e| e.uid == master_uid) {
+                return Some(source.info().id.clone());
+            }
+        }
+    }
+    None
 }
 
 /// Select an event for viewing/editing
@@ -468,9 +532,14 @@ pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, calendar_id: Stri
 }
 
 /// Confirm the event dialog - create or update the event
-pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) {
+///
+/// Returns a `Task` that, for CalDAV calendars, PUTs the event to the server
+/// off-thread (posting `CalDavEventCreated`/`CalDavEventUpdated`/
+/// `CalDavWriteFailed`); for local calendars the event is written synchronously
+/// and `Task::none()` is returned.
+pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) -> Task<Message> {
     let Some(dialog) = app.event_dialog.take() else {
-        return;
+        return Task::none();
     };
 
     let is_edit = dialog.editing_uid.is_some();
@@ -482,7 +551,7 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) {
         warn!("handle_confirm_event_dialog: Empty title, returning dialog");
         // Put dialog back - can't save without title
         app.event_dialog = Some(dialog);
-        return;
+        return Task::none();
     }
 
     // Build start and end times
@@ -535,7 +604,18 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) {
         },
     };
 
-    // Use EventHandler for create or update
+    // CalDAV calendars: write to the server off-thread; the write-result
+    // handler (CalDavEventCreated/Updated) updates the cache.
+    if is_caldav_calendar(&app.calendar_manager, &dialog.calendar_id) {
+        if is_edit {
+            info!("handle_confirm_event_dialog: Updating event in CalDAV calendar '{}'", dialog.calendar_id);
+        } else {
+            info!("handle_confirm_event_dialog: Creating event in CalDAV calendar '{}'", dialog.calendar_id);
+        }
+        return write_caldav_event(app, dialog.calendar_id, event, is_edit);
+    }
+
+    // Local calendars: use EventHandler for create or update
     let result = if dialog.editing_uid.is_some() {
         info!("handle_confirm_event_dialog: Updating event '{}' in calendar '{}'", title, dialog.calendar_id);
         // Update existing event (EventHandler handles delete + add)
@@ -556,6 +636,7 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) {
             error!("handle_confirm_event_dialog: Failed to save event: {}", e);
         }
     }
+    Task::none()
 }
 
 /// Cancel the event dialog
