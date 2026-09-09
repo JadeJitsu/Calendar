@@ -1519,9 +1519,11 @@ pub(crate) fn background_sync_due(
     }
     match last_synced {
         Some(ts) => {
+            // Use the *effective* interval (env-overridable) so the due-check
+            // and the subscription cadence stay in lockstep.
             // `signed_duration_since` is negative if the clock went backwards;
             // that simply means "not due yet".
-            now.signed_duration_since(ts).num_seconds() >= BACKGROUND_SYNC_INTERVAL.as_secs() as i64
+            now.signed_duration_since(ts).num_seconds() >= background_sync_interval().as_secs() as i64
         }
         None => true,
     }
