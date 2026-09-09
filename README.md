@@ -225,6 +225,7 @@ src/
 - **[libcosmic](https://github.com/pop-os/libcosmic)**: Modern UI framework for COSMIC desktop built on iced
 - **chrono**: Date and time handling with timezone support
 - **chrono-tz**: Timezone database
+- **jiff**: Date type used at the libcosmic `calendar()` widget boundary (the widget migrated from chrono to jiff; the app keeps its state in chrono and converts via `src/dates.rs`)
 - **i18n-embed**: Internationalization framework
 - **fluent**: Localization system (Mozilla Fluent)
 - **icalendar**: iCalendar format parsing and generation
