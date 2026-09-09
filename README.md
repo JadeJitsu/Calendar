@@ -24,7 +24,7 @@ A modern calendar application built with [libcosmic](https://github.com/pop-os/l
 
 Calendar is a native calendar application designed for the COSMIC desktop environment. Built using libcosmic's widget system, it provides a clean, intuitive interface inspired by other popular calendar applications while following COSMIC's design language and responsive layout patterns.
 
-The application will support CalDAV protocol for synchronizing events with calendar servers like Nextcloud, Radicale, and other standard CalDAV-compatible services.
+The application supports the CalDAV protocol (RFC 4791) for synchronizing events with calendar servers like Nextcloud, Radicale, and other standard CalDAV-compatible services.
 
 ## Current Status
 
@@ -89,13 +89,18 @@ This project is in **active development**. The UI foundation is in place, but co
 - Create, edit, and delete calendars
 - Default calendars: Personal (blue), Work (purple)
 
+#### CalDAV (RFC 4791)
+- Add-account dialog (HTTPS-only, Basic auth; password stored in the system keyring, never in the config file)
+- RFC 4791 discovery: `current-user-principal` → `calendar-home-set` → calendar list
+- **Discovery fallback**: when the server doesn't expose `calendar-home-set` (observed on Nextcloud 34 — the property 404s even though the collections exist), discovery falls back to listing `{base}/calendars/{uid}/` directly, the path direct-URL clients like Thunderbird use
+- Full event sync on startup and on demand (menu → Sync), with per-calendar sync/error indicators in the sidebar
+- Write-back: create/edit/delete events via CalDAV PUT/DELETE (last-writer-wins, no `If-Match` yet)
+- Recurring events (RRULE in/out), all-day events, TZID-aware datetime conversion
+
 ### 🚧 Work In Progress
 
-- [ ] CalDAV server configuration UI
-- [ ] Active CalDAV synchronization
 - [ ] Event notifications/alerts
-- [ ] Recurring events
-- [ ] Background sync
+- [ ] Background sync (periodic re-sync timer)
 - [ ] Search functionality
 - [ ] Event invitees
 
@@ -179,7 +184,7 @@ src/
 ├── calendars/              # Calendar data sources
 │   ├── calendar_source.rs  # Calendar trait definition
 │   ├── local_calendar.rs   # Local calendar implementation
-│   └── caldav_calendar.rs  # CalDAV calendar implementation (WIP)
+│   └── caldav_calendar.rs  # CalDAV calendar implementation
 │
 ├── locale.rs               # Locale detection and formatting
 ├── localized_names.rs      # Localized month/day names
@@ -212,22 +217,48 @@ src/
 - **dirs**: Platform-specific directory handling
 - **ron**: Rusty Object Notation for settings storage
 
-## Planned CalDAV Support
+## CalDAV Implementation Notes
 
-The application will support full CalDAV protocol integration:
+### Protocol requirements that bite
 
-- Connect to any CalDAV-compatible server (Nextcloud, Radicale, etc.)
-- Synchronize events bidirectionally
-- Local event caching for offline access
-- Support for multiple calendar accounts
+- **PROPFIND body root must be `DAV:propfind`** (RFC 4918 §9.1), wrapping
+  `DAV:prop`. SabreDAV (Nextcloud) rejects a bare `DAV:prop` root with
+  `400 "Expected {DAV:}propfind but received {DAV:}prop"`; lenient servers
+  (Apache mod_dav) accept both, so a bare root can pass against one server
+  and 400 against another. The bodies live in the `*_PROPFIND` constants in
+  `src/caldav.rs`, with a regression test asserting the root element.
+- **A 207 Multi-Status can still mean "property not found"** — each
+  `d:propstat` carries its own `d:status`. Nextcloud answers a missing
+  `calendar-home-set` with `404 Not Found` and an empty property element.
+  `propstat_href()` reports the server's status instead of a generic
+  "no X href" parse error.
+- **Nextcloud checks auth before routing**: a `401` does *not* prove an
+  endpoint exists. A missing OCS route answers `404 "Invalid query"` only
+  *after* auth succeeds.
 
-### Planned CalDAV Configuration
+### Server quirk: missing `calendar-home-set`
 
-Users will be able to configure:
-1. CalDAV server URL
-2. Username and password/app-specific password
-3. Which calendars to sync
-4. Sync interval
+Observed on a Nextcloud 34.0.3 host: the Calendar app is enabled and the
+web UI works, but PROPFIND for `calendar-home-set` on the user principal
+returns a per-property 404, and the DAV root doesn't advertise
+`calendar-user-set`. The per-user collections nonetheless exist and list
+fine at `{base}/calendars/{uid}/` — the path direct-URL clients
+(Thunderbird) use. `CalDavClient::discover()` catches the home-set failure
+and falls back to listing that path (uid taken from the principal URL's
+last path component).
+
+### Debug probes
+
+`src/bin/` contains standalone probes that drive the real client code
+against a live server (print only URLs, counts, UIDs, and status codes —
+never credentials or event bodies):
+
+- `caldav_probe <url> <user> <pass>` — full `discover()` chain
+- `list_probe <url> <user> <pass>` — PROPFIND a URL and list its collections
+- `report_probe <url> <user> <pass>` — REPORT a collection, list event UIDs
+
+Note: Nextcloud's bruteforce protection returns `429` after rapid
+repeated requests — space out probe runs.
 
 ## Design Philosophy
 

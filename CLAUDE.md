@@ -50,7 +50,7 @@ Calendar is a calendar application for the COSMIC desktop built with libcosmic (
 ### Calendar Backend
 - `calendars/calendar_source.rs` - `CalendarSource` trait for pluggable backends
 - `calendars/local_calendar.rs` - Local calendar implementation
-- `calendars/caldav_calendar.rs` - CalDAV calendar (WIP)
+- `calendars/caldav_calendar.rs` - CalDAV calendar (cache-only; network sync lives in `update/caldav.rs`)
 
 ### Dialog Management (`dialogs/`)
 - `dialogs/mod.rs` - `ActiveDialog` enum for all dialog types
@@ -260,6 +260,28 @@ pub fn sync_views_to_selected_date(&mut self) {
     self.refresh_cached_events();
 }
 ```
+
+## CalDAV Sync Flow
+
+`CalDavCalendar` is **cache-only**: `fetch_events()` returns the cache and
+`sync()` is a no-op. All network I/O lives in `update/caldav.rs`
+(`handle_sync_calendars`), which clones a standalone `CalDavClient` into
+`Task::perform` + `spawn_blocking` (the client is `reqwest::blocking`;
+`CalendarManager` is `!Send`). Results come back as
+`Message::CalDavSynced`/`CalDavSyncFailed` and are applied to the cache via
+`apply_fetched` on the UI thread, then `refresh_cached_events()`.
+
+Discovery (`CalDavClient::discover()`) is principal → home-set → calendar
+list, with a **fallback**: if `calendar-home-set` 404s (observed on
+Nextcloud 34), list `{base}/calendars/{uid}/` directly instead — the path
+direct-URL clients like Thunderbird use. PROPFIND bodies must be
+`DAV:propfind`-wrapped (RFC 4918 §9.1); SabreDAV 400s on a bare `DAV:prop`
+root. See README "CalDAV Implementation Notes" for the full gotcha list.
+
+Debug probes in `src/bin/` (`caldav_probe`, `list_probe`, `report_probe`)
+drive the real client against a live server; they are excluded from the
+test suite (`test = false` in Cargo.toml) because they include `caldav.rs`
+standalone.
 
 ## Event Model (caldav.rs)
 
