@@ -14,6 +14,10 @@
 
 > ⚠️ **WORK IN PROGRESS** - This project is in early development and is **not ready for production use**. Many features are incomplete or missing. Use at your own risk!
 
+## Fork
+
+This project is a **fork of [xarbit/sol](https://github.com/xarbit/sol)** — "The missing native Calendar app for the COSMIC Desktop" by [xarbit](https://github.com/xarbit) (app ID `dev.xarbit.apps.Calendar`, licensed under GPLv3). All credit for the original design, UI foundation, and codebase goes to the upstream project. This fork builds on that work to add full CalDAV support (read + write) and related calendar functionality.
+
 A modern calendar application built with [libcosmic](https://github.com/pop-os/libcosmic), featuring CalDAV support for seamless calendar synchronization.
 
 ## About
