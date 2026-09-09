@@ -194,6 +194,15 @@ menu-sync = Sync Calendars
 sync-status-syncing = Syncing…
 sync-status-error = Sync failed
 
+# Dialog - Settings
+settings-dialog-title = Settings
+settings-week-numbers = Show week numbers
+settings-sync-interval = Background sync interval
+settings-sync-interval-5min = Every 5 minutes
+settings-sync-interval-15min = Every 15 minutes
+settings-sync-interval-30min = Every 30 minutes
+settings-sync-interval-1hour = Every hour
+
 # Dialog - Delete Calendar
 dialog-delete-calendar-title = Delete Calendar
 dialog-delete-calendar-message = Are you sure you want to delete "{$name}"? This will also delete all events in this calendar.

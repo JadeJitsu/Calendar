@@ -230,7 +230,16 @@ pub enum Message {
     NewEvent,
     ImportICal,
     ExportICal,
+    /// Open the settings dialog (menu item)
     Settings,
+    /// Week numbers checkbox toggled in the settings dialog
+    SettingsWeekNumbersToggled(bool),
+    /// A background sync interval radio was selected in the settings dialog
+    SettingsSyncIntervalSelected(u64),
+    /// Confirm (Save) the settings dialog
+    ConfirmSettings,
+    /// Cancel the settings dialog
+    CancelSettings,
     About,
     LaunchUrl(String),
     ToggleContextDrawer,

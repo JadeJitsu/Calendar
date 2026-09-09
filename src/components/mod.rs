@@ -4,6 +4,7 @@
 mod calendar_dialog;
 mod calendar_dialog_callbacks;
 mod calendar_list;
+mod settings_dialog;
 pub mod color_picker;
 mod day_cell;
 mod day_header;
@@ -18,6 +19,7 @@ mod time_grid;
 pub mod time_picker;
 mod toolbar;
 
+pub use settings_dialog::render_settings_dialog;
 pub use calendar_dialog::{
     render_add_caldav_dialog, render_calendar_dialog, render_delete_calendar_dialog,
     render_delete_event_dialog,

@@ -163,6 +163,14 @@ pub enum ActiveDialog {
         /// Password (kept in dialog state only; stored in keyring on confirm)
         password: String,
     },
+    /// Application settings dialog. Holds a working copy of the settings so
+    /// Cancel discards changes; Confirm writes them back to `app.settings`.
+    Settings {
+        /// Whether to show ISO week numbers in the month view.
+        show_week_numbers: bool,
+        /// Background CalDAV sync interval, in seconds.
+        sync_interval_secs: u64,
+    },
 }
 
 impl Default for ActiveDialog {

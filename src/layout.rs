@@ -4,7 +4,7 @@
 use crate::app::CosmicCalendar;
 use crate::components::{
     render_add_caldav_dialog, render_calendar_dialog, render_delete_calendar_dialog,
-    render_delete_event_dialog, render_event_dialog,
+    render_delete_event_dialog, render_event_dialog, render_settings_dialog,
 };
 use crate::dialogs::{render_import_dialog, render_import_progress_dialog, render_import_result_dialog, view_subscribe_dialog};
 use crate::message::Message;
@@ -86,6 +86,11 @@ fn render_dialog_overlay<'a>(
         }
         ActiveDialog::AddCalDav { .. } => {
             let dialog = render_add_caldav_dialog(&app.active_dialog);
+            let dialog_with_backdrop = wrap_dialog_with_backdrop(dialog);
+            return stack![with_drag_preview, dialog_with_backdrop].into();
+        }
+        ActiveDialog::Settings { .. } => {
+            let dialog = render_settings_dialog(&app.active_dialog);
             let dialog_with_backdrop = wrap_dialog_with_backdrop(dialog);
             return stack![with_drag_preview, dialog_with_backdrop].into();
         }

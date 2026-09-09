@@ -1286,8 +1286,42 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::Settings => {
-            // TODO: Open settings dialog
-            info!("Message::Settings: Settings requested (not yet implemented)");
+            // Open the settings dialog with a working copy of the current
+            // settings (so Cancel discards changes).
+            DialogManager::close(&mut app.active_dialog);
+            app.active_dialog = ActiveDialog::Settings {
+                show_week_numbers: app.settings.show_week_numbers,
+                sync_interval_secs: app.settings.background_sync_interval_secs,
+            };
+        }
+        Message::SettingsWeekNumbersToggled(show) => {
+            if let ActiveDialog::Settings { show_week_numbers, .. } = &mut app.active_dialog {
+                *show_week_numbers = show;
+            }
+        }
+        Message::SettingsSyncIntervalSelected(secs) => {
+            if let ActiveDialog::Settings { sync_interval_secs, .. } = &mut app.active_dialog {
+                *sync_interval_secs = secs;
+            }
+        }
+        Message::ConfirmSettings => {
+            // Write the working copy back to the live settings and persist.
+            if let ActiveDialog::Settings {
+                show_week_numbers,
+                sync_interval_secs,
+            } = &app.active_dialog
+            {
+                app.settings.show_week_numbers = *show_week_numbers;
+                app.settings.background_sync_interval_secs = *sync_interval_secs;
+                if let Err(e) = SettingsHandler::save(&app.settings) {
+                    error!("Message::ConfirmSettings: Failed to save settings: {}", e);
+                }
+            }
+            app.active_dialog = ActiveDialog::None;
+        }
+        Message::CancelSettings => {
+            // Discard the working copy.
+            app.active_dialog = ActiveDialog::None;
         }
         Message::About => {
             app.core.window.show_context = !app.core.window.show_context;
