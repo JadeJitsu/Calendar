@@ -1,3 +1,6 @@
+//! The main content area: dispatches to the year/month/week/day view
+//! based on the current `CalendarView`.
+
 use chrono::NaiveDate;
 use cosmic::iced::Length;
 use cosmic::widget::{column, divider};

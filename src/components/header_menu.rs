@@ -1,3 +1,6 @@
+//! The header menu bar: start/end button groups (new event, today,
+//! search, etc.) wired to `MenuAction`s.
+
 use cosmic::widget::{button, menu};
 use cosmic::{widget, Element};
 use cosmic::app::Core;

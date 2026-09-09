@@ -1,3 +1,6 @@
+//! The four calendar views (year/month/week/day) and the `CalendarView`
+//! mode enum that cycles between them.
+
 mod day;
 mod main_view;
 mod month;
@@ -12,6 +15,7 @@ pub use sidebar::render_sidebar;
 pub use week::{render_week_view, week_time_grid_id, WeekViewEvents};
 pub use year::render_year_view;
 
+/// The four calendar display modes, cycling Year → Month → Week → Day.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CalendarView {
     Year,

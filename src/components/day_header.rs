@@ -1,3 +1,6 @@
+//! The day header row (weekday name + day number) used above the
+//! week/day time grids, with today highlighted.
+
 use cosmic::iced::alignment;
 use cosmic::widget::{column, container};
 use cosmic::{widget, Element};

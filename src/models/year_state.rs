@@ -1,3 +1,6 @@
+//! Cached year-view state: the 12 `CalendarState` months for the
+//! displayed year.
+
 use crate::models::CalendarState;
 use chrono::Datelike;
 

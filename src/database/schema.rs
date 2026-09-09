@@ -1,3 +1,6 @@
+//! SQLite persistence layer: the `Database` connection wrapper, schema
+//! creation/migrations, and CRUD for locally stored calendar events.
+
 use chrono::{DateTime, Utc};
 use log::{debug, info};
 use rusqlite::{Connection, params, Result as SqlResult};

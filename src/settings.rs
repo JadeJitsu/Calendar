@@ -1,3 +1,5 @@
+//! Application-level settings that persist across sessions (JSON file).
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;

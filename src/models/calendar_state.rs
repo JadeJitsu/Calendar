@@ -1,3 +1,6 @@
+//! Cached month-view state: the `CalendarDay` grid cell and the
+//! `CalendarState` (week rows + header text) computed once per month.
+
 use chrono::Datelike;
 use crate::localized_names;
 
@@ -14,16 +17,23 @@ pub struct CalendarDay {
 /// Cached calendar state to avoid recalculating on every render
 #[derive(Debug, Clone, PartialEq)]
 pub struct CalendarState {
+    /// The year the displayed month belongs to.
     pub year: i32,
+    /// The 1-based month the grid is showing.
     pub month: u32,
+    /// Day-of-month numbers for the grid, `None` for leading/trailing blanks.
     pub weeks: Vec<Vec<Option<u32>>>,
     /// Full weeks including adjacent month days for display
     pub weeks_full: Vec<Vec<CalendarDay>>,
-    pub today: (i32, u32, u32), // (year, month, day)
-    pub month_year_text: String, // Pre-formatted "Month Year" text
+    /// Today's date as (year, month, day).
+    pub today: (i32, u32, u32),
+    /// Pre-formatted "Month Year" text for the header.
+    pub month_year_text: String,
 }
 
 impl CalendarState {
+    /// Build the grid for `year`/`month`, computing week rows and the
+    /// localized month-year header text.
     pub fn new(year: i32, month: u32) -> Self {
         let first_day = chrono::NaiveDate::from_ymd_opt(year, month, 1).unwrap();
         let first_weekday = first_day.weekday().num_days_from_monday();
@@ -128,10 +138,12 @@ impl CalendarState {
         }
     }
 
+    /// Whether `day` (in the displayed month) is today.
     pub fn is_today(&self, day: u32) -> bool {
         self.today == (self.year, self.month, day)
     }
 
+    /// Whether the displayed month is the month containing today.
     #[allow(dead_code)] // Helper method for future use
     pub fn is_current_month(&self) -> bool {
         self.today.0 == self.year && self.today.1 == self.month

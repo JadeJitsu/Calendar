@@ -1,3 +1,6 @@
+//! The central `Message` enum for the Elm/MVU architecture, plus the
+//! dialog/event-dialog field types it carries.
+
 use chrono::{NaiveDate, NaiveTime};
 use crate::app::EventDialogField;
 use crate::caldav::{AlertTime, CalendarEvent, DiscoveredCalendar, RepeatFrequency, TravelTime};
@@ -7,6 +10,9 @@ use cosmic::iced::widget::scrollable::Viewport;
 use cosmic::widget::text_editor;
 use std::path::PathBuf;
 
+/// The central Elm/MVU message type. Every user interaction and async
+/// completion is expressed as a `Message` variant, dispatched through
+/// `CosmicCalendar::update`. Variants are grouped by feature domain.
 #[derive(Debug, Clone)]
 #[allow(dead_code)] // Message variants are part of the app's message-passing API - some are reserved for future features
 pub enum Message {

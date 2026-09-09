@@ -1,3 +1,5 @@
+//! The left sidebar: the mini month calendar above the calendar list.
+
 use cosmic::iced::Length;
 use cosmic::widget::{column, container, divider, scrollable};
 use cosmic::Element;
@@ -9,6 +11,8 @@ use crate::message::Message;
 use crate::models::CalendarState;
 use crate::ui_constants::{SIDEBAR_WIDTH, SPACING_LARGE, PADDING_STANDARD};
 
+/// Render the left sidebar: the mini month calendar above the list of
+/// calendars (with per-calendar enable toggles and sync status).
 pub fn render_sidebar<'a>(
     calendar_state: &CalendarState,
     calendars: &'a [Box<dyn CalendarSource>],

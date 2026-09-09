@@ -1,3 +1,6 @@
+//! Internationalization setup: the embedded Fluent localizations, the
+//! language loader, and locale detection.
+
 use i18n_embed::{
     fluent::{fluent_language_loader, FluentLanguageLoader},
     DesktopLanguageRequester,
@@ -10,6 +13,9 @@ use rust_embed::RustEmbed;
 struct Localizations;
 
 lazy_static::lazy_static! {
+    // The Fluent language loader, initialized once with the user's requested
+    // locale (falling back to English on failure). `fl!` resolves strings
+    // through this at runtime.
     pub static ref LANGUAGE_LOADER: FluentLanguageLoader = {
         let loader = fluent_language_loader!();
         let requested_languages = DesktopLanguageRequester::requested_languages();

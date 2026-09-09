@@ -1,3 +1,6 @@
+//! The time grid used by the week and day views: hour rows and per-day
+//! columns (`DayColumn`) with positioned event blocks.
+
 use cosmic::iced::{alignment, Border, Length};
 use cosmic::widget::{column, container, row};
 use cosmic::{widget, Element};
@@ -13,15 +16,18 @@ use crate::ui_constants::{
 /// Information about a single day column in the time grid
 #[derive(Clone)]
 pub struct DayColumn {
+    /// Whether this column is a weekend day (drives weekend styling).
     pub is_weekend: bool,
 }
 
 impl DayColumn {
+    /// Build a day column with an explicit weekend flag.
     #[allow(dead_code)] // Reserved for future day column configuration
     pub fn new(is_weekend: bool) -> Self {
         Self { is_weekend }
     }
 
+    /// A weekday (non-weekend) column.
     pub fn regular() -> Self {
         Self { is_weekend: false }
     }

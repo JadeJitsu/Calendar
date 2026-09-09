@@ -1,3 +1,5 @@
+//! The year view: a responsive grid of 12 mini month boxes.
+
 use cosmic::iced::{alignment, Border, Length, Size};
 use cosmic::widget::{column, container, row, scrollable, responsive};
 use cosmic::{widget, Element};
@@ -14,6 +16,8 @@ use crate::ui_constants::{
 // Minimum size for month boxes - ensures all content is readable
 const MIN_MONTH_BOX_SIZE: f32 = 220.0;
 
+/// Render the year overview: a responsive grid of 12 mini month boxes,
+/// each showing a compact month grid for the selected year.
 pub fn render_year_view(year_state: &YearState, _locale: &LocalePreferences) -> Element<'static, Message> {
     // Clone data needed for the closure
     let months = year_state.months.clone();

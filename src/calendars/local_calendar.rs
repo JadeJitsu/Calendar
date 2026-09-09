@@ -1,3 +1,6 @@
+//! The local (SQLite-backed) calendar source: stores events in the
+//! database and metadata in the JSON config.
+
 use super::calendar_source::{CalendarInfo, CalendarSource, CalendarType};
 use super::config::CalendarManagerConfig;
 use crate::caldav::CalendarEvent;

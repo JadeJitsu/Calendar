@@ -1,3 +1,6 @@
+//! Reusable iced style functions (day cells, buttons, borders, shadows)
+//! shared across the view components.
+
 use cosmic::iced::{Background, Border, Color, Shadow, Vector};
 use cosmic::widget::container;
 use crate::ui_constants::{
