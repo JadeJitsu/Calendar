@@ -14,6 +14,7 @@ mod calendar_handler;
 mod credentials;
 mod event_handler;
 mod export_handler;
+mod notification_scheduler;
 mod settings_handler;
 mod sync_handler;
 
@@ -21,6 +22,7 @@ pub use calendar_handler::{CalendarHandler, NewCalendarData, UpdateCalendarData}
 pub use credentials::{CalDavCredentials, host_of};
 pub use event_handler::EventHandler;
 pub use export_handler::ExportHandler;
+pub use notification_scheduler::{DueNotification, NotificationScheduler, DUE_WINDOW};
 pub use settings_handler::SettingsHandler;
 
 // Internal types - exported for potential future use but not currently needed externally

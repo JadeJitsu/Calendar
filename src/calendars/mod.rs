@@ -259,7 +259,7 @@ impl CalendarManager {
     /// Expand a recurring event into multiple occurrences within a date range
     /// Returns a vector of (occurrence_date, event) tuples
     /// Skips exception dates (dates where the recurring event was deleted for a single occurrence)
-    fn expand_recurring_event(
+    pub fn expand_recurring_event(
         event: &CalendarEvent,
         range_start: NaiveDate,
         range_end: NaiveDate,
