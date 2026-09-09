@@ -1424,3 +1424,89 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
 
     Task::none()
 }
+
+#[cfg(test)]
+mod background_sync_tests {
+    use super::*;
+    use chrono::{DateTime, TimeZone, Utc};
+
+    fn at(h: u32, m: u32) -> DateTime<Utc> {
+        Utc.with_ymd_and_hms(2026, 9, 9, h, m, 0).unwrap()
+    }
+
+    #[test]
+    fn skips_when_no_caldav_sources() {
+        let now = at(12, 0);
+        assert!(!background_sync_due(false, false, None, now));
+    }
+
+    #[test]
+    fn skips_while_a_sync_is_in_progress() {
+        let now = at(12, 0);
+        assert!(!background_sync_due(true, true, None, now));
+        // Even if the interval has long since elapsed.
+        assert!(!background_sync_due(true, true, Some(at(9, 0)), now));
+    }
+
+    #[test]
+    fn runs_when_never_synced() {
+        let now = at(12, 0);
+        assert!(background_sync_due(true, false, None, now));
+    }
+
+    #[test]
+    fn skips_before_interval_elapses() {
+        let now = at(12, 0);
+        assert!(!background_sync_due(true, false, Some(at(11, 46)), now));
+        assert!(!background_sync_due(true, false, Some(at(11, 59)), now));
+    }
+
+    #[test]
+    fn runs_at_exactly_interval_boundary() {
+        let now = at(12, 0);
+        assert!(background_sync_due(true, false, Some(at(11, 45)), now));
+    }
+
+    #[test]
+    fn runs_after_interval_elapses() {
+        let now = at(12, 0);
+        assert!(background_sync_due(true, false, Some(at(9, 0)), now));
+    }
+
+    #[test]
+    fn retries_after_a_failed_sync() {
+        // A failed sync leaves sync_status = Some((id, false)) — that is NOT
+        // "in progress", so the next tick must retry.
+        let now = at(12, 0);
+        assert!(background_sync_due(true, false, Some(at(9, 0)), now));
+    }
+}
+
+/// How often the background CalDAV sync runs.
+pub const BACKGROUND_SYNC_INTERVAL: std::time::Duration =
+    std::time::Duration::from_secs(15 * 60);
+
+/// Decide whether a background CalDAV sync should run now.
+///
+/// Skips when there are no enabled CalDAV calendars, when a sync is already
+/// in flight (avoids overlapping fetches), or when the last sync finished
+/// less than [`BACKGROUND_SYNC_INTERVAL`] ago. A *failed* sync is not "in
+/// progress" (`is_syncing == false`), so the next tick retries it.
+fn background_sync_due(
+    has_caldav: bool,
+    is_syncing: bool,
+    last_synced: Option<chrono::DateTime<chrono::Utc>>,
+    now: chrono::DateTime<chrono::Utc>,
+) -> bool {
+    if !has_caldav || is_syncing {
+        return false;
+    }
+    match last_synced {
+        Some(ts) => {
+            // `signed_duration_since` is negative if the clock went backwards;
+            // that simply means "not due yet".
+            now.signed_duration_since(ts).num_seconds() >= BACKGROUND_SYNC_INTERVAL.as_secs() as i64
+        }
+        None => true,
+    }
+}
