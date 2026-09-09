@@ -578,6 +578,27 @@ impl ExportHandler {
             })
             .unwrap_or_default();
 
+        // Attendees: ATTENDEE (multi-valued). We store bare emails, so strip
+        // the `mailto:` scheme (case-insensitive) and drop anything that isn't
+        // a mailto address (e.g. opaque `cal:` URIs from other clients).
+        let invitees = ical_event
+            .multi_properties()
+            .get("ATTENDEE")
+            .map(|props| {
+                props
+                    .iter()
+                    .filter_map(|p| {
+                        let v = p.value();
+                        // Case-insensitive `mailto:` prefix check.
+                        v.get(..7)
+                            .filter(|pfx| pfx.eq_ignore_ascii_case("mailto:"))
+                            .and_then(|_| v.get(7..))
+                            .map(|s| s.to_string())
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+
         // Reminders: first VALARM child with a parseable before-start trigger.
         let alert = ical_event
             .components()
@@ -603,7 +624,7 @@ impl ExportHandler {
             repeat,
             repeat_until,
             exception_dates,
-            invitees: vec![],
+            invitees,
             alert,
             alert_second: None,
             attachments: vec![],
@@ -942,6 +963,34 @@ mod tests {
         assert_eq!(
             events[0].start,
             Utc.with_ymd_and_hms(2025, 6, 15, 13, 0, 0).unwrap()
+        );
+    }
+
+    /// ATTENDEE lines (with a `CN` display-name param) parse into bare
+    /// `invitees` emails — the `mailto:` scheme is stripped.
+    #[test]
+    fn test_parse_attendee_lines() {
+        let ics = "BEGIN:VCALENDAR\r\n\
+                   VERSION:2.0\r\n\
+                   BEGIN:VEVENT\r\n\
+                   UID:att-test-1\r\n\
+                   SUMMARY:Invite Test\r\n\
+                   DTSTART:20250101T090000Z\r\n\
+                   DTEND:20250101T100000Z\r\n\
+                   ATTENDEE;CN=Alice:mailto:alice@example.com\r\n\
+                   ATTENDEE;CN=Bob:MAILTO:bob@example.com\r\n\
+                   ATTENDEE:mailto:carol@example.com\r\n\
+                   END:VEVENT\r\n\
+                   END:VCALENDAR";
+        let events = ExportHandler::parse_ical_string(ics).expect("parse");
+        assert_eq!(events.len(), 1);
+        assert_eq!(
+            events[0].invitees,
+            vec![
+                "alice@example.com".to_string(),
+                "bob@example.com".to_string(),
+                "carol@example.com".to_string()
+            ]
         );
     }
 }

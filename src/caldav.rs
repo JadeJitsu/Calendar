@@ -669,6 +669,14 @@ pub fn calendar_event_to_ics(event: &CalendarEvent) -> String {
             &d.format("%Y%m%d").to_string(),
         ));
     }
+    // ATTENDEE is multi-valued (icalendar routes it to `multi_properties`).
+    // We only store bare emails, so emit `mailto:` with no `CN` display name.
+    for invitee in &event.invitees {
+        ev.append_multi_property(Property::new(
+            "ATTENDEE",
+            &format!("mailto:{}", invitee),
+        ));
+    }
     if let Some(trigger) = alert_to_trigger(&event.alert) {
         ev.alarm(Alarm::display("Reminder", trigger));
     }
@@ -917,6 +925,48 @@ END:VCALENDAR</c:calendar-data>
             vec![chrono::NaiveDate::from_ymd_opt(2026, 9, 24).unwrap()]
         );
         assert_eq!(parsed.alert, AlertTime::FifteenMinutes);
+    }
+
+    /// Invitees must survive the ICS round-trip: the export writes one
+    /// `ATTENDEE` per invitee and the import reads them back.
+    #[test]
+    fn test_ics_round_trip_invitees() {
+        let event = CalendarEvent {
+            uid: "rt-invitees-1".to_string(),
+            summary: "Team Sync".to_string(),
+            location: None,
+            all_day: false,
+            start: chrono::DateTime::parse_from_rfc3339("2026-09-10T09:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            end: chrono::DateTime::parse_from_rfc3339("2026-09-10T09:30:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            travel_time: TravelTime::None,
+            repeat: RepeatFrequency::Never,
+            repeat_until: None,
+            exception_dates: vec![],
+            invitees: vec![
+                "alice@example.com".to_string(),
+                "bob@example.com".to_string(),
+            ],
+            alert: AlertTime::None,
+            alert_second: None,
+            attachments: vec![],
+            url: None,
+            notes: None,
+        };
+
+        let ics = calendar_event_to_ics(&event);
+        let parsed = crate::services::ExportHandler::parse_ical_string(&ics)
+            .expect("parse back")
+            .pop()
+            .expect("one event");
+
+        assert_eq!(
+            parsed.invitees,
+            vec!["alice@example.com".to_string(), "bob@example.com".to_string()]
+        );
     }
 
     #[test]
