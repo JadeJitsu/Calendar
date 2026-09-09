@@ -15,10 +15,10 @@ pub struct CalendarConfig {
     pub enabled: bool,
     pub calendar_type: String,
     /// Per-calendar CalDAV collection URL (e.g. `https://host/remote.php/dav/calendars/user/work/`).
-    /// Only set for `calendar_type == "caldav"`.
+    /// Only set for CalDAV calendars (`calendar_type == "CalDav"`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub server_url: Option<String>,
-    /// CalDAV username. Only set for `calendar_type == "caldav"`.
+    /// CalDAV username. Only set for CalDAV calendars (`calendar_type == "CalDav"`).
     /// The password is NOT stored here — it lives only in the system keyring.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
@@ -103,7 +103,7 @@ mod tests {
             name: "Work".to_string(),
             color: "#ff0000".to_string(),
             enabled: true,
-            calendar_type: "caldav".to_string(),
+            calendar_type: "CalDav".to_string(),
             server_url: Some("https://example.com/remote.php/dav/calendars/user/work/".to_string()),
             username: Some("user".to_string()),
         }
@@ -136,7 +136,7 @@ mod tests {
             name: "Personal".to_string(),
             color: "#00ff00".to_string(),
             enabled: true,
-            calendar_type: "local".to_string(),
+            calendar_type: "Local".to_string(),
             server_url: None,
             username: None,
         };

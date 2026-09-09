@@ -77,7 +77,13 @@ impl CalendarManager {
             // Load calendars from config
             for cal_config in &config.calendars {
                 debug!("CalendarManager: Loading calendar '{}' ({})", cal_config.name, cal_config.id);
-                if cal_config.calendar_type == "caldav" {
+                // Case-insensitive: configs written before the
+                // `as_config()` fix may hold the lowercase `"caldav"`
+                // form, current ones hold `"CalDav"`.
+                if cal_config
+                    .calendar_type
+                    .eq_ignore_ascii_case(CalendarType::CalDav.as_config())
+                {
                     // CalDAV: password lives only in the keyring. A missing
                     // credential or construct failure logs (host only) and
                     // skips the calendar rather than failing startup.
@@ -602,7 +608,7 @@ impl CalendarManager {
                 name: info.name.clone(),
                 color: info.color.clone(),
                 enabled: info.enabled,
-                calendar_type: format!("{:?}", info.calendar_type),
+                calendar_type: info.calendar_type.as_config().to_string(),
                 server_url,
                 username,
             });
