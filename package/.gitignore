@@ -1,0 +1,6 @@
+# makepkg build artifacts
+src/
+pkg/
+build/
+*.tar.gz
+*.pkg.tar.zst
