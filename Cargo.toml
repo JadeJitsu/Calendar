@@ -142,3 +142,10 @@ test = false
 name = "list_probe"
 path = "src/bin/list_probe.rs"
 test = false
+
+# Lower optimization for the bundled SQLCipher C build only — compiling its
+# amalgamated source at -O3 spikes memory well past what this machine's RAM
+# can sustain alongside a running browser. This does not weaken encryption,
+# only how hard the C compiler optimizes the resulting code.
+[profile.release.package.libsqlite3-sys]
+opt-level = 0

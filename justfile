@@ -23,6 +23,14 @@ dbus-service := appid + '.service'
 dbus-service-src := 'res' / dbus-service
 dbus-service-dst := clean(INSTALL_DIR / 'dbus-1' / 'services' / dbus-service)
 
+icon-svg := appid + '.svg'
+icon-svg-src := 'res' / 'icons' / 'hicolor' / 'scalable' / 'apps' / icon-svg
+icon-svg-dst := clean(INSTALL_DIR / 'icons' / 'hicolor' / 'scalable' / 'apps' / icon-svg)
+
+icon-png := appid + '.png'
+icon-png-src := 'res' / 'icons' / 'hicolor' / '64x64' / 'apps' / icon-png
+icon-png-dst := clean(INSTALL_DIR / 'icons' / 'hicolor' / '64x64' / 'apps' / icon-png)
+
 # Default recipe to display help information
 default:
     @just --list
@@ -65,11 +73,14 @@ install:
     install -Dm0644 {{desktop-src}} {{desktop-dst}}
     install -Dm0644 {{metainfo-src}} {{metainfo-dst}}
     install -Dm0644 {{dbus-service-src}} {{dbus-service-dst}}
+    install -Dm0644 {{icon-svg-src}} {{icon-svg-dst}}
+    install -Dm0644 {{icon-png-src}} {{icon-png-dst}}
 
 # Install the application to the user prefix (~/.local), no root required.
 # Creates any missing target directories and refreshes the desktop database.
 install-user:
     @mkdir -p ~/.local/bin ~/.local/share/applications ~/.local/share/metainfo ~/.local/share/dbus-1/services
+    @mkdir -p ~/.local/share/icons/hicolor/scalable/apps ~/.local/share/icons/hicolor/64x64/apps
     install -Dm0755 {{bin-src}} ~/.local/bin/{{name}}
     # The desktop launcher's PATH does not include ~/.local/bin (only the
     # interactive shell rc files add it), so a bare `Exec=xcalendar` fails
@@ -78,7 +89,10 @@ install-user:
     sed -i "s|^Exec=.*|Exec=$HOME/.local/bin/{{name}} %u|" ~/.local/share/applications/{{desktop}}
     install -Dm0644 {{metainfo-src}} ~/.local/share/metainfo/{{metainfo}}
     install -Dm0644 {{dbus-service-src}} ~/.local/share/dbus-1/services/{{dbus-service}}
+    install -Dm0644 {{icon-svg-src}} ~/.local/share/icons/hicolor/scalable/apps/{{icon-svg}}
+    install -Dm0644 {{icon-png-src}} ~/.local/share/icons/hicolor/64x64/apps/{{icon-png}}
     @update-desktop-database ~/.local/share/applications 2>/dev/null || true
+    @gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor 2>/dev/null || true
     @echo "✅ Installed to ~/.local"
 
 # Vendor dependencies
