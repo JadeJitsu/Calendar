@@ -82,12 +82,12 @@
 - [ ] Multi-day event spanning
 
 #### Phase 5: CalDAV Integration
-- [ ] CalDAV sync implementation
-  - Parse iCalendar data from server
-  - Push local changes to server
+- [x] CalDAV sync implementation
+  - [x] Parse iCalendar data from server
+  - [x] Push local changes to server
+  - [x] Nextcloud Calendar support (incl. `calendar-home-set` 404 fallback)
 - [ ] Google Calendar support
 - [ ] iCloud Calendar support
-- [ ] Nextcloud Calendar support
 
 #### Phase 6: Import/Export
 - [ ] Import iCal file (.ics)
