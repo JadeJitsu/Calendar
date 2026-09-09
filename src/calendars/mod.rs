@@ -1,3 +1,6 @@
+//! Calendar sources: the `CalendarSource` trait plus the local (SQLite)
+//! and CalDAV implementations, and on-disk configuration.
+
 mod calendar_source;
 mod caldav_calendar;
 mod config;

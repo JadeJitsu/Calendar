@@ -1,3 +1,6 @@
+//! The sidebar calendar list: each calendar row with its color indicator,
+//! enable toggle, and quick color picker.
+
 use cosmic::iced::Length;
 use cosmic::widget::{button, column, container, menu, row};
 use cosmic::{widget, Element};

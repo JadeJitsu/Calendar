@@ -1,3 +1,6 @@
+//! Calendar configuration: the `CalendarConfig` record and the
+//! `CalendarManagerConfig` that loads/saves the full calendar list to disk.
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;

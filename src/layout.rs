@@ -1,3 +1,6 @@
+//! Top-level layout composition: assembles the sidebar, main view, and
+//! any active dialog into the final window content.
+
 use crate::app::CosmicCalendar;
 use crate::components::{
     render_add_caldav_dialog, render_calendar_dialog, render_delete_calendar_dialog,

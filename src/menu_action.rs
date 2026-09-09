@@ -1,3 +1,6 @@
+//! The `MenuAction` enum: the set of actions reachable from the menu bar
+//! and keyboard shortcuts.
+
 use cosmic::widget::menu;
 
 use crate::message::Message;

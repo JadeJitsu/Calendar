@@ -1,3 +1,6 @@
+//! Application entry point: module declarations, i18n initialization,
+//! logging setup, and the `cosmic::app` bootstrap.
+
 mod app;
 mod cache;
 mod caldav;

@@ -1,3 +1,6 @@
+//! The `CalendarSource` trait and the `CalendarInfo`/`CalendarType`
+//! types that unify local and CalDAV calendars behind one interface.
+
 use crate::caldav::CalendarEvent;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -15,6 +18,7 @@ pub enum CalendarType {
 }
 
 impl CalendarType {
+    /// Human-readable label for this calendar type (e.g. "CalDAV").
     #[allow(dead_code)] // Reserved for future calendar type display
     pub fn as_str(&self) -> &str {
         match self {
@@ -46,6 +50,8 @@ pub struct CalendarInfo {
 }
 
 impl CalendarInfo {
+    /// Build a calendar with a type-appropriate default color, no
+    /// description, and `enabled: true`.
     pub fn new(id: String, name: String, calendar_type: CalendarType) -> Self {
         CalendarInfo {
             id,

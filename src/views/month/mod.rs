@@ -57,6 +57,8 @@ pub struct MonthViewEvents<'a> {
     pub drag_target_date: Option<NaiveDate>,
 }
 
+/// Render the month grid: a responsive weekday header above a 7-column
+/// grid of day cells, with optional week numbers and event chips.
 pub fn render_month_view<'a>(
     calendar_state: &CalendarState,
     selected_date: Option<NaiveDate>,

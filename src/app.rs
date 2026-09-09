@@ -1,3 +1,7 @@
+//! The main application struct and its `cosmic::app::Application`
+//! implementation: owns all app state and implements the Elm/MVU
+//! `update`/`view` cycle that dispatches `Message` variants.
+
 use crate::cache::CalendarCache;
 use crate::calendars::CalendarManager;
 use crate::components;

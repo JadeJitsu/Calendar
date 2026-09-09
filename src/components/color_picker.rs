@@ -1,3 +1,6 @@
+//! Color picker components: the predefined calendar color palettes, the
+//! color indicator/palette/quick-picker widgets, and hex-color parsing.
+
 use cosmic::iced::{Color, Length};
 use cosmic::widget::{button, column, container, row};
 use cosmic::{widget, Element};

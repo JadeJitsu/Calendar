@@ -1,3 +1,6 @@
+//! Global keyboard shortcut registry: maps key bindings to `MenuAction`s
+//! and provides them to the menu bar.
+
 use cosmic::iced::keyboard::key::Named;
 use cosmic::iced::keyboard::Key;
 use cosmic::widget::menu;

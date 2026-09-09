@@ -1,3 +1,7 @@
+//! The "subscribe to calendar" dialog, shown after a CalDAV collection is
+//! fetched: it previews the fetched events and lets the user choose whether
+//! to import them into an existing calendar or a new one.
+
 use cosmic::iced::Length;
 use cosmic::widget::{button, column, container, dialog, radio, text, text_input};
 use cosmic::{widget, Element};
@@ -6,6 +10,8 @@ use crate::app::CosmicCalendar;
 use crate::fl;
 use crate::message::Message;
 
+/// Build the subscribe dialog body from the fetched calendar data and the
+/// user's in-progress choices (target calendar, or a new calendar name).
 pub fn view_subscribe_dialog<'a>(
     app: &'a CosmicCalendar,
     url: &'a str,

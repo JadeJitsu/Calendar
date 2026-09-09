@@ -1,3 +1,6 @@
+//! The compact month grid shown in the sidebar, with month navigation
+//! and the selected day highlighted.
+
 use cosmic::iced::Length;
 use cosmic::widget::{button, column, container, row};
 use cosmic::{widget, Element};
@@ -11,6 +14,8 @@ use crate::ui_constants::{
     MINI_CALENDAR_GRID_HEIGHT, ICON_PREVIOUS, ICON_NEXT
 };
 
+/// Render the compact month grid in the sidebar, with prev/next month
+/// navigation and the currently selected day highlighted.
 pub fn render_mini_calendar(
     calendar_state: &CalendarState,
     selected_day: Option<u32>,

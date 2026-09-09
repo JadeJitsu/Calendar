@@ -1,3 +1,6 @@
+//! In-memory cache of computed calendar states and formatted period
+//! strings, keyed by (year, month), to avoid recalculating on every render.
+
 use crate::models::CalendarState;
 use std::collections::HashMap;
 
@@ -141,10 +144,14 @@ impl CalendarCache {
     }
 }
 
+/// Counters describing what the cache currently holds (for diagnostics).
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct CacheStats {
+    /// Number of view states currently cached.
     pub states_cached: usize,
+    /// Number of pre-formatted period ("Month Year") strings cached.
     pub period_texts_cached: usize,
+    /// The (year, month) the cache was last warmed for.
     pub current_month: (i32, u32),
 }

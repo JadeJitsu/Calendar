@@ -188,6 +188,7 @@ impl ActiveDialog {
         matches!(self, ActiveDialog::ColorPicker { .. })
     }
 
+    /// Check if a calendar create/edit/delete dialog is open
     #[allow(dead_code)] // Reserved for future dialog type checking
     pub fn is_calendar_dialog(&self) -> bool {
         matches!(
@@ -198,6 +199,7 @@ impl ActiveDialog {
         )
     }
 
+    /// Check if the event create/edit dialog is open
     #[allow(dead_code)] // Reserved for future dialog type checking
     pub fn is_event_dialog(&self) -> bool {
         matches!(self, ActiveDialog::EventDialogOpen)

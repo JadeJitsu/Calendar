@@ -1,3 +1,6 @@
+//! The month-view day cell: renders a single day's number, event chips,
+//! and quick-add input, with today/selected/adjacent-month styling.
+
 use chrono::NaiveDate;
 use cosmic::iced::{alignment, Length, Size};
 use cosmic::widget::{column, container, mouse_area, responsive};

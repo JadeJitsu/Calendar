@@ -1,3 +1,6 @@
+//! Reusable UI components (day cells, time grid, dialogs, pickers, etc.)
+//! and their public re-exports.
+
 mod calendar_dialog;
 mod calendar_dialog_callbacks;
 mod calendar_list;

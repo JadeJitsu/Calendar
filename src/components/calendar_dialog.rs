@@ -1,3 +1,6 @@
+//! The calendar create/edit dialog and the CalDAV add / calendar-delete
+//! / event-delete dialogs.
+
 use cosmic::iced::Length;
 use cosmic::widget::{button, column, container, dialog, row, secure_input, text_input};
 use cosmic::{widget, Element};

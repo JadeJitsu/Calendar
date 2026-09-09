@@ -1,3 +1,6 @@
+//! Cached week-view state: the 7 days of the displayed week plus the
+//! pre-formatted week-range header text.
+
 use chrono::{Datelike, NaiveDate, Weekday};
 use crate::locale::LocalePreferences;
 

@@ -1,3 +1,5 @@
+//! The single-day view: an all-day section above a one-column time grid.
+
 use cosmic::iced::Length;
 use cosmic::widget::{column, container, row, scrollable};
 use cosmic::Element;
@@ -9,6 +11,8 @@ use crate::message::Message;
 use crate::models::DayState;
 use crate::ui_constants::{PADDING_SMALL, ALL_DAY_HEADER_HEIGHT};
 
+/// Render the single-day view: an all-day section above a one-column time
+/// grid for the selected day.
 pub fn render_day_view(day_state: &DayState, locale: &LocalePreferences) -> Element<'static, Message> {
     let all_day_section = render_all_day_section(day_state);
 

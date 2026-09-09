@@ -53,22 +53,31 @@ impl Error for SyncError {}
 /// Sync status for a calendar
 #[derive(Debug, Clone)]
 pub struct CalendarSyncStatus {
+    /// The id of the calendar that was synced.
     pub calendar_id: String,
+    /// Display name of the calendar (for user-facing messages).
     pub calendar_name: String,
+    /// Whether this calendar's sync completed without error.
     pub success: bool,
+    /// Human-readable error, present only when `success` is false.
     pub error_message: Option<String>,
 }
 
 /// Overall sync result
 #[derive(Debug)]
 pub struct SyncReport {
+    /// Total number of calendars attempted.
     pub total: usize,
+    /// Number of calendars that synced successfully.
     pub succeeded: usize,
+    /// Number of calendars that failed.
     pub failed: usize,
+    /// Per-calendar detail, in the order the calendars were processed.
     pub statuses: Vec<CalendarSyncStatus>,
 }
 
 impl SyncReport {
+    /// True when every attempted calendar synced successfully.
     pub fn all_succeeded(&self) -> bool {
         self.failed == 0
     }

@@ -1,3 +1,6 @@
+//! Cached view-state models (month/week/day/year) computed once per
+//! displayed period to avoid recalculating on every render.
+
 mod calendar_state;
 mod week_state;
 mod day_state;

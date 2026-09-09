@@ -1,4 +1,5 @@
-/// Locale-aware formatting and settings based on system configuration
+//! Locale-aware formatting and settings based on system configuration.
+
 use std::env;
 use chrono::Datelike;
 

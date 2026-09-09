@@ -1,3 +1,6 @@
+//! The navigation toolbar: previous/next buttons plus the primary and
+//! secondary period text.
+
 use cosmic::widget::{button, row};
 use cosmic::{widget, Element};
 

@@ -1,4 +1,4 @@
-/// Get localized weekday and month names using the fl! macro
+//! Localized weekday and month names, resolved through the `fl!` macro.
 
 use crate::fl;
 

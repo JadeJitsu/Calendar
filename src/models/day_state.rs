@@ -1,3 +1,6 @@
+//! Cached day-view state: the displayed date plus pre-formatted header
+//! strings.
+
 use chrono::{Datelike, NaiveDate};
 use crate::locale::LocalePreferences;
 use crate::localized_names;

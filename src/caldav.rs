@@ -63,6 +63,10 @@ pub enum TravelTime {
     Custom(i32), // Custom minutes
 }
 
+/// A single calendar event, shared between local and CalDAV-backed
+/// calendars. This is the app's canonical in-memory event model; the
+/// `calendar_event_to_ics` / `parse_ical_string` pair round-trips it to and
+/// from iCalendar text.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CalendarEvent {
     /// Unique identifier for the event
@@ -154,6 +158,8 @@ pub struct CalDavClient {
 }
 
 impl CalDavClient {
+    /// Create a client for `base_url`. Fails with [`CalDavError::NotHttps`]
+    /// if the URL is not `https://` — plaintext CalDAV is refused outright.
     pub fn new(base_url: String, username: String, password: String) -> Result<Self, CalDavError> {
         // Security: enforce HTTPS-only connections
         if !base_url.starts_with("https://") {
