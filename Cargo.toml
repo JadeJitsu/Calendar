@@ -90,3 +90,18 @@ single-instance = ["libcosmic/single-instance"]
 name = "caldav_probe"
 path = "src/bin/caldav_probe.rs"
 test = false
+
+[[bin]]
+name = "ocs_probe"
+path = "src/bin/ocs_probe.rs"
+test = false
+
+[[bin]]
+name = "report_probe"
+path = "src/bin/report_probe.rs"
+test = false
+
+[[bin]]
+name = "list_probe"
+path = "src/bin/list_probe.rs"
+test = false

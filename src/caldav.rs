@@ -274,17 +274,62 @@ impl CalDavClient {
         Ok(parse_calendar_multistatus(&xml, home)?)
     }
 
-    /// Full discovery: principal → home-set → calendar list. If any step
-    /// fails (e.g. the pasted URL is already a collection), fall back to
-    /// treating the base URL itself as a single calendar.
+    /// Full discovery: principal → home-set → calendar list.
+    ///
+    /// Fallback: some servers (observed on Nextcloud 34) do not expose
+    /// `calendar-home-set` on the principal — the property 404s even
+    /// though the per-user collections exist and are listable directly.
+    /// When the home-set step fails, list `{base}/calendars/{username}/`
+    /// instead, which is the path direct-URL clients (e.g. Thunderbird)
+    /// use.
     pub fn discover(&self) -> Result<Vec<DiscoveredCalendar>, CalDavError> {
         let principal = self.discover_principal()?;
-        let home = self.discover_home(&principal)?;
+        let home = match self.discover_home(&principal) {
+            Ok(h) => h,
+            Err(e) => {
+                // The per-user path segment is the user's UID — the last
+                // path component of the principal URL (Nextcloud:
+                // `/principals/users/{uid}/`). Fall back to the login name
+                // if the URL doesn't match that shape.
+                let uid = url::Url::parse(&principal)
+                    .ok()
+                    .and_then(|u| {
+                        u.path()
+                            .rsplit('/')
+                            .find(|s| !s.is_empty())
+                            .map(|s| s.to_string())
+                    })
+                    .unwrap_or_else(|| self.username.clone());
+                let user_url = Self::user_calendars_url(&self.base_url(), &uid);
+                match self.list_calendars(&user_url) {
+                    Ok(cals) if !cals.is_empty() => {
+                        log::warn!(
+                            "CalDAV: calendar-home-set unavailable ({}); \
+                             falling back to per-user path {}",
+                            e,
+                            user_url
+                        );
+                        return Ok(cals);
+                    }
+                    _ => return Err(e),
+                }
+            }
+        };
         let calendars = self.list_calendars(&home)?;
         if !calendars.is_empty() {
             return Ok(calendars);
         }
         Err(CalDavError::Parse("no calendars found".into()))
+    }
+
+    /// The per-user DAV collection path: `{base}/calendars/{username}/`.
+    /// Trailing-slash-insensitive on `base_url`.
+    pub fn user_calendars_url(base_url: &str, username: &str) -> String {
+        format!(
+            "{}/calendars/{}/",
+            base_url.trim_end_matches('/'),
+            username
+        )
     }
 
     /// The fallback: treat the base URL as a single calendar collection.
@@ -986,5 +1031,26 @@ mod propstat_status_tests {
         let doc = roxmltree::Document::parse(xml).unwrap();
         let href = propstat_href(&doc, "calendar-home-set").unwrap();
         assert_eq!(href, "/remote.php/dav/calendars/user/");
+    }
+}
+
+#[cfg(test)]
+mod user_calendars_fallback_tests {
+    use super::*;
+
+    /// The fallback list URL is `{base}/calendars/{username}/` — the
+    /// per-user DAV path used by Nextcloud (and the path Thunderbird is
+    /// given directly). Base URLs with or without a trailing slash must
+    /// produce the same result.
+    #[test]
+    fn test_user_calendars_url_trailing_slash_insensitive() {
+        assert_eq!(
+            CalDavClient::user_calendars_url("https://x/remote.php/dav", "jlagman"),
+            "https://x/remote.php/dav/calendars/jlagman/"
+        );
+        assert_eq!(
+            CalDavClient::user_calendars_url("https://x/remote.php/dav/", "jlagman"),
+            "https://x/remote.php/dav/calendars/jlagman/"
+        );
     }
 }

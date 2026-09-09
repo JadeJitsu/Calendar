@@ -1,18 +1,15 @@
-//! Live CalDAV discovery probe (debug aid).
-//!
-//! Drives the real `CalDavClient::discover()` (the same code the app runs)
-//! and prints the result. Usage:
-//!   cargo run --bin caldav_probe -- <url> <user> <pass>
-//!
-//! Prints only hosts, URLs, and counts — never the password or event data.
+//! Live CalDAV collection lister: PROPFIND Depth 1 against a URL and print
+//! the child collections. Usage:
+//!   cargo run --bin list_probe -- <url> <user> <pass>
+use caldav::CalDavClient;
+
 #[path = "../caldav.rs"]
 mod caldav;
-use caldav::CalDavClient;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 4 {
-        eprintln!("usage: caldav_probe <url> <user> <pass>");
+        eprintln!("usage: list_probe <url> <user> <pass>");
         std::process::exit(2);
     }
     let (url, user, pass) = (&args[1], &args[2], &args[3]);
@@ -23,15 +20,17 @@ fn main() {
             std::process::exit(1);
         }
     };
-    match client.discover() {
+    // list_calendars PROPFINDs the given URL at Depth 1 and parses the
+    // calendar collections from the response.
+    match client.list_calendars(url) {
         Ok(cals) => {
-            println!("discover(): OK, {} calendar(s)", cals.len());
+            println!("{} collection(s) under {url}:", cals.len());
             for c in &cals {
                 println!("  - {} : {}", c.name, c.url);
             }
         }
         Err(e) => {
-            println!("discover(): ERR {e}");
+            println!("LIST ERR: {e}");
             std::process::exit(1);
         }
     }
