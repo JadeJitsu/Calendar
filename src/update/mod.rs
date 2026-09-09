@@ -444,8 +444,8 @@ use caldav::{
     handle_caldav_event_deleted, handle_caldav_event_updated, handle_caldav_sync_failed,
     handle_caldav_sync_started, handle_caldav_synced, handle_caldav_write_failed,
     handle_caldav_dialog_password_changed, handle_caldav_dialog_url_changed,
-    handle_caldav_dialog_user_changed, handle_confirm_add_caldav, handle_open_add_caldav_dialog,
-    handle_sync_calendars,
+    handle_background_sync, handle_caldav_dialog_user_changed, handle_confirm_add_caldav,
+    handle_open_add_caldav_dialog, handle_sync_calendars,
 };
 use event::{
     extract_master_uid, extract_occurrence_date, handle_cancel_event_dialog, handle_cancel_quick_event,
@@ -1394,6 +1394,9 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::SyncCalendars => {
             return handle_sync_calendars(app);
         }
+        Message::BackgroundSync => {
+            return handle_background_sync(app);
+        }
         Message::CalDavSyncStarted(calendar_id) => {
             handle_caldav_sync_started(app, calendar_id);
         }
@@ -1492,7 +1495,7 @@ pub const BACKGROUND_SYNC_INTERVAL: std::time::Duration =
 /// in flight (avoids overlapping fetches), or when the last sync finished
 /// less than [`BACKGROUND_SYNC_INTERVAL`] ago. A *failed* sync is not "in
 /// progress" (`is_syncing == false`), so the next tick retries it.
-fn background_sync_due(
+pub(crate) fn background_sync_due(
     has_caldav: bool,
     is_syncing: bool,
     last_synced: Option<chrono::DateTime<chrono::Utc>>,

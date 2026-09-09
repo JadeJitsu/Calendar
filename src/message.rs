@@ -301,6 +301,8 @@ pub enum Message {
     // CalDAV sync
     /// Sync all enabled CalDAV calendars (startup + manual)
     SyncCalendars,
+    /// Periodic background sync tick (15-minute subscription)
+    BackgroundSync,
     /// Sync started for a calendar (calendar_id)
     CalDavSyncStarted(String),
     /// Sync finished for a calendar (calendar_id, fetched events, uid→href map)

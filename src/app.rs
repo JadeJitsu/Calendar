@@ -156,6 +156,9 @@ pub struct CosmicCalendar {
     pub selected_calendar_color: String,
     /// CalDAV sync status: (calendar_id, is_syncing). `None` when idle.
     pub sync_status: Option<(String, bool)>,
+    /// When the last background CalDAV sync finished (drives the 15-min
+    /// `BackgroundSync` due-check). `None` = never synced since startup.
+    pub last_background_sync: Option<chrono::DateTime<chrono::Utc>>,
     /// Centralized dialog state - only one dialog can be open at a time
     pub active_dialog: ActiveDialog,
     /// Drag selection state for multi-day event creation
@@ -261,6 +264,7 @@ impl CosmicCalendar {
             cached_week_events,
             selected_calendar_color,
             sync_status: None,
+            last_background_sync: None,
             active_dialog: ActiveDialog::None,
             selection_state: SelectionState::new(),
             event_drag_state: EventDragState::new(),
@@ -570,7 +574,12 @@ impl Application for CosmicCalendar {
         let timer_sub = cosmic::iced::time::every(std::time::Duration::from_secs(30))
             .map(|_| Message::TimeTick);
 
-        Subscription::batch([event_sub, timer_sub])
+        // Background CalDAV sync tick (every 15 minutes; the handler skips
+        // when no CalDAV calendar is enabled or a sync is already running).
+        let background_sync_sub = cosmic::iced::time::every(crate::update::BACKGROUND_SYNC_INTERVAL)
+            .map(|_| Message::BackgroundSync);
+
+        Subscription::batch([event_sub, timer_sub, background_sync_sub])
     }
 
     #[cfg(feature = "single-instance")]

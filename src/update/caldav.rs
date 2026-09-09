@@ -304,6 +304,41 @@ pub fn handle_caldav_sync_started(app: &mut CosmicCalendar, calendar_id: String)
     app.sync_status = Some((calendar_id, true));
 }
 
+/// Periodic background sync tick (15-minute subscription).
+///
+/// Runs the normal sync path when due: an enabled CalDAV calendar exists,
+/// no sync is already in flight, and the last background sync finished at
+/// least `BACKGROUND_SYNC_INTERVAL` ago (or never). A failed sync left
+/// `sync_status = Some((id, false))` — that is *not* in-flight, so the next
+/// tick retries.
+pub fn handle_background_sync(app: &mut CosmicCalendar) -> Task<Message> {
+    use chrono::Utc;
+
+    let has_caldav = app
+        .calendar_manager
+        .sources()
+        .iter()
+        .any(|s| s.info().calendar_type == CalendarType::CalDav && s.is_enabled());
+    let is_syncing = app
+        .sync_status
+        .as_ref()
+        .map(|(_, syncing)| *syncing)
+        .unwrap_or(false);
+
+    if !crate::update::background_sync_due(
+        has_caldav,
+        is_syncing,
+        app.last_background_sync,
+        Utc::now(),
+    ) {
+        debug!("CalDAV: Background sync not due, skipping");
+        return Task::none();
+    }
+
+    info!("CalDAV: Background sync started");
+    handle_sync_calendars(app)
+}
+
 /// A calendar sync finished: apply fetched events to the cache and re-arm the
 /// event-alert timer now that the remote events are available.
 pub fn handle_caldav_synced(
@@ -324,6 +359,7 @@ pub fn handle_caldav_synced(
         }
     }
     app.sync_status = None;
+    app.last_background_sync = Some(chrono::Utc::now());
     app.refresh_cached_events();
     // Re-arm the precise alert timer with the freshly-synced events.
     crate::update::arm_notification_timer(app)
@@ -340,6 +376,10 @@ pub fn handle_caldav_sync_failed(
     // calendar. The bool is `is_syncing` — `false` here means "errored",
     // distinct from `None` (idle/cleared).
     app.sync_status = Some((calendar_id, false));
+    // Stamp the attempt so the next background tick retries after the
+    // interval rather than hammering a dead server every 15 minutes...
+    // (it retries on the next tick anyway — the interval is the throttle).
+    app.last_background_sync = Some(chrono::Utc::now());
 }
 
 /// An event was created on the server: apply to the cache.
