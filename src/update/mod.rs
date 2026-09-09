@@ -551,10 +551,21 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         // === UI State ===
         Message::TimeTick => {
             // Timer tick to update the current time indicator
-            // The view will re-render with the new time automatically
-            // Also a backstop for event notifications: re-arms the precise
-            // timer (recovers after sleep/wake, tracks event changes).
-            return check_event_notifications(app);
+            // The view will re-render with the new time automatically.
+            //
+            // Two jobs ride on this 30 s tick:
+            //  1. Notification backstop — re-arms the precise alert timer
+            //     (recovers after sleep/wake, tracks event changes).
+            //  2. Background CalDAV sync — the due-check inside
+            //     `handle_background_sync` skips unless the configured
+            //     interval has elapsed, so this is cheap on most ticks.
+            //     Driving it from the tick (rather than a dedicated
+            //     `time::every` subscription) means a user changing the
+            //     interval in Settings takes effect within 30 s — iced
+            //     keys subscriptions by type, not by the duration value.
+            let notification_task = check_event_notifications(app);
+            let sync_task = handle_background_sync(app);
+            return Task::batch([notification_task, sync_task]);
         }
         Message::NotificationCheck => {
             // A precise alert timer fired: deliver due notifications and
@@ -1394,9 +1405,6 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::SyncCalendars => {
             return handle_sync_calendars(app);
         }
-        Message::BackgroundSync => {
-            return handle_background_sync(app);
-        }
         Message::CalDavSyncStarted(calendar_id) => {
             handle_caldav_sync_started(app, calendar_id);
         }
@@ -1437,43 +1445,50 @@ mod background_sync_tests {
         Utc.with_ymd_and_hms(2026, 9, 9, h, m, 0).unwrap()
     }
 
+    fn at_s(h: u32, m: u32, sec: u32) -> DateTime<Utc> {
+        Utc.with_ymd_and_hms(2026, 9, 9, h, m, sec).unwrap()
+    }
+
+    // All tests use a 15-minute (900 s) interval unless stated otherwise.
+    const I: u64 = 900;
+
     #[test]
     fn skips_when_no_caldav_sources() {
         let now = at(12, 0);
-        assert!(!background_sync_due(false, false, None, now));
+        assert!(!background_sync_due(false, false, None, I, now));
     }
 
     #[test]
     fn skips_while_a_sync_is_in_progress() {
         let now = at(12, 0);
-        assert!(!background_sync_due(true, true, None, now));
+        assert!(!background_sync_due(true, true, None, I, now));
         // Even if the interval has long since elapsed.
-        assert!(!background_sync_due(true, true, Some(at(9, 0)), now));
+        assert!(!background_sync_due(true, true, Some(at(9, 0)), I, now));
     }
 
     #[test]
     fn runs_when_never_synced() {
         let now = at(12, 0);
-        assert!(background_sync_due(true, false, None, now));
+        assert!(background_sync_due(true, false, None, I, now));
     }
 
     #[test]
     fn skips_before_interval_elapses() {
         let now = at(12, 0);
-        assert!(!background_sync_due(true, false, Some(at(11, 46)), now));
-        assert!(!background_sync_due(true, false, Some(at(11, 59)), now));
+        assert!(!background_sync_due(true, false, Some(at(11, 46)), I, now));
+        assert!(!background_sync_due(true, false, Some(at(11, 59)), I, now));
     }
 
     #[test]
     fn runs_at_exactly_interval_boundary() {
         let now = at(12, 0);
-        assert!(background_sync_due(true, false, Some(at(11, 45)), now));
+        assert!(background_sync_due(true, false, Some(at(11, 45)), I, now));
     }
 
     #[test]
     fn runs_after_interval_elapses() {
         let now = at(12, 0);
-        assert!(background_sync_due(true, false, Some(at(9, 0)), now));
+        assert!(background_sync_due(true, false, Some(at(9, 0)), I, now));
     }
 
     #[test]
@@ -1481,24 +1496,38 @@ mod background_sync_tests {
         // A failed sync leaves sync_status = Some((id, false)) — that is NOT
         // "in progress", so the next tick must retry.
         let now = at(12, 0);
-        assert!(background_sync_due(true, false, Some(at(9, 0)), now));
+        assert!(background_sync_due(true, false, Some(at(9, 0)), I, now));
+    }
+
+    #[test]
+    fn respects_a_custom_interval() {
+        // A 60 s interval: last sync 2 min ago is due; 30 s ago is not.
+        let now = at(12, 0);
+        assert!(background_sync_due(true, false, Some(at(11, 58)), 60, now));
+        assert!(!background_sync_due(true, false, Some(at_s(11, 59, 30)), 60, now));
     }
 }
 
-/// How often the background CalDAV sync runs (default).
-pub const BACKGROUND_SYNC_INTERVAL: std::time::Duration =
-    std::time::Duration::from_secs(15 * 60);
+/// How often the background CalDAV sync runs by default, in seconds (15 min).
+pub const DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS: u64 = 15 * 60;
 
-/// Effective background sync interval: `BACKGROUND_SYNC_INTERVAL`, overridable
-/// via `XCAL_SYNC_INTERVAL_SECS` (whole seconds, minimum 10) for testing.
-pub fn background_sync_interval() -> std::time::Duration {
-    parse_sync_interval(std::env::var("XCAL_SYNC_INTERVAL_SECS").ok())
-}
-
-fn parse_sync_interval(raw: Option<String>) -> std::time::Duration {
-    match raw.as_deref().and_then(|s| s.trim().parse::<u64>().ok()) {
-        Some(secs) if secs >= 10 => std::time::Duration::from_secs(secs),
-        _ => BACKGROUND_SYNC_INTERVAL,
+/// The effective background sync interval in seconds: the user-configured
+/// value from settings, overridable via `XCAL_SYNC_INTERVAL_SECS` (whole
+/// seconds, minimum 10) for testing. A value under 10 s would hammer the
+/// server, so it falls back to the default.
+pub fn effective_sync_interval(settings: &crate::settings::AppSettings) -> u64 {
+    if let Ok(raw) = std::env::var("XCAL_SYNC_INTERVAL_SECS") {
+        if let Ok(secs) = raw.trim().parse::<u64>() {
+            if secs >= 10 {
+                return secs;
+            }
+        }
+    }
+    let secs = settings.background_sync_interval_secs;
+    if secs >= 10 {
+        secs
+    } else {
+        DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS
     }
 }
 
@@ -1506,12 +1535,13 @@ fn parse_sync_interval(raw: Option<String>) -> std::time::Duration {
 ///
 /// Skips when there are no enabled CalDAV calendars, when a sync is already
 /// in flight (avoids overlapping fetches), or when the last sync finished
-/// less than [`BACKGROUND_SYNC_INTERVAL`] ago. A *failed* sync is not "in
-/// progress" (`is_syncing == false`), so the next tick retries it.
+/// less than `interval_secs` ago. A *failed* sync is not "in progress"
+/// (`is_syncing == false`), so the next tick retries it.
 pub(crate) fn background_sync_due(
     has_caldav: bool,
     is_syncing: bool,
     last_synced: Option<chrono::DateTime<chrono::Utc>>,
+    interval_secs: u64,
     now: chrono::DateTime<chrono::Utc>,
 ) -> bool {
     if !has_caldav || is_syncing {
@@ -1519,37 +1549,49 @@ pub(crate) fn background_sync_due(
     }
     match last_synced {
         Some(ts) => {
-            // Use the *effective* interval (env-overridable) so the due-check
-            // and the subscription cadence stay in lockstep.
             // `signed_duration_since` is negative if the clock went backwards;
             // that simply means "not due yet".
-            now.signed_duration_since(ts).num_seconds() >= background_sync_interval().as_secs() as i64
+            now.signed_duration_since(ts).num_seconds() >= interval_secs as i64
         }
         None => true,
     }
 }
 
 #[cfg(test)]
-mod background_sync_interval_tests {
+mod effective_sync_interval_tests {
     use super::*;
+    use crate::settings::AppSettings;
 
-    #[test]
-    fn default_interval_is_15_minutes() {
-        assert_eq!(parse_sync_interval(None), BACKGROUND_SYNC_INTERVAL);
-        assert_eq!(parse_sync_interval(Some("".to_string())), BACKGROUND_SYNC_INTERVAL);
-        assert_eq!(parse_sync_interval(Some("not-a-number".to_string())), BACKGROUND_SYNC_INTERVAL);
+    fn settings_with(secs: u64) -> AppSettings {
+        let mut s = AppSettings::default();
+        s.background_sync_interval_secs = secs;
+        s
     }
 
     #[test]
-    fn parses_valid_override() {
-        assert_eq!(parse_sync_interval(Some("60".to_string())), std::time::Duration::from_secs(60));
-        assert_eq!(parse_sync_interval(Some("3600".to_string())), std::time::Duration::from_secs(3600));
+    fn uses_the_configured_value() {
+        assert_eq!(effective_sync_interval(&settings_with(300)), 300);
+        assert_eq!(effective_sync_interval(&settings_with(3600)), 3600);
     }
 
     #[test]
-    fn rejects_silently_too_short() {
-        // Under 10 s would hammer the server; fall back to the default.
-        assert_eq!(parse_sync_interval(Some("5".to_string())), BACKGROUND_SYNC_INTERVAL);
-        assert_eq!(parse_sync_interval(Some("0".to_string())), BACKGROUND_SYNC_INTERVAL);
+    fn falls_back_for_too_short() {
+        // Under 10 s would hammer the server; use the default instead.
+        assert_eq!(
+            effective_sync_interval(&settings_with(5)),
+            DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS
+        );
+        assert_eq!(
+            effective_sync_interval(&settings_with(0)),
+            DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS
+        );
+    }
+
+    #[test]
+    fn default_is_15_minutes() {
+        assert_eq!(
+            effective_sync_interval(&AppSettings::default()),
+            DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS
+        );
     }
 }

@@ -156,8 +156,8 @@ pub struct CosmicCalendar {
     pub selected_calendar_color: String,
     /// CalDAV sync status: (calendar_id, is_syncing). `None` when idle.
     pub sync_status: Option<(String, bool)>,
-    /// When the last background CalDAV sync finished (drives the 15-min
-    /// `BackgroundSync` due-check). `None` = never synced since startup.
+    /// When the last background CalDAV sync finished (drives the
+    /// `TimeTick`-driven due-check). `None` = never synced since startup.
     pub last_background_sync: Option<chrono::DateTime<chrono::Utc>>,
     /// Centralized dialog state - only one dialog can be open at a time
     pub active_dialog: ActiveDialog,
@@ -570,16 +570,14 @@ impl Application for CosmicCalendar {
             }
         });
 
-        // Timer subscription for updating the current time indicator (every 30 seconds)
+        // Timer subscription for updating the current time indicator (every 30 seconds).
+        // The background CalDAV sync also rides on this tick (see the
+        // `Message::TimeTick` handler) so a user-changed interval takes effect
+        // within 30 s without rebuilding the subscription.
         let timer_sub = cosmic::iced::time::every(std::time::Duration::from_secs(30))
             .map(|_| Message::TimeTick);
 
-        // Background CalDAV sync tick (every 15 minutes; the handler skips
-        // when no CalDAV calendar is enabled or a sync is already running).
-        let background_sync_sub = cosmic::iced::time::every(crate::update::background_sync_interval())
-            .map(|_| Message::BackgroundSync);
-
-        Subscription::batch([event_sub, timer_sub, background_sync_sub])
+        Subscription::batch([event_sub, timer_sub])
     }
 
     #[cfg(feature = "single-instance")]

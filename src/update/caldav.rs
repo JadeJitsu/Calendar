@@ -325,10 +325,12 @@ pub fn handle_background_sync(app: &mut CosmicCalendar) -> Task<Message> {
         .map(|(_, syncing)| *syncing)
         .unwrap_or(false);
 
+    let interval_secs = crate::update::effective_sync_interval(&app.settings);
     if !crate::update::background_sync_due(
         has_caldav,
         is_syncing,
         app.last_background_sync,
+        interval_secs,
         Utc::now(),
     ) {
         debug!("CalDAV: Background sync not due, skipping");
