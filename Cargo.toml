@@ -83,3 +83,10 @@ clap = { version = "4.5", features = ["derive"] }
 # Enable with: cargo build --features single-instance
 # Or disable at runtime with: COSMIC_SINGLE_INSTANCE=false sol-calendar
 single-instance = ["libcosmic/single-instance"]
+
+# Debug aid: live CalDAV discovery probe. Not part of the test suite —
+# it includes caldav.rs standalone, which can't see the rest of the crate.
+[[bin]]
+name = "caldav_probe"
+path = "src/bin/caldav_probe.rs"
+test = false

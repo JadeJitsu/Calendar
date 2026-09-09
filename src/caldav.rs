@@ -199,6 +199,39 @@ impl CalDavClient {
 
     // ── PROPFIND discovery ────────────────────────────────────────────────
 
+    /// PROPFIND body for `current-user-principal`.
+    ///
+    /// RFC 4918 §9.1: the root element must be `DAV:propfind` wrapping
+    /// `DAV:prop`. SabreDAV (Nextcloud) rejects a bare `DAV:prop` root with
+    /// 400 "Expected {DAV:}propfind but received {DAV:}prop"; lenient
+    /// servers (Apache mod_dav) accept both.
+    const PRINCIPAL_PROPFIND: &'static str = r#"<?xml version="1.0" encoding="utf-8"?>
+<d:propfind xmlns:d="DAV:">
+    <d:prop>
+        <d:current-user-principal/>
+    </d:prop>
+</d:propfind>"#;
+
+    /// PROPFIND body for `calendar-home-set` (same `DAV:propfind` root
+    /// requirement as [`Self::PRINCIPAL_PROPFIND`]).
+    const HOME_PROPFIND: &'static str = r#"<?xml version="1.0" encoding="utf-8"?>
+<d:propfind xmlns:d="DAV:">
+    <d:prop>
+        <d:calendar-home-set/>
+    </d:prop>
+</d:propfind>"#;
+
+    /// PROPFIND body listing calendar collections (same `DAV:propfind` root
+    /// requirement as [`Self::PRINCIPAL_PROPFIND`]).
+    const LIST_CAL_PROPFIND: &'static str = r#"<?xml version="1.0" encoding="utf-8"?>
+<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
+    <d:prop>
+        <d:displayname/>
+        <c:calendar-color/>
+        <d:resourcetype/>
+    </d:prop>
+</d:propfind>"#;
+
     /// Send a PROPFIND and return the response body.
     fn propfind(&self, url: &str, depth: &str, body: &str) -> Result<String, CalDavError> {
         let method = Self::method("PROPFIND")?;
@@ -221,51 +254,23 @@ impl CalDavClient {
     /// Resolve the current-user-principal URL (PROPFIND A).
     pub fn discover_principal(&self) -> Result<String, CalDavError> {
         let url = self.base_url();
-        let body = r#"<?xml version="1.0" encoding="utf-8"?>
-<d:prop xmlns:d="DAV:">
-    <d:current-user-principal/>
-</d:prop>"#;
-        let xml = self.propfind(&url, "0", body)?;
+        let xml = self.propfind(&url, "0", Self::PRINCIPAL_PROPFIND)?;
         let doc = roxmltree::Document::parse(&xml).map_err(|e| CalDavError::Parse(e.to_string()))?;
-        let href = doc
-            .descendants()
-            .find(|e| e.has_tag_name("current-user-principal"))
-            .and_then(|e| e.first_child())
-            .filter(|e| e.is_element())
-            .filter(|e| e.has_tag_name("href"))
-            .and_then(|e| e.text())
-            .ok_or_else(|| CalDavError::Parse("no current-user-principal href".into()))?;
-        Ok(Self::resolve_href(&url, href))
+        let href = propstat_href(&doc, "current-user-principal")?;
+        Ok(Self::resolve_href(&url, &href))
     }
 
     /// Resolve the calendar-home-set URL (PROPFIND B).
     pub fn discover_home(&self, principal: &str) -> Result<String, CalDavError> {
-        let body = r#"<?xml version="1.0" encoding="utf-8"?>
-<d:prop xmlns:d="DAV:">
-    <d:calendar-home-set/>
-</d:prop>"#;
-        let xml = self.propfind(principal, "0", body)?;
+        let xml = self.propfind(principal, "0", Self::HOME_PROPFIND)?;
         let doc = roxmltree::Document::parse(&xml).map_err(|e| CalDavError::Parse(e.to_string()))?;
-        let href = doc
-            .descendants()
-            .find(|e| e.has_tag_name("calendar-home-set"))
-            .and_then(|e| e.first_child())
-            .filter(|e| e.is_element())
-            .filter(|e| e.has_tag_name("href"))
-            .and_then(|e| e.text())
-            .ok_or_else(|| CalDavError::Parse("no calendar-home-set href".into()))?;
-        Ok(Self::resolve_href(principal, href))
+        let href = propstat_href(&doc, "calendar-home-set")?;
+        Ok(Self::resolve_href(principal, &href))
     }
 
     /// List calendar collections under a home-set URL (PROPFIND C).
     pub fn list_calendars(&self, home: &str) -> Result<Vec<DiscoveredCalendar>, CalDavError> {
-        let body = r#"<?xml version="1.0" encoding="utf-8"?>
-<d:prop xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
-    <d:displayname/>
-    <c:calendar-color/>
-    <d:resourcetype/>
-</d:prop>"#;
-        let xml = self.propfind(home, "1", body)?;
+        let xml = self.propfind(home, "1", Self::LIST_CAL_PROPFIND)?;
         Ok(parse_calendar_multistatus(&xml, home)?)
     }
 
@@ -404,6 +409,50 @@ impl CalDavClient {
 }
 
 // ── multistatus parsing (pure, testable) ────────────────────────────────────
+
+/// Extract the `d:href` child of a single-property PROPFIND response,
+/// reporting the server's propstat status when the property was not
+/// returned successfully.
+///
+/// A 207 Multi-Status body can still mean "property not found": each
+/// `d:propstat` carries its own `d:status`. Nextcloud answers a missing
+/// `calendar-home-set` (CalDAV app not enabled) with
+/// `HTTP/1.1 404 Not Found` and an empty property element — without
+/// checking the status, that surfaces as the misleading "no X href"
+/// parse error.
+fn propstat_href(doc: &roxmltree::Document, prop: &str) -> Result<String, CalDavError> {
+    let prop_el = doc
+        .descendants()
+        .find(|e| e.has_tag_name(prop))
+        .ok_or_else(|| CalDavError::Parse(format!("no {prop} element in response")))?;
+
+    // The href, if the server returned the property at all. (Descendant
+    // search, not first-child: responses may carry whitespace text nodes
+    // between the property element and its href.)
+    if let Some(href) = prop_el
+        .descendants()
+        .find(|e| e.has_tag_name("href"))
+        .and_then(|e| e.text())
+    {
+        return Ok(href.to_string());
+    }
+
+    // No href: find the enclosing propstat's status and report it.
+    let status = prop_el
+        .ancestors()
+        .find(|e| e.has_tag_name("propstat"))
+        .and_then(|ps| {
+            ps.children()
+                .find(|e| e.is_element() && e.has_tag_name("status"))
+                .and_then(|e| e.text())
+                .map(|s| s.to_string())
+        })
+        .unwrap_or_else(|| "unknown status".to_string());
+
+    Err(CalDavError::Parse(format!(
+        "server did not return {prop}: {status} (on Nextcloud this usually means the CalDAV app is not enabled)"
+    )))
+}
 
 /// Parse a Depth-1 calendar-list multistatus into discovered calendars.
 /// Keeps only responses whose `resourcetype` contains a `calendar` element.
@@ -851,5 +900,91 @@ END:VCALENDAR</c:calendar-data>
                 .unwrap()
                 .with_timezone(&chrono::Utc)
         );
+    }
+}
+
+#[cfg(test)]
+mod propfind_body_tests {
+    use super::*;
+
+    /// RFC 4918 §9.1: a PROPFIND body's root element must be `DAV:propfind`
+    /// wrapping `DAV:prop`. SabreDAV (Nextcloud) rejects a bare `DAV:prop`
+    /// root with 400 "Expected {DAV:}propfind but received {DAV:}prop";
+    /// lenient servers (Apache mod_dav) accept both, which is why the bug
+    /// survived until a Nextcloud server was tried.
+    #[test]
+    fn test_propfind_bodies_are_propfind_wrapped() {
+        for body in [
+            CalDavClient::PRINCIPAL_PROPFIND,
+            CalDavClient::HOME_PROPFIND,
+            CalDavClient::LIST_CAL_PROPFIND,
+        ] {
+            let doc = roxmltree::Document::parse(body).expect("valid xml");
+            let root = doc.root_element();
+            assert!(
+                root.has_tag_name("propfind"),
+                "root element must be DAV:propfind, got {:?}",
+                root.tag_name()
+            );
+            assert!(
+                root.descendants().any(|e| e.has_tag_name("prop")),
+                "propfind must wrap a DAV:prop element"
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod propstat_status_tests {
+    use super::*;
+
+    /// When the server answers a property with a non-2xx propstat status
+    /// (e.g. `calendar-home-set` → 404 because the CalDAV app is not
+    /// enabled), the error must say so — not the generic "no X href"
+    /// parse error that hid this from the user.
+    #[test]
+    fn test_propstat_404_reports_status() {
+        let xml = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/remote.php/dav/principals/users/jlagman/</d:href>
+    <d:propstat>
+      <d:prop><d:calendar-home-set/></d:prop>
+      <d:status>HTTP/1.1 404 Not Found</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"#;
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let err = propstat_href(&doc, "calendar-home-set").unwrap_err();
+        assert!(
+            err.to_string().contains("404"),
+            "error should carry the server status, got: {err}"
+        );
+        assert!(
+            err.to_string().contains("calendar-home-set"),
+            "error should name the property, got: {err}"
+        );
+    }
+
+    /// A 2xx propstat with an href child resolves normally.
+    #[test]
+    fn test_propstat_200_resolves_href() {
+        let xml = r#"<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/remote.php/dav/principals/users/user/</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:calendar-home-set>
+          <d:href>/remote.php/dav/calendars/user/</d:href>
+        </d:calendar-home-set>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>"#;
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let href = propstat_href(&doc, "calendar-home-set").unwrap();
+        assert_eq!(href, "/remote.php/dav/calendars/user/");
     }
 }
