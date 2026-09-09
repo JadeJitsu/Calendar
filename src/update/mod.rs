@@ -33,7 +33,7 @@ use cosmic::iced::widget::scrollable;
 use log::{debug, error, info, warn};
 
 use crate::app::CosmicCalendar;
-use crate::components::quick_event_input_id;
+use crate::components::{quick_event_input_id, search_input_id};
 use crate::dialogs::{ActiveDialog, DialogManager};
 use crate::message::Message;
 use crate::services::{ExportHandler, SettingsHandler};
@@ -580,6 +580,24 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
         Message::ToggleSearch => {
             app.show_search = !app.show_search;
+            // Focus the search box when it opens so the user can type immediately.
+            if app.show_search {
+                return text_input::focus(search_input_id());
+            }
+        }
+        Message::SearchQueryChanged(query) => {
+            app.search_query = query;
+            app.search_results = app.compute_search_results();
+        }
+        Message::SearchSelectResult(calendar_id, uid) => {
+            // Open the event for editing and close the search bar.
+            app.show_search = false;
+            app.search_query.clear();
+            return Task::done(cosmic::Action::App(Message::OpenEditEventDialog(calendar_id, uid)));
+        }
+        Message::CloseSearch => {
+            app.show_search = false;
+            app.search_query.clear();
         }
         Message::ToggleWeekNumbers => {
             debug!("Message::ToggleWeekNumbers");

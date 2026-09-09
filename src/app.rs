@@ -136,6 +136,11 @@ pub struct CosmicCalendar {
     /// Track previous condensed state to detect changes and sync sidebar
     pub last_condensed: bool,
     pub show_search: bool,
+    /// Current search box text (empty = no active query).
+    pub search_query: String,
+    /// Live results for `search_query` (recomputed in `update` when the
+    /// query changes or events sync).
+    pub search_results: Vec<crate::services::SearchResult>,
     pub cache: CalendarCache,
     pub week_state: WeekState,
     pub day_state: DayState,
@@ -250,6 +255,8 @@ impl CosmicCalendar {
             show_sidebar: true,
             last_condensed: false, // Will be synced on first render
             show_search: false,
+            search_query: String::new(),
+            search_results: Vec::new(),
             cache,
             week_state,
             day_state: DayState::current(&locale),
@@ -405,7 +412,7 @@ impl CosmicCalendar {
             calendar_color: &self.selected_calendar_color,
         };
 
-        views::render_main_content(
+        let main = views::render_main_content(
             &self.cache,
             &self.week_state,
             &self.day_state,
@@ -416,6 +423,51 @@ impl CosmicCalendar {
             self.settings.show_week_numbers,
             Some(month_events),
             Some(week_events),
+        );
+
+        if !self.show_search {
+            return main;
+        }
+
+        // Results are computed in `update` (stored on `self.search_results`)
+        // so this render stays a pure read.
+        let search_bar =
+            components::render_search_bar(&self.search_query, &self.search_results);
+
+        cosmic::widget::column()
+            .spacing(0)
+            .push(search_bar)
+            .push(cosmic::widget::divider::horizontal::default())
+            .push(main)
+            .width(cosmic::iced::Length::Fill)
+            .height(cosmic::iced::Length::Fill)
+            .into()
+    }
+
+    /// Run the current `search_query` over every enabled calendar's events.
+    pub(crate) fn compute_search_results(&self) -> Vec<crate::services::SearchResult> {
+        let manager = &self.calendar_manager;
+        let query = self.search_query.as_str();
+
+        // Collect owned (calendar_id, color, event) tuples across all enabled
+        // calendars, then run the pure search over references to them.
+        let mut owned: Vec<(String, String, crate::caldav::CalendarEvent)> = Vec::new();
+        for source in manager.sources() {
+            if !source.is_enabled() {
+                continue;
+            }
+            let id = source.info().id.clone();
+            let color = source.info().color.clone();
+            if let Ok(list) = source.fetch_events() {
+                for e in list {
+                    owned.push((id.clone(), color.clone(), e));
+                }
+            }
+        }
+
+        crate::services::search_events(
+            query,
+            owned.iter().map(|(id, color, e)| (id.as_str(), color.as_str(), e)),
         )
     }
 }

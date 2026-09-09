@@ -45,6 +45,12 @@ pub enum Message {
     /// Triggered on window resize to sync sidebar with condensed state
     WindowResized,
     ToggleSearch,
+    /// The search box text changed (live filter).
+    SearchQueryChanged(String),
+    /// A search result row was clicked: open that event for editing.
+    SearchSelectResult(String, String),
+    /// Close the search bar (Esc / clear).
+    CloseSearch,
     ToggleWeekNumbers,
     /// Week view scroll position changed - tracks scroll via on_scroll callback (COSMIC pattern)
     WeekViewScroll(Viewport),

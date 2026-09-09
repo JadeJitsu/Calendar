@@ -363,6 +363,10 @@ pub fn handle_caldav_synced(
     app.sync_status = None;
     app.last_background_sync = Some(chrono::Utc::now());
     app.refresh_cached_events();
+    // Keep an open search bar in sync with the freshly-fetched events.
+    if app.show_search {
+        app.search_results = app.compute_search_results();
+    }
     // Re-arm the precise alert timer with the freshly-synced events.
     crate::update::arm_notification_timer(app)
 }
