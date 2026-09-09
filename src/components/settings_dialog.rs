@@ -28,11 +28,12 @@ fn interval_label(secs: u64) -> String {
 /// Render the settings dialog. Takes the active dialog state, which should be
 /// the `Settings` variant.
 pub fn render_settings_dialog(active_dialog: &ActiveDialog) -> Element<'_, Message> {
-    let (show_week_numbers, sync_interval_secs) = match active_dialog {
+    let (show_week_numbers, sync_interval_secs, close_to_tray) = match active_dialog {
         ActiveDialog::Settings {
             show_week_numbers,
             sync_interval_secs,
-        } => (*show_week_numbers, *sync_interval_secs),
+            close_to_tray,
+        } => (*show_week_numbers, *sync_interval_secs, *close_to_tray),
         _ => return widget::text("").into(), // Should not happen
     };
 
@@ -46,6 +47,17 @@ pub fn render_settings_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
                 .on_toggle(move |_| Message::SettingsWeekNumbersToggled(toggled)),
         )
         .push(widget::text(fl!("settings-week-numbers")));
+
+    // Close-to-tray checkbox
+    let close_to_tray_toggled = !close_to_tray;
+    let close_to_tray_control = row([])
+        .spacing(8)
+        .align_y(cosmic::iced::Alignment::Center)
+        .push(
+            widget::checkbox(close_to_tray).label("")
+                .on_toggle(move |_| Message::SettingsCloseToTrayToggled(close_to_tray_toggled)),
+        )
+        .push(widget::text(fl!("settings-close-to-tray")));
 
     // Background sync interval radio group
     let mut interval_control = column([]).spacing(8);
@@ -65,6 +77,7 @@ pub fn render_settings_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
     dialog()
         .title(fl!("settings-dialog-title"))
         .control(week_numbers_control)
+        .control(close_to_tray_control)
         .control(interval_control)
         .secondary_action(button::text(fl!("button-cancel")).on_press(Message::CancelSettings))
         .primary_action(button::suggested(fl!("button-save")).on_press(Message::ConfirmSettings))

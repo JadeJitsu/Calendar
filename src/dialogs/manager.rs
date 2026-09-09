@@ -170,6 +170,8 @@ pub enum ActiveDialog {
         show_week_numbers: bool,
         /// Background CalDAV sync interval, in seconds.
         sync_interval_secs: u64,
+        /// Whether closing the window minimizes to the system tray.
+        close_to_tray: bool,
     },
 }
 

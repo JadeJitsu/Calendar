@@ -254,10 +254,18 @@ pub enum Message {
     SettingsWeekNumbersToggled(bool),
     /// A background sync interval radio was selected in the settings dialog
     SettingsSyncIntervalSelected(u64),
+    /// Close-to-tray checkbox toggled in the settings dialog
+    SettingsCloseToTrayToggled(bool),
     /// Confirm (Save) the settings dialog
     ConfirmSettings,
     /// Cancel the settings dialog
     CancelSettings,
+    /// Window close requested while close-to-tray is on -> minimize to tray
+    TrayMinimizeToTray,
+    /// Tray menu "Show/Restore" clicked
+    TrayShowOrRestore,
+    /// Tray menu "Quit" clicked
+    TrayQuit,
     About,
     LaunchUrl(String),
     ToggleContextDrawer,

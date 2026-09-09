@@ -51,6 +51,21 @@ dirs = "5.0"
 # Desktop notifications for event alerts
 notify-rust = "4"
 
+# System tray icon (StatusNotifierItem on Wayland/COSMIC). default-features off
+# to skip the `libxdo` dependency (keyboard accelerators, which we don't use) —
+# it would otherwise require the libxdo system library at link time.
+tray-icon = { version = "0.19", default-features = false }
+
+# Decode the bundled PNG tray icon to RGBA (already in the lock as a transitive dep)
+png = "0.17"
+
+# Linux tray backend is libappindicator (GTK3): the StatusNotifierItem only
+# registers once a GTK main loop is running, so we spawn a thread that inits
+# GTK and pumps it. Version must match what libappindicator 0.9 pulls in (0.18)
+# to avoid a second gtk-sys in the tree.
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+
 # File dialogs (with XDG portal support for Flatpak)
 rfd = "0.15"
 

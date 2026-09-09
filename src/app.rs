@@ -26,13 +26,12 @@ use log::info;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-// Use different APP_ID for development builds to avoid conflicts with installed Flatpak
-// Flatpak builds are detected via FLATPAK_ID environment variable at compile time
-const APP_ID: &str = if option_env!("FLATPAK_ID").is_some() {
-    "dev.xarbit.apps.Calendar"
-} else {
-    "dev.xarbit.apps.Calendar.Devel"
-};
+// The app-id must match the installed `.desktop` file and icon name
+// (`dev.xarbit.apps.Calendar`) so the COSMIC dock associates the running
+// window with the launcher and the window icon resolves via the icon theme.
+// A `.Devel` suffix here would break both: `icon::from_name` would not find
+// the icon, and the dock would not match the window to the launcher.
+const APP_ID: &str = "dev.xarbit.apps.Calendar";
 
 /// Command-line flags passed to the application
 #[derive(Debug, Clone, Default)]
@@ -505,6 +504,10 @@ impl Application for CosmicCalendar {
         let app = Self::initialize_app(core);
         info!("CosmicCalendar: Application initialized with view {:?}", app.current_view);
 
+        // Create the system tray icon (always visible). Idempotent and
+        // non-fatal — a tray failure should not block the app from starting.
+        crate::services::init_tray();
+
         // Handle file arguments if provided
         if !flags.files_to_open.is_empty() {
             info!("CosmicCalendar: {} file(s) to open on startup", flags.files_to_open.len());
@@ -622,6 +625,13 @@ impl Application for CosmicCalendar {
                 cosmic::iced::Event::Window(cosmic::iced::window::Event::Resized { .. }) => {
                     Some(Message::WindowResized)
                 }
+                // Close button pressed. With exit_on_close(false) (set in
+                // main.rs when close-to-tray is on) the surface is NOT closed
+                // and this event is delivered here instead; the update handler
+                // decides whether to minimize (close-to-tray) or let it pass.
+                cosmic::iced::Event::Window(cosmic::iced::window::Event::CloseRequested) => {
+                    Some(Message::TrayMinimizeToTray)
+                }
                 // Track mouse position for drag preview
                 // Always emit cursor move events - the handler will check if drag is active
                 cosmic::iced::Event::Mouse(cosmic::iced::mouse::Event::CursorMoved { position }) => {
@@ -638,7 +648,11 @@ impl Application for CosmicCalendar {
         let timer_sub = cosmic::iced::time::every(std::time::Duration::from_secs(30))
             .map(|_| Message::TimeTick);
 
-        Subscription::batch([event_sub, timer_sub])
+        // Drain tray menu events (Show/Restore, Quit) from the tray thread.
+        let tray_sub =
+            cosmic::iced::Subscription::run_with((), |_| crate::services::tray_event_stream());
+
+        Subscription::batch([event_sub, timer_sub, tray_sub])
     }
 
     #[cfg(feature = "single-instance")]

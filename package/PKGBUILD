@@ -3,7 +3,8 @@
 # Build:  makepkg -si   (as a regular user, or via paru -S)
 # Install: pacman -U xcalendar-<ver>-<arch>.pkg.tar.zst
 #
-# The app is a self-contained Rust binary; no GTK/glib build deps are needed.
+# The app is a self-contained Rust binary. The system tray icon (StatusNotifierItem)
+# needs libappindicator3 + gtk3 at runtime (the tray-icon Linux backend).
 pkgname=xcalendar
 pkgver=0.1.0
 pkgrel=1
@@ -17,6 +18,8 @@ depends=(
     'libxkbcommon'
     'zlib'
     'zstd'
+    'libappindicator3'
+    'gtk3'
 )
 makedepends=('rust' 'cargo')
 source=(
@@ -40,6 +43,10 @@ package() {
     install -Dm644 res/dev.xarbit.apps.Calendar.desktop -t "${pkgdir}/usr/share/applications/"
     install -Dm644 res/dev.xarbit.apps.Calendar.metainfo.xml -t "${pkgdir}/usr/share/metainfo/"
     install -Dm644 res/dev.xarbit.apps.Calendar.service -t "${pkgdir}/usr/share/dbus-1/services/"
+    # App icon in the hicolor theme so the `.desktop` Icon= name resolves and
+    # the COSMIC dock shows the app's icon for the running window.
+    install -Dm644 res/icons/hicolor/scalable/apps/dev.xarbit.apps.Calendar.svg \
+        -t "${pkgdir}/usr/share/icons/hicolor/scalable/apps/"
     # The desktop launcher's PATH does not include the install prefix's bin
     # dir in all environments; the bare `Exec=xcalendar` works system-wide
     # because /usr/bin is always on the launcher PATH.

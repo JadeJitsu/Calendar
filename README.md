@@ -68,7 +68,12 @@ This project is in **active development**. Core calendar functionality — event
 #### Notifications & Background Sync
 - Event reminders/alerts with precise one-shot desktop notifications (fires at the exact due instant, not on a polling tick)
 - Background CalDAV sync on a configurable interval (Settings → sync interval: 5/15/30 min or 1 hour)
-- Settings dialog (week numbers, background sync interval)
+- Settings dialog (week numbers, background sync interval, close-to-tray)
+
+#### System Tray
+- Always-visible system tray icon (StatusNotifierItem on Wayland/COSMIC) with a **Show** / **Quit** menu
+- **Close to tray** setting (Settings): when enabled, clicking the window's close button minimizes the app to the tray instead of quitting; the process keeps running in the background
+- On Linux the tray icon is created on a dedicated GTK thread that pumps a GTK main loop (the `tray-icon` Linux backend is libappindicator, which only registers once a GTK loop is running)
 
 #### Search
 - Live event search (header search button) across all enabled calendars
@@ -120,6 +125,7 @@ This project is in **active development**. Core calendar functionality — event
 
 - Rust (latest stable version)
 - libcosmic dependencies (automatically fetched from git)
+- Linux (system tray icon): `libappindicator3` (pkg-config `appindicator3-0.1`) and `gtk3` — the `tray-icon` Linux backend is libappindicator. e.g. `sudo pacman -S libappindicator3 gtk3`
 
 ### Compile
 
@@ -180,7 +186,7 @@ src/
 │   ├── event_chip.rs       # Event display chips
 │   ├── header_menu.rs      # Application menu bar
 │   ├── search.rs           # Search bar (input + results list)
-│   └── settings_dialog.rs  # Settings dialog (week numbers, sync interval)
+│   └── settings_dialog.rs  # Settings dialog (week numbers, sync interval, close-to-tray)
 │
 ├── dialogs/                # Dialog management
 │   ├── mod.rs              # Dialog types and state
@@ -192,7 +198,8 @@ src/
 │   ├── settings_handler.rs # Settings persistence
 │   ├── search.rs           # Pure event search (query → results)
 │   ├── export_handler.rs   # iCalendar import/export + ICS round-trip
-│   └── notification_scheduler.rs # Due-window + precise alert timing
+│   ├── notification_scheduler.rs # Due-window + precise alert timing
+│   └── tray.rs             # System tray icon (StatusNotifierItem) + close-to-tray events
 │
 ├── database/               # Data persistence
 │   └── schema.rs           # SQLite schema and queries
@@ -233,6 +240,9 @@ src/
 - **serde**: Serialization/deserialization
 - **dirs**: Platform-specific directory handling
 - **ron**: Rusty Object Notation for settings storage
+- **tray-icon**: System tray icon (StatusNotifierItem on Wayland/COSMIC)
+- **png**: Decodes the bundled tray icon to RGBA
+- **gtk** (Linux only): pumps the GTK main loop the tray backend (libappindicator) needs to register
 
 ## CalDAV Implementation Notes
 

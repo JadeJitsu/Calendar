@@ -20,6 +20,11 @@ pub struct AppSettings {
     /// minutes; old config files without this field load with the default.
     #[serde(default = "default_background_sync_interval_secs")]
     pub background_sync_interval_secs: u64,
+    /// Whether closing the window minimizes to the system tray (and keeps the
+    /// app running in the background) instead of exiting. Defaults to false;
+    /// old config files without this field load as false.
+    #[serde(default)]
+    pub close_to_tray: bool,
 }
 
 impl Default for AppSettings {
@@ -27,6 +32,7 @@ impl Default for AppSettings {
         Self {
             show_week_numbers: true, // Show week numbers by default
             background_sync_interval_secs: DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS,
+            close_to_tray: false,
         }
     }
 }
@@ -87,6 +93,24 @@ mod tests {
         let settings: AppSettings = serde_json::from_str(json).unwrap();
         assert!(settings.show_week_numbers);
         assert_eq!(settings.background_sync_interval_secs, 900);
+    }
+
+    #[test]
+    fn serde_default_close_to_tray_is_false_when_missing() {
+        // Old config files have no close_to_tray — serde must fill it with
+        // false rather than failing to parse.
+        let json = r#"{"show_week_numbers": true}"#;
+        let settings: AppSettings = serde_json::from_str(json).unwrap();
+        assert!(!settings.close_to_tray);
+    }
+
+    #[test]
+    fn serde_round_trips_close_to_tray() {
+        let mut settings = AppSettings::default();
+        settings.close_to_tray = true;
+        let json = serde_json::to_string(&settings).unwrap();
+        let back: AppSettings = serde_json::from_str(&json).unwrap();
+        assert!(back.close_to_tray);
     }
 
     #[test]

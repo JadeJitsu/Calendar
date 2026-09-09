@@ -18,6 +18,7 @@ mod notification_scheduler;
 mod search;
 mod settings_handler;
 mod sync_handler;
+mod tray;
 
 pub use calendar_handler::{CalendarHandler, NewCalendarData, UpdateCalendarData};
 pub use credentials::{CalDavCredentials, host_of};
@@ -29,6 +30,7 @@ pub use search::{search_events, SearchResult};
 #[allow(unused_imports)]
 pub use notification_scheduler::{DueNotification, DUE_WINDOW};
 pub use settings_handler::SettingsHandler;
+pub use tray::{init as init_tray, tray_event_stream};
 
 // Internal types - exported for potential future use but not currently needed externally
 #[allow(unused_imports)]

@@ -162,9 +162,18 @@ pub fn main() -> cosmic::iced::Result {
 
     info!("Localization initialized, launching application");
 
+    // Read the persisted close-to-tray preference so we can decide whether the
+    // window's close button should keep the process alive.
+    let close_to_tray = crate::settings::AppSettings::load()
+        .map(|s| s.close_to_tray)
+        .unwrap_or(false);
+
     // Configure application settings
     let settings = Settings::default()
-        .exit_on_close(true);  // exit_on_close(true) prevents D-Bus blocking hang
+        // When close-to-tray is on, keep the process alive on window close so
+        // the CloseRequested handler can minimize instead of exit. When off,
+        // keep exit_on_close(true) (prevents the D-Bus blocking hang).
+        .exit_on_close(!close_to_tray);
 
     #[cfg(feature = "single-instance")]
     {

@@ -199,6 +199,9 @@ sync-status-error = Sync failed
 # Dialog - Settings
 settings-dialog-title = Settings
 settings-week-numbers = Show week numbers
+settings-close-to-tray = Close to tray
+tray-menu-show = Show
+tray-menu-quit = Quit
 settings-sync-interval = Background sync interval
 settings-sync-interval-5min = Every 5 minutes
 settings-sync-interval-15min = Every 15 minutes

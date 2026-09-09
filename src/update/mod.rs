@@ -1378,6 +1378,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             app.active_dialog = ActiveDialog::Settings {
                 show_week_numbers: app.settings.show_week_numbers,
                 sync_interval_secs: app.settings.background_sync_interval_secs,
+                close_to_tray: app.settings.close_to_tray,
             };
         }
         Message::SettingsWeekNumbersToggled(show) => {
@@ -1390,15 +1391,22 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 *sync_interval_secs = secs;
             }
         }
+        Message::SettingsCloseToTrayToggled(show) => {
+            if let ActiveDialog::Settings { close_to_tray, .. } = &mut app.active_dialog {
+                *close_to_tray = show;
+            }
+        }
         Message::ConfirmSettings => {
             // Write the working copy back to the live settings and persist.
             if let ActiveDialog::Settings {
                 show_week_numbers,
                 sync_interval_secs,
+                close_to_tray,
             } = &app.active_dialog
             {
                 app.settings.show_week_numbers = *show_week_numbers;
                 app.settings.background_sync_interval_secs = *sync_interval_secs;
+                app.settings.close_to_tray = *close_to_tray;
                 if let Err(e) = SettingsHandler::save(&app.settings) {
                     error!("Message::ConfirmSettings: Failed to save settings: {}", e);
                 }
@@ -1408,6 +1416,30 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::CancelSettings => {
             // Discard the working copy.
             app.active_dialog = ActiveDialog::None;
+        }
+        Message::TrayMinimizeToTray => {
+            // Close button pressed. Only minimize when close-to-tray is on (and
+            // we're the main window); otherwise this is a no-op. When the
+            // setting is on, exit_on_close is false (set in main.rs) so the
+            // process stays alive after the window is minimized.
+            if app.settings.close_to_tray {
+                if let Some(id) = app.core.main_window_id() {
+                    return cosmic::iced::window::minimize(id, true);
+                }
+            }
+        }
+        Message::TrayShowOrRestore => {
+            // Tray "Show/Restore": un-minimize then raise + focus the main
+            // window. This mirrors the sequence libcosmic itself uses to
+            // restore a minimized window (minimize(false) then gain_focus).
+            if let Some(id) = app.core.main_window_id() {
+                return cosmic::iced::window::minimize(id, false)
+                    .chain(cosmic::iced::window::gain_focus(id));
+            }
+        }
+        Message::TrayQuit => {
+            // Tray "Quit": exit the iced runtime cleanly (runs normal shutdown).
+            return cosmic::iced::exit::<cosmic::Action<Message>>();
         }
         Message::About => {
             app.core.window.show_context = !app.core.window.show_context;
