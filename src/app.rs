@@ -215,12 +215,11 @@ impl CosmicCalendar {
             .name(fl!("app-title"))
             .icon(icon::from_name(Self::APP_ID))
             .version(env!("CARGO_PKG_VERSION"))
-            .author("xarbit")
+            .author("JadeJitsu")
             .license("GPL-3.0-only")
                         .license_url("https://spdx.org/licenses/GPL-3.0-only")
-                        .developers([("Jason Scurtu", "jscurtu@gmail.com")])
-            .links([(fl!("about-repository"), "https://github.com/xarbit/sol"),
-                (fl!("about-support"), "https://github.com/xarbit/sol/issues")]);
+            .links([(fl!("about-repository"), "https://github.com/JadeJitsu/Calendar"),
+                (fl!("about-support"), "https://github.com/JadeJitsu/Calendar/issues")]);
 
         // Detect system locale preferences
         let locale = LocalePreferences::detect_from_system();

@@ -4,8 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
 description = "A calendar application for the COSMIC Desktop"
-repository = "https://github.com/xarbit/sol"
-authors = ["xarbit"]
+repository = "https://github.com/JadeJitsu/Calendar"
 
 [dependencies]
 # COSMIC framework with all recommended features
