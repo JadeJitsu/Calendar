@@ -21,6 +21,7 @@
 //! - [`close_quick_event_with_scroll_restore`]: Close quick event and restore scroll
 
 mod calendar;
+mod caldav;
 mod event;
 mod import;
 mod navigation;
@@ -384,6 +385,14 @@ use calendar::{
     handle_open_calendar_dialog_create, handle_open_calendar_dialog_edit,
     handle_request_delete_calendar, handle_toggle_calendar,
 };
+use caldav::{
+    handle_caldav_discovered, handle_caldav_discovery_failed, handle_caldav_event_created,
+    handle_caldav_event_deleted, handle_caldav_event_updated, handle_caldav_sync_failed,
+    handle_caldav_sync_started, handle_caldav_synced, handle_caldav_write_failed,
+    handle_caldav_dialog_password_changed, handle_caldav_dialog_url_changed,
+    handle_caldav_dialog_user_changed, handle_confirm_add_caldav, handle_open_add_caldav_dialog,
+    handle_sync_calendars,
+};
 use event::{
     extract_master_uid, extract_occurrence_date, handle_cancel_event_dialog, handle_cancel_quick_event,
     handle_commit_quick_event, handle_confirm_event_dialog, handle_delete_event,
@@ -707,9 +716,12 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             handle_quick_event_text_changed(app, text);
         }
         Message::CommitQuickEvent => {
-            handle_commit_quick_event(app);
-            // Schedule deferred scroll restore after UI updates
-            return schedule_deferred_scroll_restore(app);
+            // Schedule deferred scroll restore after UI updates; batch with the
+            // (possibly CalDAV write) task returned by the handler.
+            return Task::batch([
+                handle_commit_quick_event(app),
+                schedule_deferred_scroll_restore(app),
+            ]);
         }
         Message::CancelQuickEvent => {
             handle_cancel_quick_event(app);
@@ -717,7 +729,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             return schedule_deferred_scroll_restore(app);
         }
         Message::DeleteEvent(uid) => {
-            handle_delete_event(app, uid);
+            return handle_delete_event(app, uid);
         }
         Message::RequestDeleteSelectedEvent => {
             // Request delete of selected event - opens confirmation dialog
@@ -747,17 +759,20 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
         Message::ConfirmDeleteEvent => {
             // Confirm event deletion from the dialog (deletes all occurrences for recurring events)
-            if let Some((event_uid, _event_name, _is_recurring, _occurrence_date)) = app.active_dialog.event_delete_data() {
-                let uid = event_uid.to_string();
-                // For recurring events, we need to delete the master event
-                let master_uid = extract_master_uid(&uid).to_string();
-                // Close dialog first
-                DialogManager::close(&mut app.active_dialog);
-                // Clear selection
-                app.selected_event_uid = None;
-                // Delete the master event (all occurrences)
-                handle_delete_event(app, master_uid);
-            }
+            return match app.active_dialog.event_delete_data() {
+                Some((event_uid, _event_name, _is_recurring, _occurrence_date)) => {
+                    let uid = event_uid.to_string();
+                    // For recurring events, we need to delete the master event
+                    let master_uid = extract_master_uid(&uid).to_string();
+                    // Close dialog first
+                    DialogManager::close(&mut app.active_dialog);
+                    // Clear selection
+                    app.selected_event_uid = None;
+                    // Delete the master event (all occurrences)
+                    handle_delete_event(app, master_uid)
+                }
+                None => Task::none(),
+            };
         }
         Message::DeleteSingleOccurrence => {
             // Delete only the selected occurrence of a recurring event by adding an exception date
@@ -1118,7 +1133,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::ConfirmEventDialog => {
-            handle_confirm_event_dialog(app);
+            return handle_confirm_event_dialog(app);
         }
         Message::CancelEventDialog => {
             handle_cancel_event_dialog(app);
@@ -1285,6 +1300,60 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
 
         Message::CancelSubscription => {
             return handle_cancel_subscription(app);
+        }
+
+        // === CalDAV account management ===
+        Message::OpenAddCalDavDialog => {
+            handle_open_add_caldav_dialog(app);
+        }
+        Message::CalDavDialogUrlChanged(url) => {
+            handle_caldav_dialog_url_changed(app, url);
+        }
+        Message::CalDavDialogUserChanged(username) => {
+            handle_caldav_dialog_user_changed(app, username);
+        }
+        Message::CalDavDialogPasswordChanged(password) => {
+            handle_caldav_dialog_password_changed(app, password);
+        }
+        Message::ConfirmAddCalDav => {
+            return handle_confirm_add_caldav(app);
+        }
+        Message::CancelAddCalDav => {
+            DialogManager::close(&mut app.active_dialog);
+        }
+        Message::CalDavDiscovered(server_url, username, calendars) => {
+            return handle_caldav_discovered(app, server_url, username, calendars);
+        }
+        Message::CalDavDiscoveryFailed(error_message) => {
+            handle_caldav_discovery_failed(app, error_message);
+        }
+
+        // === CalDAV sync ===
+        Message::SyncCalendars => {
+            return handle_sync_calendars(app);
+        }
+        Message::CalDavSyncStarted(calendar_id) => {
+            handle_caldav_sync_started(app, calendar_id);
+        }
+        Message::CalDavSynced(calendar_id, events, hrefs) => {
+            handle_caldav_synced(app, calendar_id, events, hrefs);
+        }
+        Message::CalDavSyncFailed(calendar_id, error_message) => {
+            handle_caldav_sync_failed(app, calendar_id, error_message);
+        }
+
+        // === CalDAV event write-back results ===
+        Message::CalDavEventCreated(calendar_id, event, href) => {
+            handle_caldav_event_created(app, calendar_id, event, href);
+        }
+        Message::CalDavEventUpdated(calendar_id, event, href) => {
+            handle_caldav_event_updated(app, calendar_id, event, href);
+        }
+        Message::CalDavEventDeleted(calendar_id, uid) => {
+            handle_caldav_event_deleted(app, calendar_id, uid);
+        }
+        Message::CalDavWriteFailed(calendar_id, error_message) => {
+            handle_caldav_write_failed(app, calendar_id, error_message);
         }
 
         // No-op for cancelled operations

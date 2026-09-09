@@ -179,6 +179,21 @@ dialog-calendar-name = Name
 dialog-calendar-name-placeholder = Calendar name
 dialog-calendar-color = Color
 
+# Dialog - Add CalDAV Account
+dialog-add-caldav-title = Add CalDAV Account
+dialog-add-caldav-url = Server URL
+dialog-add-caldav-url-placeholder = https://caldav.example.com
+dialog-add-caldav-username = Username
+dialog-add-caldav-username-placeholder = Your username
+dialog-add-caldav-password = Password
+dialog-add-caldav-password-placeholder = Your password
+dialog-add-caldav-https-note = Only HTTPS servers are supported. Your password is stored in your system keyring.
+button-connect = Connect
+menu-add-caldav = Add CalDAV Account...
+menu-sync = Sync Calendars
+sync-status-syncing = Syncing…
+sync-status-error = Sync failed
+
 # Dialog - Delete Calendar
 dialog-delete-calendar-title = Delete Calendar
 dialog-delete-calendar-message = Are you sure you want to delete "{$name}"? This will also delete all events in this calendar.

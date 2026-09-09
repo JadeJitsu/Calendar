@@ -11,8 +11,7 @@
 //!       ▼
 //! Protocol Trait
 //!       │
-//!       ├── LocalProtocol (SQLite database)
-//!       └── CalDavProtocol (HTTP/CalDAV server)
+//!       └── LocalProtocol (SQLite database)
 //! ```
 //!
 //! # Adding a New Protocol
@@ -22,9 +21,8 @@
 //! 3. Re-export from this module
 
 mod local;
-mod caldav;
 
-// Internal use only - LocalProtocol used in tests, CalDavProtocol for future remote calendar support
+// Internal use only - LocalProtocol used in tests
 #[allow(unused_imports)]
 pub(crate) use local::LocalProtocol;
 

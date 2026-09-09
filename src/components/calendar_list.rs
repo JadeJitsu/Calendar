@@ -46,11 +46,16 @@ fn calendar_context_menu(index: usize) -> Option<Vec<menu::Tree<Message>>> {
     ))
 }
 
-/// Render the list of calendars with checkboxes, color pickers, and selection
+/// Render the list of calendars with checkboxes, color pickers, and selection.
+///
+/// `sync_status` is `Some((calendar_id, is_syncing))` while a CalDAV calendar
+/// is syncing (`is_syncing == true`) or has just failed to sync
+/// (`is_syncing == false`); `None` means no CalDAV sync activity.
 pub fn render_calendar_list<'a>(
     calendars: &'a [Box<dyn CalendarSource>],
     active_dialog: &ActiveDialog,
     selected_calendar_id: Option<&String>,
+    sync_status: Option<&(String, bool)>,
 ) -> Element<'a, Message> {
     let mut calendar_list = column()
         .spacing(SPACING_MEDIUM)
@@ -62,6 +67,18 @@ pub fn render_calendar_list<'a>(
         let is_enabled = calendar.is_enabled();
         let is_picker_open = active_dialog.color_picker_calendar_id() == Some(&info.id);
         let is_selected = selected_calendar_id.map(|id| id == &info.id).unwrap_or(false);
+
+        // CalDAV sync indicator: a spinner while syncing, an error tint when
+        // the last sync for this calendar failed.
+        let sync_indicator = match sync_status {
+            Some((id, true)) if id == &info.id => {
+                Some(widget::text(fl!("sync-status-syncing")).size(11))
+            }
+            Some((id, false)) if id == &info.id => {
+                Some(widget::text(fl!("sync-status-error")).size(11))
+            }
+            _ => None,
+        };
 
         // Use the color picker component for the indicator
         let color_indicator = render_color_indicator(
@@ -88,12 +105,16 @@ pub fn render_calendar_list<'a>(
             cosmic::theme::Button::Text
         });
 
-        let calendar_row = row()
+        let mut calendar_row = row()
             .spacing(SPACING_SMALL)
             .align_y(cosmic::iced::Alignment::Center)
             .push(checkbox)
             .push(color_indicator)
             .push(name_button);
+
+        if let Some(indicator) = sync_indicator {
+            calendar_row = calendar_row.push(indicator);
+        }
 
         // Wrap in context menu for right-click actions
         let calendar_row_with_context = widget::context_menu(

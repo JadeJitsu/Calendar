@@ -154,6 +154,15 @@ pub enum ActiveDialog {
         create_new_calendar: bool,
         new_calendar_name: String,
     },
+    /// Add a CalDAV account (Basic-auth servers)
+    AddCalDav {
+        /// Server URL (must be https://)
+        url: String,
+        /// Username
+        username: String,
+        /// Password (kept in dialog state only; stored in keyring on confirm)
+        password: String,
+    },
 }
 
 impl Default for ActiveDialog {

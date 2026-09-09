@@ -542,7 +542,7 @@ mod tests {
         assert_eq!(events[0].summary, "Test Event");
 
         // Delete event
-        let deleted = db.delete_event("event1").unwrap();
+        let deleted = db.delete_event("cal1", "event1").unwrap();
         assert!(deleted);
 
         let events = db.get_events_for_calendar("cal1").unwrap();

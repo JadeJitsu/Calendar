@@ -115,4 +115,15 @@ pub trait CalendarSource: Debug + Send {
     fn supports_write(&self) -> bool {
         true
     }
+
+    /// Remote connection config for persistence, if this is a remote source.
+    /// Returns `(server_url, username)` for CalDAV; `None` for local sources.
+    /// The password is intentionally NOT part of this — it lives in the keyring.
+    fn remote_config(&self) -> Option<(String, String)> {
+        None
+    }
+
+    /// Downcast to the concrete source type (used to apply CalDAV sync
+    /// results to a `CalDavCalendar` cache).
+    fn as_any(&mut self) -> &mut dyn std::any::Any;
 }

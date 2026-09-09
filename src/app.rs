@@ -148,6 +148,8 @@ pub struct CosmicCalendar {
     pub cached_week_events: std::collections::HashMap<chrono::NaiveDate, Vec<crate::components::DisplayEvent>>,
     /// Color of the selected calendar (cached for quick event input)
     pub selected_calendar_color: String,
+    /// CalDAV sync status: (calendar_id, is_syncing). `None` when idle.
+    pub sync_status: Option<(String, bool)>,
     /// Centralized dialog state - only one dialog can be open at a time
     pub active_dialog: ActiveDialog,
     /// Drag selection state for multi-day event creation
@@ -251,6 +253,7 @@ impl CosmicCalendar {
             cached_month_events,
             cached_week_events,
             selected_calendar_color,
+            sync_status: None,
             active_dialog: ActiveDialog::None,
             selection_state: SelectionState::new(),
             event_drag_state: EventDragState::new(),
@@ -361,6 +364,7 @@ impl CosmicCalendar {
             selected_day,
             &self.active_dialog,
             self.selected_calendar_id.as_ref(),
+            self.sync_status.as_ref(),
         )
     }
 
@@ -448,6 +452,17 @@ impl Application for CosmicCalendar {
                 info!("CosmicCalendar: Processing URL: {}", url);
                 return (app, cosmic::app::Task::done(cosmic::Action::App(Message::ProcessUrl(url.clone()))));
             }
+        }
+
+        // Sync CalDAV calendars on startup (no-op if none are configured)
+        let has_caldav = app
+            .calendar_manager
+            .sources()
+            .iter()
+            .any(|s| s.info().calendar_type == crate::calendars::CalendarType::CalDav);
+        if has_caldav {
+            info!("CosmicCalendar: Triggering CalDAV sync on startup");
+            return (app, cosmic::app::Task::done(cosmic::Action::App(Message::SyncCalendars)));
         }
 
         (app, cosmic::app::Task::none())
