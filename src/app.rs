@@ -15,7 +15,7 @@ use crate::selection::{SelectionState, EventDragState};
 use crate::settings::AppSettings;
 use crate::views::{self, CalendarView};
 use chrono::{Datelike, NaiveDate};
-use cosmic::app::{Core, Task};
+use cosmic::app::Core;
 use cosmic::iced::keyboard;
 use cosmic::widget::icon;
 use cosmic::widget::calendar::CalendarModel;

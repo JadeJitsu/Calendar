@@ -12,7 +12,7 @@
 
 use std::collections::HashSet;
 
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, Duration, Utc};
 
 use crate::caldav::{alert_minutes, CalendarEvent, RepeatFrequency};
 use crate::calendars::CalendarManager;
@@ -219,7 +219,7 @@ pub fn fire_notifications(due: &[DueNotification]) -> Vec<(String, String)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
+    use chrono::{NaiveDate, TimeZone};
     use crate::caldav::AlertTime;
 
     fn event_at(start: DateTime<Utc>, alert: AlertTime) -> CalendarEvent {

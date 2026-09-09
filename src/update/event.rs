@@ -404,6 +404,7 @@ pub fn handle_cancel_quick_event(app: &mut CosmicCalendar) {
 // === Event Dialog Handlers ===
 
 /// Open the event dialog for creating a new event
+#[allow(deprecated)] // event_dialog → active_dialog migration blocked on text_editor::Content: Clone
 pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
     debug!("handle_open_new_event_dialog: Opening new event dialog");
     let today = app.selected_date;
@@ -467,6 +468,7 @@ pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
 }
 
 /// Open the event dialog for editing an existing event
+#[allow(deprecated)] // event_dialog → active_dialog migration blocked on text_editor::Content: Clone
 pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, calendar_id: String, uid: String) {
     // Extract master UID for recurring events (occurrence UIDs have format master-uid_YYYYMMDD)
     let master_uid = extract_master_uid(&uid);
@@ -537,6 +539,7 @@ pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, calendar_id: Stri
 /// off-thread (posting `CalDavEventCreated`/`CalDavEventUpdated`/
 /// `CalDavWriteFailed`); for local calendars the event is written synchronously
 /// and `Task::none()` is returned.
+#[allow(deprecated)] // event_dialog → active_dialog migration blocked on text_editor::Content: Clone
 pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) -> Task<Message> {
     let Some(dialog) = app.event_dialog.take() else {
         return Task::none();
@@ -640,6 +643,7 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) -> Task<Message> {
 }
 
 /// Cancel the event dialog
+#[allow(deprecated)] // event_dialog → active_dialog migration blocked on text_editor::Content: Clone
 pub fn handle_cancel_event_dialog(app: &mut CosmicCalendar) {
     debug!("handle_cancel_event_dialog: Cancelling event dialog");
     app.event_dialog = None;

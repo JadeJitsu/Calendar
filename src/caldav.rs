@@ -6,7 +6,9 @@
 //! full multistatus/ICS response bodies — log UIDs, calendar IDs, hosts, and
 //! status codes only.
 
-use icalendar::{Alarm, Calendar, Component, Event, EventLike, Property, Trigger, ValueType};
+use icalendar::{Alarm, Component, Event, EventLike, Property, Trigger, ValueType};
+#[cfg(test)]
+use icalendar::Calendar;
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -687,6 +689,11 @@ pub fn build_event(event: &CalendarEvent) -> Event {
 }
 
 /// Serialize a `CalendarEvent` to a VCALENDAR string for PUT.
+///
+/// Test-only helper — the live write path is `ExportHandler::event_to_ical`,
+/// which delegates to [`build_event`] directly. Kept for the round-trip tests
+/// in this module.
+#[cfg(test)]
 pub fn calendar_event_to_ics(event: &CalendarEvent) -> String {
     let mut calendar = Calendar::new();
     calendar.push(build_event(event));

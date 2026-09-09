@@ -2,7 +2,7 @@
 
 use crate::app::CosmicCalendar;
 use crate::dialogs::{ActiveDialog, DialogManager};
-use crate::services::{CalendarHandler, ExportHandler, NewCalendarData, UpdateCalendarData};
+use crate::services::{CalendarHandler, NewCalendarData, UpdateCalendarData};
 use chrono::Local;
 use cosmic::app::Task;
 use log::{debug, error, info, warn};
@@ -218,7 +218,6 @@ pub fn handle_confirm_delete_calendar(app: &mut CosmicCalendar) {
 
 /// Open a file save dialog to export a calendar to an iCalendar file
 pub fn handle_export_calendar_dialog(
-    app: &mut CosmicCalendar,
     calendar_id: String,
     calendar_name: String,
 ) -> Task<crate::message::Message> {

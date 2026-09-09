@@ -47,7 +47,11 @@ fn map_keyring_error(e: keyring::Error) -> CredentialError {
 }
 
 /// Stored CalDAV credentials.
+///
+/// Currently used as a namespace for the associated `store`/`load`/`delete`
+/// functions; the struct itself is not yet instantiated as a value.
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Reserved for future credential display / account management
 pub struct CalDavCredentials {
     pub username: String,
     pub password: String,
@@ -81,6 +85,7 @@ impl CalDavCredentials {
 
     /// Delete a stored password from the keyring. A missing entry is not an
     /// error.
+    #[allow(dead_code)] // Reserved for future account-removal flow
     pub fn delete(server_url: &str, username: &str) -> Result<(), CredentialError> {
         let entry = Self::entry(server_url, username)?;
         match entry.delete_credential() {
@@ -92,6 +97,7 @@ impl CalDavCredentials {
 
     /// Whether a usable system keyring is available. Uses the store's own
     /// readiness check — no network, no specific credential touched.
+    #[allow(dead_code)] // Reserved for future keyring-availability UI
     pub fn is_available() -> bool {
         Entry::store_status().is_ok()
     }

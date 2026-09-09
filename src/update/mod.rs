@@ -689,7 +689,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             if let Some(calendar) = app.calendar_manager.sources().get(index) {
                 let calendar_id = calendar.info().id.clone();
                 let calendar_name = calendar.info().name.clone();
-                return handle_export_calendar_dialog(app, calendar_id, calendar_name);
+                return handle_export_calendar_dialog(calendar_id, calendar_name);
             }
         }
         Message::CalendarDialogNameChanged(name) => {

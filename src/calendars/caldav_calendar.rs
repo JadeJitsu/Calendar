@@ -59,6 +59,7 @@ impl CalDavCalendar {
     }
 
     /// Get cached events without fetching from server.
+    #[allow(dead_code)] // Reserved for future event access (mirrors LocalCalendar::get_events)
     pub fn cached_events(&self) -> &[CalendarEvent] {
         &self.cached_events
     }

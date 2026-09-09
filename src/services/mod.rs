@@ -24,7 +24,7 @@ pub use credentials::{CalDavCredentials, host_of};
 pub use event_handler::EventHandler;
 pub use export_handler::ExportHandler;
 pub use notification_scheduler::{fire_notifications, NotificationScheduler};
-pub use search::{search_events, MatchedField, SearchResult};
+pub use search::{search_events, SearchResult};
 // Public API of the scheduler not yet consumed by other modules.
 #[allow(unused_imports)]
 pub use notification_scheduler::{DueNotification, DUE_WINDOW};
