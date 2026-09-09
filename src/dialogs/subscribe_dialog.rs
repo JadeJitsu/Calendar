@@ -24,19 +24,19 @@ pub fn view_subscribe_dialog<'a>(
     let event_count = events.len();
 
     // URL info
-    let url_section = column()
+    let url_section = column([])
         .spacing(4)
         .push(text(fl!("subscribe-dialog-url")).size(14))
         .push(text(url).size(12));
 
     // Calendar info
-    let calendar_section = column()
+    let calendar_section = column([])
         .spacing(4)
         .push(text(fl!("subscribe-dialog-calendar-name")).size(14))
         .push(text(calendar_name).size(12));
 
     // Event count
-    let event_info = column().spacing(8).push(
+    let event_info = column([]).spacing(8).push(
         text(fl!(
             "subscribe-dialog-event-count",
             count = (event_count as i64)
@@ -45,7 +45,7 @@ pub fn view_subscribe_dialog<'a>(
     );
 
     // Calendar selection
-    let mut calendar_control = column()
+    let mut calendar_control = column([])
         .spacing(8)
         .push(text(fl!("subscribe-dialog-select-calendar")).size(14));
 
@@ -85,7 +85,7 @@ pub fn view_subscribe_dialog<'a>(
         calendar_control = calendar_control.push(
             container(
                 text_input("New calendar name", new_calendar_name)
-                    .on_input(Message::UpdateSubscriptionCalendarName),
+                    .on_input(|s| Message::UpdateSubscriptionCalendarName(s)),
             )
             .padding([0, 0, 0, 16]),
         );

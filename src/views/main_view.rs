@@ -44,7 +44,7 @@ pub fn render_main_content<'a>(
         CalendarView::Day => views::render_day_view(day_state, locale),
     };
 
-    column()
+    column([])
         .spacing(0)
         .push(toolbar)
         .push(divider::horizontal::default())

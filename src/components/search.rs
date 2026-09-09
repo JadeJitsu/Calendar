@@ -4,8 +4,9 @@
 
 use chrono::{Datelike, Utc};
 use cosmic::iced::{Alignment, Length};
-use cosmic::iced_widget::text_input;
+use cosmic::widget::text_input;
 use cosmic::widget::{button, column, container, row, scrollable, text};
+use cosmic::widget::Id;
 use cosmic::{widget, Element};
 
 use crate::components::parse_color_safe;
@@ -15,8 +16,8 @@ use crate::services::SearchResult;
 use crate::ui_constants::{PADDING_MEDIUM, SPACING_SMALL};
 
 /// Stable id for the search text input (used to focus it on open).
-pub fn search_input_id() -> text_input::Id {
-    text_input::Id::new("search_input")
+pub fn search_input_id() -> Id {
+    Id::new("search_input")
 }
 
 /// Human-readable date for a result row, e.g. "Sep 10, 2026".
@@ -44,12 +45,12 @@ fn color_dot(color: &str) -> Element<'_, Message> {
 
 /// One clickable result row.
 fn render_result_row(r: &SearchResult) -> Element<'_, Message> {
-    let mut row = row()
+    let mut row = row([])
         .spacing(SPACING_SMALL)
         .align_y(Alignment::Center)
         .push(color_dot(&r.color))
         .push(
-            column()
+            column([])
                 .spacing(0)
                 .width(Length::Fill)
                 .push(text(&r.summary).size(15))
@@ -75,10 +76,10 @@ pub fn render_search_bar<'a>(
     results: &'a [SearchResult],
 ) -> Element<'a, Message> {
     let placeholder = fl!("search-placeholder");
-    let input = text_input(&placeholder, query)
+    let input = text_input(placeholder, query)
         .id(search_input_id())
-        .on_input(Message::SearchQueryChanged)
-        .on_submit(Message::CloseSearch)
+        .on_input(|s| Message::SearchQueryChanged(s))
+        .on_submit(|_| Message::CloseSearch)
         .padding(PADDING_MEDIUM)
         .width(Length::Fill);
 
@@ -88,17 +89,17 @@ pub fn render_search_bar<'a>(
         // Idle: just the input.
         container(input).into()
     } else if results.is_empty() {
-        column()
+        column([])
             .spacing(SPACING_SMALL)
             .push(input)
             .push(text(fl!("search-no-results")).size(14))
             .into()
     } else {
-        let mut rows = column().spacing(0);
+        let mut rows = column([]).spacing(0);
         for r in results {
             rows = rows.push(render_result_row(r));
         }
-        column()
+        column([])
             .spacing(SPACING_SMALL)
             .push(input)
             .push(

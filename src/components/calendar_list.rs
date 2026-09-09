@@ -60,7 +60,7 @@ pub fn render_calendar_list<'a>(
     selected_calendar_id: Option<&String>,
     sync_status: Option<&(String, bool)>,
 ) -> Element<'a, Message> {
-    let mut calendar_list = column()
+    let mut calendar_list = column([])
         .spacing(SPACING_MEDIUM)
         .padding(PADDING_MEDIUM)
         .push(widget::text::body(fl!("sidebar-calendars")).size(FONT_SIZE_BODY));
@@ -91,7 +91,7 @@ pub fn render_calendar_list<'a>(
         );
 
         // Checkbox for visibility toggle
-        let checkbox = widget::checkbox("", is_enabled).on_toggle({
+        let checkbox = widget::checkbox(is_enabled).label("").on_toggle({
             let id = info.id.clone();
             move |_| Message::ToggleCalendar(id.clone())
         });
@@ -108,7 +108,7 @@ pub fn render_calendar_list<'a>(
             cosmic::theme::Button::Text
         });
 
-        let mut calendar_row = row()
+        let mut calendar_row = row([])
             .spacing(SPACING_SMALL)
             .align_y(cosmic::iced::Alignment::Center)
             .push(checkbox)

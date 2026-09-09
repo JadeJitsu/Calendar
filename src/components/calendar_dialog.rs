@@ -26,21 +26,21 @@ pub fn render_calendar_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
     };
 
     // Name input field with label
-    let name_control = column()
+    let name_control = column([])
         .spacing(8)
         .push(widget::text(fl!("dialog-calendar-name")))
         .push(
             text_input(fl!("dialog-calendar-name-placeholder"), name)
-                .on_input(Message::CalendarDialogNameChanged)
+                .on_input(|s| Message::CalendarDialogNameChanged(s))
                 .on_submit(|_| Message::ConfirmCalendarDialog)
                 .width(Length::Fill),
         );
 
     // Color picker grid using shared color constant
-    let mut color_grid = column().spacing(SPACING_COLOR_GRID);
+    let mut color_grid = column([]).spacing(SPACING_COLOR_GRID);
 
     for row_colors in QUICK_PICKER_COLORS {
-        let mut color_row = row().spacing(SPACING_COLOR_GRID);
+        let mut color_row = row([]).spacing(SPACING_COLOR_GRID);
 
         for hex in row_colors {
             let color = parse_hex_color(hex).unwrap_or(COLOR_DEFAULT_GRAY);
@@ -76,7 +76,7 @@ pub fn render_calendar_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
     }
 
     // Color control with label
-    let color_control = column()
+    let color_control = column([])
         .spacing(8)
         .push(widget::text(fl!("dialog-calendar-color")))
         .push(color_grid);
@@ -122,34 +122,34 @@ pub fn render_add_caldav_dialog(active_dialog: &ActiveDialog) -> Element<'_, Mes
     };
 
     // Server URL input (must be https://)
-    let url_control = column()
+    let url_control = column([])
         .spacing(8)
         .push(widget::text(fl!("dialog-add-caldav-url")))
         .push(
             text_input(fl!("dialog-add-caldav-url-placeholder"), url)
-                .on_input(Message::CalDavDialogUrlChanged)
+                .on_input(|s| Message::CalDavDialogUrlChanged(s))
                 .on_submit(|_| Message::ConfirmAddCalDav)
                 .width(Length::Fill),
         );
 
     // Username input
-    let user_control = column()
+    let user_control = column([])
         .spacing(8)
         .push(widget::text(fl!("dialog-add-caldav-username")))
         .push(
             text_input(fl!("dialog-add-caldav-username-placeholder"), username)
-                .on_input(Message::CalDavDialogUserChanged)
+                .on_input(|s| Message::CalDavDialogUserChanged(s))
                 .on_submit(|_| Message::ConfirmAddCalDav)
                 .width(Length::Fill),
         );
 
     // Password input (masked)
-    let password_control = column()
+    let password_control = column([])
         .spacing(8)
         .push(widget::text(fl!("dialog-add-caldav-password")))
         .push(
             secure_input(fl!("dialog-add-caldav-password-placeholder"), password, None, true)
-                .on_input(Message::CalDavDialogPasswordChanged)
+                .on_input(|s| Message::CalDavDialogPasswordChanged(s))
                 .on_submit(|_| Message::ConfirmAddCalDav)
                 .width(Length::Fill),
         );
@@ -221,7 +221,7 @@ pub fn render_delete_event_dialog(active_dialog: &ActiveDialog) -> Element<'_, M
         let body_message = fl!("dialog-delete-event-recurring-message");
 
         // Create a custom button row with three buttons - wrap to allow buttons to adapt
-        let button_row = row()
+        let button_row = row([])
             .spacing(8)
             .push(
                 button::text(fl!("button-cancel"))
@@ -240,7 +240,7 @@ pub fn render_delete_event_dialog(active_dialog: &ActiveDialog) -> Element<'_, M
             );
 
         // Build dialog content with event name as title context
-        let content = column()
+        let content = column([])
             .spacing(16)
             .push(widget::text::title4(event_name))
             .push(widget::text(body_message))

@@ -92,7 +92,7 @@ pub fn render_unified_events_with_selection(
     let total_events = actual_date_events + timed_events.len();
 
     // Build a single column with consistent DATE_EVENT_SPACING to match overlay
-    let mut col = column().spacing(DATE_EVENT_SPACING as u16);
+    let mut col = column([]).spacing(DATE_EVENT_SPACING as u16);
     let mut shown = 0;
 
     // Track which timed events we've used

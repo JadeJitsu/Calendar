@@ -7,7 +7,7 @@ use chrono::{NaiveTime, Timelike};
 use cosmic::app::Task;
 use cosmic::iced::Length;
 use cosmic::iced::widget::scrollable as iced_scrollable;
-use cosmic::iced_core::id::Id;
+use cosmic::widget::Id;
 use cosmic::widget::{button, column, container, row, scrollable, text};
 use cosmic::Element;
 
@@ -47,11 +47,11 @@ pub fn scroll_start_time_to(hour: u32, minute: u32) -> Task<Message> {
     Task::batch(vec![
         iced_scrollable::scroll_to(
             start_time_hour_id(),
-            iced_scrollable::AbsoluteOffset { x: 0.0, y: hour_offset },
+            iced_scrollable::AbsoluteOffset { x: Some(0.0), y: Some(hour_offset) },
         ),
         iced_scrollable::scroll_to(
             start_time_minute_id(),
-            iced_scrollable::AbsoluteOffset { x: 0.0, y: minute_offset },
+            iced_scrollable::AbsoluteOffset { x: Some(0.0), y: Some(minute_offset) },
         ),
     ])
 }
@@ -66,11 +66,11 @@ pub fn scroll_end_time_to(hour: u32, minute: u32) -> Task<Message> {
     Task::batch(vec![
         iced_scrollable::scroll_to(
             end_time_hour_id(),
-            iced_scrollable::AbsoluteOffset { x: 0.0, y: hour_offset },
+            iced_scrollable::AbsoluteOffset { x: Some(0.0), y: Some(hour_offset) },
         ),
         iced_scrollable::scroll_to(
             end_time_minute_id(),
-            iced_scrollable::AbsoluteOffset { x: 0.0, y: minute_offset },
+            iced_scrollable::AbsoluteOffset { x: Some(0.0), y: Some(minute_offset) },
         ),
     ])
 }
@@ -110,7 +110,7 @@ pub fn render_time_picker<'a, M: Clone + 'static>(
     let current_minute = current_time.map(|t| t.minute()).unwrap_or(0);
 
     // Hour column (0-23) - add right padding to avoid scrollbar overlap
-    let mut hour_buttons = column().spacing(2).padding([4, 12, 4, 4]);
+    let mut hour_buttons = column([]).spacing(2).padding([4, 12, 4, 4]);
     for hour in 0..24u32 {
         let is_selected = hour == current_hour;
         let on_hour = on_hour_change(hour);
@@ -132,7 +132,7 @@ pub fn render_time_picker<'a, M: Clone + 'static>(
     }
 
     // Minute column (0, 5, 10, ... 55) - 5 minute increments, add right padding
-    let mut minute_buttons = column().spacing(2).padding([4, 12, 4, 4]);
+    let mut minute_buttons = column([]).spacing(2).padding([4, 12, 4, 4]);
     for minute in (0..60u32).step_by(5) {
         let is_selected = (current_minute / 5) * 5 == minute;
         let on_minute = on_minute_change(minute);
@@ -169,20 +169,20 @@ pub fn render_time_picker<'a, M: Clone + 'static>(
     let hour_label = text("Hour").size(12);
     let minute_label = text("Min").size(12);
 
-    let hour_col = column()
+    let hour_col = column([])
         .spacing(4)
         .align_x(cosmic::iced::Alignment::Center)
         .push(hour_label)
         .push(hour_scroll);
 
-    let minute_col = column()
+    let minute_col = column([])
         .spacing(4)
         .align_x(cosmic::iced::Alignment::Center)
         .push(minute_label)
         .push(minute_scroll);
 
     // Combine hour and minute columns with separator
-    let picker_content = row()
+    let picker_content = row([])
         .spacing(8)
         .push(hour_col)
         .push(text(":").size(20))
@@ -192,7 +192,7 @@ pub fn render_time_picker<'a, M: Clone + 'static>(
     let apply_btn = button::suggested(fl!("button-apply"))
         .on_press(on_apply);
 
-    let full_content = column()
+    let full_content = column([])
         .spacing(12)
         .align_x(cosmic::iced::Alignment::Center)
         .push(picker_content)
@@ -205,7 +205,7 @@ pub fn render_time_picker<'a, M: Clone + 'static>(
             let cosmic = theme.cosmic();
             container::Style {
                 background: Some(cosmic::iced::Background::Color(
-                    cosmic.background.base.into(),
+                    cosmic.background(false).base.into(),
                 )),
                 border: cosmic::iced::Border {
                     radius: cosmic.corner_radii.radius_m.into(),

@@ -66,7 +66,7 @@ pub fn render_month_view<'a>(
     show_week_numbers: bool,
     events: Option<MonthViewEvents<'a>>,
 ) -> Element<'a, Message> {
-    let mut grid = column().spacing(SPACING_TINY).padding(PADDING_MONTH_GRID);
+    let mut grid = column([]).spacing(SPACING_TINY).padding(PADDING_MONTH_GRID);
 
     // Responsive weekday header - uses short names when cells are narrow
     let week_number_offset = if show_week_numbers { WEEK_NUMBER_WIDTH } else { 0.0 };
@@ -99,7 +99,7 @@ pub fn render_month_view<'a>(
         // Compute the max slot for this week - all day cells need this for consistent placeholders
         let week_max_slot = event_slots.values().copied().max();
 
-        let mut week_row = row().spacing(SPACING_TINY).height(Length::Fill);
+        let mut week_row = row([]).spacing(SPACING_TINY).height(Length::Fill);
 
         // Week number cell (only if enabled)
         if show_week_numbers {

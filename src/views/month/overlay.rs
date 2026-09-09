@@ -316,7 +316,7 @@ pub fn render_date_events_overlay<'a>(
     let event_height = if compact { COMPACT_EVENT_HEIGHT } else { DATE_EVENT_HEIGHT };
 
     // Build overlay with same structure as main grid
-    let mut overlay_column = column()
+    let mut overlay_column = column([])
         .spacing(SPACING_TINY)
         .padding(PADDING_MONTH_GRID);
 
@@ -331,7 +331,7 @@ pub fn render_date_events_overlay<'a>(
             let max_slot = segs.iter().map(|s| s.slot).max().unwrap_or(0);
 
             // Build week content: header offset + slot rows
-            let mut week_content = column().spacing(DATE_EVENT_SPACING);
+            let mut week_content = column([]).spacing(DATE_EVENT_SPACING);
 
             // Spacer for day header area
             week_content = week_content.push(vertical_spacer(DAY_CELL_HEADER_OFFSET + DAY_CELL_TOP_PADDING));
@@ -344,7 +344,7 @@ pub fn render_date_events_overlay<'a>(
                     .collect();
 
                 // Build row for this slot
-                let mut slot_row = row().spacing(SPACING_TINY).height(Length::Fixed(event_height));
+                let mut slot_row = row([]).spacing(SPACING_TINY).height(Length::Fixed(event_height));
 
                 // Sort segments by start_col to process them in order
                 let mut sorted_segs = slot_segments.clone();
@@ -408,7 +408,7 @@ pub fn render_date_events_overlay<'a>(
             }
 
             // Build the week row with week number spacer
-            let mut week_row = row().spacing(SPACING_TINY).height(Length::Fill);
+            let mut week_row = row([]).spacing(SPACING_TINY).height(Length::Fill);
 
             if show_week_numbers {
                 week_row = week_row.push(horizontal_spacer(WEEK_NUMBER_WIDTH));

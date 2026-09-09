@@ -13,7 +13,7 @@ use crate::ui_constants::{FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, PADDING_SMALL, SPAC
 
 /// Render the weekday header row with responsive names
 pub fn render_weekday_header(show_week_numbers: bool, use_short_names: bool) -> Element<'static, Message> {
-    let mut header_row = row().spacing(SPACING_TINY);
+    let mut header_row = row([]).spacing(SPACING_TINY);
 
     // Week number header (only if enabled)
     if show_week_numbers {

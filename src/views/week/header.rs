@@ -4,7 +4,7 @@
 
 use chrono::{Datelike, Local, NaiveDate};
 use cosmic::iced::{alignment, Background, Border, Length};
-use cosmic::iced_widget::keyed::Column as KeyedColumn;
+use cosmic::iced::widget::keyed::Column as KeyedColumn;
 use cosmic::widget::{column, container, mouse_area, row};
 use cosmic::{widget, Element};
 use std::collections::HashMap;
@@ -40,10 +40,10 @@ pub fn render_header_section<'a>(
     all_day_section_height: f32,
     selected_event_uid: Option<&str>,
 ) -> Element<'a, Message> {
-    let mut header_col = column().spacing(0);
+    let mut header_col = column([]).spacing(0);
 
     // Day headers row
-    let mut day_headers = row().spacing(0);
+    let mut day_headers = row([]).spacing(0);
 
     // Time column placeholder for day headers
     day_headers = day_headers.push(fixed_spacer(TIME_LABEL_WIDTH, DAY_HEADER_HEIGHT));
@@ -97,7 +97,7 @@ fn render_day_header<'a>(day_name: &str, day_number: &str, is_today: bool) -> El
         widget::text(day_number.to_string()).size(FONT_SIZE_MEDIUM).into()
     };
 
-    column()
+    column([])
         .spacing(SPACING_TINY)
         .align_x(alignment::Horizontal::Center)
         .push(widget::text(day_name.to_string()).size(FONT_SIZE_SMALL))
@@ -113,7 +113,7 @@ fn render_all_day_section<'a>(
     height: f32,
     selected_event_uid: Option<&str>,
 ) -> Element<'a, Message> {
-    let mut all_day_row = row().spacing(0);
+    let mut all_day_row = row([]).spacing(0);
 
     // Time column with "all-day" label
     all_day_row = all_day_row.push(

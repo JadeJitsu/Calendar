@@ -13,7 +13,7 @@ pub fn render_toolbar(primary_text: &str, secondary_text: &str) -> Element<'stat
     let primary = primary_text.to_string();
     let secondary = secondary_text.to_string();
 
-    row()
+    row([])
         .padding(PADDING_SMALL)
         .spacing(SPACING_MEDIUM)
         .align_y(cosmic::iced::Alignment::Center)
@@ -28,7 +28,7 @@ pub fn render_toolbar(primary_text: &str, secondary_text: &str) -> Element<'stat
                 .padding(PADDING_TINY)
         )
         .push(
-            row()
+            row([])
                 .spacing(SPACING_MEDIUM)
                 .align_y(cosmic::iced::Alignment::Center)
                 .push(widget::text::title4(primary))

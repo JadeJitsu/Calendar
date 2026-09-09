@@ -27,7 +27,7 @@ pub fn weekend_background(theme: &cosmic::Theme, is_weekend: bool) -> Option<Bac
 pub fn overlay_sidebar_style(theme: &cosmic::Theme) -> container::Style {
     container::Style {
         background: Some(Background::Color(
-            theme.cosmic().background.base.into(),
+            theme.cosmic().background(false).base.into(),
         )),
         border: Border {
             width: 0.0,

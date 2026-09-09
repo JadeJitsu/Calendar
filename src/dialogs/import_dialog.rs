@@ -31,13 +31,13 @@ pub fn render_import_dialog<'a>(
     let event_count = events.len();
 
     // File info section
-    let file_info = column()
+    let file_info = column([])
         .spacing(8)
         .push(text(fl!("import-source-file")).size(14))
         .push(text(source_file_name).size(12));
 
     // Event count info
-    let event_info = column().spacing(8).push(
+    let event_info = column([]).spacing(8).push(
         text(fl!(
             "import-event-count",
             count = (event_count as i64)
@@ -47,7 +47,7 @@ pub fn render_import_dialog<'a>(
 
     // Calendar selection with radio buttons
     let mut calendar_control =
-        column().spacing(8).push(text(fl!("import-target-calendar")).size(14));
+        column([]).spacing(8).push(text(fl!("import-target-calendar")).size(14));
 
     if calendars.is_empty() {
         calendar_control = calendar_control.push(text("(No calendars available)").size(12));
@@ -75,7 +75,7 @@ pub fn render_import_dialog<'a>(
 
     // Show event details in a scrollable area if there are events
     let events_preview = if !events.is_empty() {
-        let mut event_list = column().spacing(4);
+        let mut event_list = column([]).spacing(4);
 
         // Show ALL events in scrollable area
         for event in events.iter() {
@@ -99,12 +99,12 @@ pub fn render_import_dialog<'a>(
         )
         .height(Length::Fixed(200.0));
 
-        column()
+        column([])
             .spacing(8)
             .push(text(fl!("import-events-preview")).size(14))
             .push(scrollable_events)
     } else {
-        column()
+        column([])
     };
 
     // Determine if import button should be enabled

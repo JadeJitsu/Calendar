@@ -4,7 +4,7 @@
 
 use chrono::{NaiveTime, Timelike};
 use cosmic::iced::{Background, Border, Length};
-use cosmic::iced_widget::text_input;
+use cosmic::widget::text_input;
 use cosmic::widget::{column, container};
 use cosmic::Element;
 
@@ -39,10 +39,10 @@ pub fn render_quick_event_input_layer(
     let color = parse_color_safe(&calendar_color);
 
     // Create text input for the event title
-    let input = text_input("New event...", &text)
+    let input = text_input("New event...", text)
         .id(quick_event_input_id())
-        .on_input(Message::QuickEventTextChanged)
-        .on_submit(Message::CommitQuickEvent)
+        .on_input(|s| Message::QuickEventTextChanged(s))
+        .on_submit(|_| Message::CommitQuickEvent)
         .size(12)
         .padding([4, 6])
         .width(Length::Fill);
@@ -69,7 +69,7 @@ pub fn render_quick_event_input_layer(
     let top_spacer = vertical_spacer(top_offset);
 
     // Build column with spacer and input
-    column()
+    column([])
         .spacing(0)
         .push(top_spacer)
         .push(input_container)

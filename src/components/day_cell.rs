@@ -124,7 +124,7 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
             .align_x(alignment::Horizontal::Right);
 
         // Build content with day number at top
-        let mut content = column()
+        let mut content = column([])
             .spacing(SPACING_SMALL) // More spacing between day number and events
             .width(Length::Fill)
             .push(header);

@@ -60,7 +60,7 @@ pub fn render_day_header(config: DayHeaderConfig) -> Element<'static, Message> {
             .padding(config.padding)
     };
 
-    column()
+    column([])
         .spacing(SPACING_TINY)
         .align_x(alignment::Horizontal::Center)
         .push(widget::text(config.day_name).size(config.day_name_size))

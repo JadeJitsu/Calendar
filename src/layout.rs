@@ -262,7 +262,7 @@ fn render_desktop_with_sidebar(app: &CosmicCalendar) -> Element<'_, Message> {
         app.active_dialog.is_open(),
     );
 
-    row()
+    row([])
         .spacing(0)
         .push(app.render_sidebar())
         .push(divider::vertical::default())

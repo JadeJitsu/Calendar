@@ -459,9 +459,9 @@ pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
         notes_content: text_editor::Content::new(),
         editing_field: None,
         start_date_picker_open: false,
-        start_date_calendar: CalendarModel::new(today, today),
+        start_date_calendar: CalendarModel::new(crate::dates::to_jiff(today), crate::dates::to_jiff(today)),
         end_date_picker_open: false,
-        end_date_calendar: CalendarModel::new(today, today),
+        end_date_calendar: CalendarModel::new(crate::dates::to_jiff(today), crate::dates::to_jiff(today)),
         start_time_picker_open: false,
         end_time_picker_open: false,
     });
@@ -525,9 +525,9 @@ pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, calendar_id: Stri
         notes_content: text_editor::Content::with_text(&event.notes.unwrap_or_default()),
         editing_field: None,
         start_date_picker_open: false,
-        start_date_calendar: CalendarModel::new(start_date, start_date),
+        start_date_calendar: CalendarModel::new(crate::dates::to_jiff(start_date), crate::dates::to_jiff(start_date)),
         end_date_picker_open: false,
-        end_date_calendar: CalendarModel::new(end_date, end_date),
+        end_date_calendar: CalendarModel::new(crate::dates::to_jiff(end_date), crate::dates::to_jiff(end_date)),
         start_time_picker_open: false,
         end_time_picker_open: false,
     });

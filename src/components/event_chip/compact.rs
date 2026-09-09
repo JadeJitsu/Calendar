@@ -80,7 +80,7 @@ pub fn render_compact_events(
     let mut shown = 0;
 
     // Use same spacing as overlay for proper alignment
-    let mut col = column().spacing(DATE_EVENT_SPACING as u16);
+    let mut col = column([]).spacing(DATE_EVENT_SPACING as u16);
     let mut has_content = false;
 
     // Track which timed events we've used
@@ -114,7 +114,7 @@ pub fn render_compact_events(
     // Render any remaining timed events as dots in a row
     let remaining_timed: Vec<_> = timed_event_iter.collect();
     if !remaining_timed.is_empty() && shown < max_visible {
-        let mut dots_row = row().spacing(SPACING_TINY);
+        let mut dots_row = row([]).spacing(SPACING_TINY);
         let remaining_slots = max_visible - shown;
 
         for (i, event) in remaining_timed.iter().enumerate() {

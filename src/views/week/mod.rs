@@ -44,8 +44,8 @@ use utils::{
 };
 
 /// Returns the scrollable ID for the week view time grid
-pub fn week_time_grid_id() -> cosmic::iced_core::id::Id {
-    cosmic::iced_core::id::Id::new("week_time_grid")
+pub fn week_time_grid_id() -> cosmic::widget::Id {
+    cosmic::widget::Id::new("week_time_grid")
 }
 
 /// Events grouped by day for display in the week view
@@ -95,7 +95,7 @@ pub fn render_week_view<'a>(
     // Time grid with timed events
     let time_grid = render_time_grid_with_events(locale, week_state, &timed_events, selected_event_uid, selection, active_dialog, calendar_color);
 
-    let content = column()
+    let content = column([])
         .spacing(0)
         .push(header_section)
         .push(
@@ -140,7 +140,7 @@ fn render_time_grid_with_events<'a>(
     });
 
     // Build the grid as a row: time labels column + day columns
-    let mut main_row = cosmic::widget::row().spacing(0);
+    let mut main_row = cosmic::widget::row([]).spacing(0);
 
     // Time labels column
     let time_labels = render_time_labels_column(locale, today_column_index.is_some(), current_hour);

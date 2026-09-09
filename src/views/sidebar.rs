@@ -29,20 +29,20 @@ pub fn render_sidebar<'a>(
 
     // Scrollable top section with calendars
     let scrollable_content = scrollable(
-        column()
+        column([])
             .spacing(SPACING_LARGE)
             .padding(PADDING_STANDARD)
             .push(calendars_section)
     );
 
     // Bottom section with mini calendar (fixed at bottom)
-    let bottom_section = column()
+    let bottom_section = column([])
         .spacing(0)
         .push(divider::horizontal::default())
         .push(container(mini_calendar).padding(PADDING_STANDARD));
 
     // Combine: scrollable top + fixed bottom
-    let sidebar_layout = column()
+    let sidebar_layout = column([])
         .spacing(0)
         .push(container(scrollable_content).height(Length::Fill))
         .push(bottom_section);

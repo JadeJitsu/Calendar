@@ -55,7 +55,7 @@ pub fn render_spanning_overlay<'a>(
     }
 
     // Build the overlay structure matching the grid layout
-    let mut overlay_column = column()
+    let mut overlay_column = column([])
         .spacing(SPACING_TINY)
         .padding(PADDING_MONTH_GRID);
 
@@ -70,7 +70,7 @@ pub fn render_spanning_overlay<'a>(
 
         if let Some((_, start_col, end_col)) = week_overlay {
             // This week has the selection - render the spanning input
-            let mut week_row = row().spacing(SPACING_TINY).height(Length::Fill);
+            let mut week_row = row([]).spacing(SPACING_TINY).height(Length::Fill);
 
             // Week number spacer (if enabled)
             if show_week_numbers {

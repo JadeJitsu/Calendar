@@ -1,7 +1,7 @@
 //! Event dialog component for creating and editing events
 //! Uses COSMIC settings-style grouped sections with editable_input
 
-use chrono::Weekday;
+use jiff::civil::Weekday;
 use cosmic::iced::widget::stack;
 use cosmic::iced::Length;
 use cosmic::widget::{button, calendar, column, container, mouse_area, popover, row, scrollable, settings, text, text_editor, toggler};
@@ -87,7 +87,7 @@ pub fn render_event_dialog<'a>(
         is_editing(EventDialogField::Title),
         |editing| Message::EventDialogToggleEdit(EventDialogField::Title, editing),
     )
-    .on_input(Message::EventDialogTitleChanged)
+    .on_input(|s| Message::EventDialogTitleChanged(s))
     .width(Length::Fill);
 
     // === Location Input using editable_input ===
@@ -97,7 +97,7 @@ pub fn render_event_dialog<'a>(
         is_editing(EventDialogField::Location),
         |editing| Message::EventDialogToggleEdit(EventDialogField::Location, editing),
     )
-    .on_input(Message::EventDialogLocationChanged)
+    .on_input(|s| Message::EventDialogLocationChanged(s))
     .width(Length::Fill);
 
     let basic_section = settings::section()
@@ -119,7 +119,7 @@ pub fn render_event_dialog<'a>(
 
     // Calendar picker button for start date with popover
     let start_date_picker_btn = button::custom(
-        row()
+        row([])
             .spacing(8)
             .align_y(cosmic::iced::Alignment::Center)
             .push(start_date_text)
@@ -137,7 +137,7 @@ pub fn render_event_dialog<'a>(
                 Message::EventDialogStartDateChanged,
                 || Message::EventDialogStartDateCalendarPrev,
                 || Message::EventDialogStartDateCalendarNext,
-                Weekday::Mon,
+                Weekday::Monday,
             )
         )
         .style(popup_container_style);
@@ -152,7 +152,7 @@ pub fn render_event_dialog<'a>(
     // Start time picker button
     let start_time_text = text(&state.start_time_input).width(Length::Fixed(60.0));
     let start_time_picker_btn = button::custom(
-        row()
+        row([])
             .spacing(8)
             .align_y(cosmic::iced::Alignment::Center)
             .push(start_time_text)
@@ -185,7 +185,7 @@ pub fn render_event_dialog<'a>(
 
     // Calendar picker button for end date with popover
     let end_date_picker_btn = button::custom(
-        row()
+        row([])
             .spacing(8)
             .align_y(cosmic::iced::Alignment::Center)
             .push(end_date_text)
@@ -203,7 +203,7 @@ pub fn render_event_dialog<'a>(
                 Message::EventDialogEndDateChanged,
                 || Message::EventDialogEndDateCalendarPrev,
                 || Message::EventDialogEndDateCalendarNext,
-                Weekday::Mon,
+                Weekday::Monday,
             )
         )
         .style(popup_container_style);
@@ -218,7 +218,7 @@ pub fn render_event_dialog<'a>(
     // End time picker button
     let end_time_text = text(&state.end_time_input).width(Length::Fixed(60.0));
     let end_time_picker_btn = button::custom(
-        row()
+        row([])
             .spacing(8)
             .align_y(cosmic::iced::Alignment::Center)
             .push(end_time_text)
@@ -247,18 +247,18 @@ pub fn render_event_dialog<'a>(
     };
 
     let starts_row = if state.all_day {
-        row().spacing(8).push(start_date_with_picker)
+        row([]).spacing(8).push(start_date_with_picker)
     } else {
-        row()
+        row([])
             .spacing(8)
             .push(start_date_with_picker)
             .push(start_time_with_picker)
     };
 
     let ends_row = if state.all_day {
-        row().spacing(8).push(end_date_with_picker)
+        row([]).spacing(8).push(end_date_with_picker)
     } else {
-        row()
+        row([])
             .spacing(8)
             .push(end_date_with_picker)
             .push(end_time_with_picker)
@@ -288,7 +288,7 @@ pub fn render_event_dialog<'a>(
         TravelTime::OneHour,
     ];
 
-    let mut travel_buttons = row().spacing(4);
+    let mut travel_buttons = row([]).spacing(4);
     for opt in travel_time_options.iter() {
         let is_selected = &state.travel_time == opt;
         let opt_clone = opt.clone();
@@ -313,7 +313,7 @@ pub fn render_event_dialog<'a>(
         RepeatFrequency::Yearly,
     ];
 
-    let mut repeat_buttons = row().spacing(4);
+    let mut repeat_buttons = row([]).spacing(4);
     for opt in repeat_options.iter() {
         let is_selected = &state.repeat == opt;
         let opt_clone = opt.clone();
@@ -352,7 +352,7 @@ pub fn render_event_dialog<'a>(
         let calendar_id = info.id.clone();
 
         let calendar_btn = button::custom(
-            row()
+            row([])
                 .spacing(8)
                 .align_y(cosmic::iced::Alignment::Center)
                 .push(
@@ -390,7 +390,7 @@ pub fn render_event_dialog<'a>(
         AlertTime::OneDay,
     ];
 
-    let mut alert_buttons = row().spacing(4);
+    let mut alert_buttons = row([]).spacing(4);
     for opt in alert_options.iter() {
         let is_selected = &state.alert == opt;
         let opt_clone = opt.clone();
@@ -411,11 +411,11 @@ pub fn render_event_dialog<'a>(
         .add(settings::item::builder(fl!("event-alert")).control(alert_buttons));
 
     // === Invitees Section ===
-    let mut invitee_chips = row().spacing(4);
+    let mut invitee_chips = row([]).spacing(4);
     for (index, invitee) in state.invitees.iter().enumerate() {
         invitee_chips = invitee_chips.push(
             button::custom(
-                row()
+                row([])
                     .spacing(4)
                     .push(text(invitee).size(12))
                     .push(text("×").size(12)),
@@ -432,11 +432,11 @@ pub fn render_event_dialog<'a>(
         true, // Always editable for input
         |_| Message::EventDialogAddInvitee, // Toggle acts as submit
     )
-    .on_input(Message::EventDialogInviteeInputChanged)
+    .on_input(|s| Message::EventDialogInviteeInputChanged(s))
     .on_submit(|_| Message::EventDialogAddInvitee)
     .width(Length::Fill);
 
-    let invitees_content = column()
+    let invitees_content = column([])
         .spacing(4)
         .push(invitee_chips)
         .push(invitee_input);
@@ -452,7 +452,7 @@ pub fn render_event_dialog<'a>(
         is_editing(EventDialogField::Url),
         |editing| Message::EventDialogToggleEdit(EventDialogField::Url, editing),
     )
-    .on_input(Message::EventDialogUrlChanged)
+    .on_input(|s| Message::EventDialogUrlChanged(s))
     .width(Length::Fill);
 
     // Notes uses text_editor for multi-line input
@@ -481,9 +481,9 @@ pub fn render_event_dialog<'a>(
         button::suggested(fl!("button-create")).on_press(Message::ConfirmEventDialog)
     };
 
-    let buttons = row()
+    let buttons = row([])
         .spacing(8)
-        .push(widget::horizontal_space())
+        .push(widget::space())
         .push(cancel_btn)
         .push(confirm_btn);
 
@@ -499,7 +499,7 @@ pub fn render_event_dialog<'a>(
     ])
     .padding(0);
 
-    let dialog_content = column()
+    let dialog_content = column([])
         .spacing(12)
         .padding([16, 24]) // Add padding to content (top/bottom, left/right) to avoid scrollbar overlap
         .push(text::title4(dialog_title))
@@ -546,7 +546,7 @@ fn popup_container_style(theme: &cosmic::Theme) -> container::Style {
     let cosmic = theme.cosmic();
     container::Style {
         background: Some(cosmic::iced::Background::Color(
-            cosmic.background.base.into(),
+            cosmic.background(false).base.into(),
         )),
         border: cosmic::iced::Border {
             radius: cosmic.corner_radii.radius_m.into(),
@@ -567,7 +567,7 @@ fn dialog_container_style(theme: &cosmic::Theme) -> container::Style {
     let cosmic = theme.cosmic();
     container::Style {
         background: Some(cosmic::iced::Background::Color(
-            cosmic.background.base.into(),
+            cosmic.background(false).base.into(),
         )),
         border: cosmic::iced::Border {
             radius: cosmic.corner_radii.radius_m.into(),

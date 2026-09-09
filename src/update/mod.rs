@@ -39,7 +39,7 @@ use crate::message::Message;
 use crate::services::{ExportHandler, SettingsHandler};
 use crate::views::{week_time_grid_id, CalendarView};
 use crate::ui_constants::HOUR_ROW_HEIGHT;
-use cosmic::iced_widget::text_input;
+use cosmic::widget::text_input;
 
 /// Helper to dismiss empty quick events on focus-loss actions (navigation, day selection)
 /// This centralizes the pattern of clearing transient UI state when the user navigates away
@@ -124,7 +124,7 @@ fn scroll_week_to_current_time() -> Task<Message> {
     // Use scroll_to with AbsoluteOffset for vertical scrolling
     scrollable::scroll_to(
         week_time_grid_id(),
-        scrollable::AbsoluteOffset { x: 0.0, y: scroll_offset },
+        scrollable::AbsoluteOffset::<Option<f32>> { x: Some(0.0), y: Some(scroll_offset) },
     )
 }
 
@@ -138,7 +138,7 @@ fn scroll_week_to_hour(hour: u32) -> Task<Message> {
 
     scrollable::scroll_to(
         week_time_grid_id(),
-        scrollable::AbsoluteOffset { x: 0.0, y: scroll_offset },
+        scrollable::AbsoluteOffset::<Option<f32>> { x: Some(0.0), y: Some(scroll_offset) },
     )
 }
 
@@ -614,7 +614,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             // Restore scroll position from the saved restore point
             // This uses the position captured BEFORE quick event started (not the continuously tracked one)
             if let Some(offset) = app.week_view_scroll_restore.take() {
-                return scrollable::scroll_to(week_time_grid_id(), offset);
+                return scrollable::scroll_to(week_time_grid_id(), offset.into());
             }
         }
         Message::ScrollTimelineUp => {
@@ -624,7 +624,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                     // Scroll up by one hour (decrease y offset, minimum 0)
                     let new_y = (offset.y - HOUR_ROW_HEIGHT).max(0.0);
                     let new_offset = scrollable::AbsoluteOffset { x: offset.x, y: new_y };
-                    return scrollable::scroll_to(week_time_grid_id(), new_offset);
+                    return scrollable::scroll_to(week_time_grid_id(), new_offset.into());
                 }
             }
         }
@@ -636,7 +636,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                     let max_scroll = HOUR_ROW_HEIGHT * 23.0; // Can scroll to show hour 23
                     let new_y = (offset.y + HOUR_ROW_HEIGHT).min(max_scroll);
                     let new_offset = scrollable::AbsoluteOffset { x: offset.x, y: new_y };
-                    return scrollable::scroll_to(week_time_grid_id(), new_offset);
+                    return scrollable::scroll_to(week_time_grid_id(), new_offset.into());
                 }
             }
         }
@@ -980,14 +980,15 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::EventDialogStartDateChanged(date) => {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
-                dialog.start_date = date;
-                dialog.start_date_input = date.format("%Y-%m-%d").to_string();
+                let start = crate::dates::from_jiff(date);
+                dialog.start_date = start;
+                dialog.start_date_input = date.to_string();
                 dialog.start_date_calendar.set_selected_visible(date);
                 dialog.start_date_picker_open = false; // Close picker after selection
                 // If end date is before start, adjust it
-                if dialog.end_date < date {
-                    dialog.end_date = date;
-                    dialog.end_date_input = date.format("%Y-%m-%d").to_string();
+                if dialog.end_date < start {
+                    dialog.end_date = start;
+                    dialog.end_date_input = date.to_string();
                     dialog.end_date_calendar.set_selected_visible(date);
                 }
             }
@@ -1076,8 +1077,8 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::EventDialogEndDateChanged(date) => {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
-                dialog.end_date = date;
-                dialog.end_date_input = date.format("%Y-%m-%d").to_string();
+                dialog.end_date = crate::dates::from_jiff(date);
+                dialog.end_date_input = date.to_string();
                 dialog.end_date_calendar.set_selected_visible(date);
                 dialog.end_date_picker_open = false; // Close picker after selection
             }

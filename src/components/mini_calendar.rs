@@ -24,7 +24,7 @@ pub fn render_mini_calendar(
     let year = calendar_state.year;
     let month = calendar_state.month;
 
-    let header = row()
+    let header = row([])
         .spacing(SPACING_MEDIUM)
         .push(
             button::icon(widget::icon::from_name(ICON_PREVIOUS))
@@ -38,10 +38,10 @@ pub fn render_mini_calendar(
                 .padding(PADDING_TINY),
         );
 
-    let mut grid = column().spacing(SPACING_SMALL);
+    let mut grid = column([]).spacing(SPACING_SMALL);
 
     // Weekday headers (abbreviated)
-    let mut header_row = row().spacing(SPACING_XXS);
+    let mut header_row = row([]).spacing(SPACING_XXS);
     let weekday_names = localized_names::get_weekday_names_short();
     for weekday in weekday_names {
         header_row = header_row.push(
@@ -55,7 +55,7 @@ pub fn render_mini_calendar(
 
     // Use pre-calculated weeks from CalendarState
     for week in &calendar_state.weeks {
-        let mut week_row = row().spacing(SPACING_XXS);
+        let mut week_row = row([]).spacing(SPACING_XXS);
         for day_opt in week {
             let cell: Element<'static, Message> = if let Some(day) = day_opt {
                 let is_today = calendar_state.is_today(*day);
@@ -97,5 +97,5 @@ pub fn render_mini_calendar(
     // Wrap grid in fixed-height container to prevent layout shifts between months
     let grid_container = container(grid).height(Length::Fixed(MINI_CALENDAR_GRID_HEIGHT));
 
-    column().spacing(SPACING_MINI_CALENDAR).push(header).push(grid_container).into()
+    column([]).spacing(SPACING_MINI_CALENDAR).push(header).push(grid_container).into()
 }

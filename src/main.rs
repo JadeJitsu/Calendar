@@ -6,6 +6,7 @@ mod cache;
 mod caldav;
 mod calendars;
 mod color_constants;
+mod dates;
 mod components;
 mod database;
 #[cfg(debug_assertions)]

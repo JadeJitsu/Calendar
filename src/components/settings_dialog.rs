@@ -38,17 +38,17 @@ pub fn render_settings_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
 
     // Week numbers checkbox
     let toggled = !show_week_numbers;
-    let week_numbers_control = row()
+    let week_numbers_control = row([])
         .spacing(8)
         .align_y(cosmic::iced::Alignment::Center)
         .push(
-            widget::checkbox("", show_week_numbers)
+            widget::checkbox(show_week_numbers).label("")
                 .on_toggle(move |_| Message::SettingsWeekNumbersToggled(toggled)),
         )
         .push(widget::text(fl!("settings-week-numbers")));
 
     // Background sync interval radio group
-    let mut interval_control = column().spacing(8);
+    let mut interval_control = column([]).spacing(8);
     interval_control = interval_control.push(widget::text(fl!("settings-sync-interval")));
     for secs in SYNC_INTERVAL_OPTIONS {
         let is_selected = Some(secs) == Some(sync_interval_secs);

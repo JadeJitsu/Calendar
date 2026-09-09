@@ -60,7 +60,7 @@ pub fn render_time_indicator_layer(
         .height(Length::Fixed(dot_size))
         .align_y(alignment::Vertical::Center);
 
-        row()
+        row([])
             .spacing(0)
             .align_y(alignment::Vertical::Center)
             .push(dot)
@@ -87,7 +87,7 @@ pub fn render_time_indicator_layer(
     let remaining_height = (total_height - adjusted_offset - dot_size).max(0.0);
     let bottom_spacer = vertical_spacer(remaining_height);
 
-    column()
+    column([])
         .spacing(0)
         .push(top_spacer)
         .push(time_indicator)

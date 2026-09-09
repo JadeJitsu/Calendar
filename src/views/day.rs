@@ -20,7 +20,7 @@ pub fn render_day_view(day_state: &DayState, locale: &LocalePreferences) -> Elem
     let day_columns = vec![DayColumn::regular()];
     let time_grid = render_time_grid(locale, &day_columns);
 
-    let content = column()
+    let content = column([])
         .spacing(0)
         .push(all_day_section)
         .push(scrollable(time_grid));
@@ -33,7 +33,7 @@ pub fn render_day_view(day_state: &DayState, locale: &LocalePreferences) -> Elem
 
 /// Render the all-day events section at the top
 fn render_all_day_section(day_state: &DayState) -> Element<'static, Message> {
-    let mut header_row = row().spacing(0);
+    let mut header_row = row([]).spacing(0);
 
     // Time column placeholder
     header_row = header_row.push(render_time_column_placeholder(ALL_DAY_HEADER_HEIGHT));

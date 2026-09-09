@@ -169,8 +169,8 @@ pub enum Message {
     EventDialogAllDayToggled(bool),
     /// Update event start date input text
     EventDialogStartDateInputChanged(String),
-    /// Update event start date in dialog
-    EventDialogStartDateChanged(NaiveDate),
+    /// Update event start date in dialog (jiff Date: the libcosmic calendar widget migrated to jiff)
+    EventDialogStartDateChanged(jiff::civil::Date),
     /// Toggle start date calendar picker
     EventDialogToggleStartDatePicker,
     /// Navigate start date calendar to previous month
@@ -185,8 +185,8 @@ pub enum Message {
     EventDialogStartTimeMinuteChanged(u32),
     /// Update event end date input text
     EventDialogEndDateInputChanged(String),
-    /// Update event end date in dialog
-    EventDialogEndDateChanged(NaiveDate),
+    /// Update event end date in dialog (jiff Date: the libcosmic calendar widget migrated to jiff)
+    EventDialogEndDateChanged(jiff::civil::Date),
     /// Toggle end date calendar picker
     EventDialogToggleEndDatePicker,
     /// Navigate end date calendar to previous month

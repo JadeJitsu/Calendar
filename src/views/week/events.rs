@@ -4,7 +4,7 @@
 
 use chrono::{Local, NaiveDate, Timelike};
 use cosmic::iced::{Background, Border, Length};
-use cosmic::iced_widget::keyed::Column as KeyedColumn;
+use cosmic::iced::widget::keyed::Column as KeyedColumn;
 use cosmic::widget::{container, mouse_area, row};
 use cosmic::{widget, Element};
 use std::hash::{Hash, Hasher};
@@ -40,7 +40,7 @@ pub fn render_events_overlay_layer(
 ) -> Element<'static, Message> {
     // Each column renders its events independently with proper vertical positioning
     // This ensures overlapping events appear side-by-side
-    let mut columns_row = row().spacing(EVENT_COLUMN_SPACING);
+    let mut columns_row = row([]).spacing(EVENT_COLUMN_SPACING);
 
     for col_idx in 0..max_columns {
         // Get all events for this column, sorted by start time

@@ -37,7 +37,7 @@ pub fn render_import_progress_dialog(active_dialog: &ActiveDialog) -> Element<'_
         .size(14);
 
     // Scrollable log of imported events
-    let mut log_column = column().spacing(4);
+    let mut log_column = column([]).spacing(4);
 
     // Show last 10 entries in reverse order (newest first)
     for entry in import_log.iter().rev().take(10) {
@@ -54,7 +54,7 @@ pub fn render_import_progress_dialog(active_dialog: &ActiveDialog) -> Element<'_
     let spinner = text("⟳").size(32); // Unicode spinner character
 
     // Main content
-    let content = column()
+    let content = column([])
         .spacing(16)
         .padding(16)
         .push(spinner)
@@ -69,7 +69,7 @@ pub fn render_import_progress_dialog(active_dialog: &ActiveDialog) -> Element<'_
 
     // Dialog container
     container(
-        column()
+        column([])
             .spacing(16)
             .push(content)
             .push(

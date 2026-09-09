@@ -74,14 +74,14 @@ fn render_year_grid(
 ) -> Element<'static, Message> {
     let actual_box_size = box_size.unwrap_or(MIN_MONTH_BOX_SIZE);
 
-    let mut year_layout = column()
+    let mut year_layout = column([])
         .spacing(SPACING_MEDIUM)
         .padding(PADDING_MEDIUM);
 
     // Create rows based on the number of columns
     let mut month_index = 0;
     while month_index < 12 {
-        let mut month_row = row().spacing(SPACING_MEDIUM);
+        let mut month_row = row([]).spacing(SPACING_MEDIUM);
 
         for _ in 0..num_columns {
             if month_index < 12 {
@@ -128,7 +128,7 @@ fn render_mini_month(
     month: usize,
     box_size: f32,
 ) -> Element<'static, Message> {
-    let mut mini_calendar = column()
+    let mut mini_calendar = column([])
         .spacing(SPACING_SMALL)
         .padding(PADDING_SMALL)
         .width(Length::Fixed(box_size))
@@ -145,7 +145,7 @@ fn render_mini_month(
 
     // Weekday headers (abbreviated, single letter for space)
     let weekday_names = localized_names::get_weekday_names_short();
-    let mut header_row = row().spacing(SPACING_XXS);
+    let mut header_row = row([]).spacing(SPACING_XXS);
     for weekday in &weekday_names {
         let first_char = weekday.chars().next().unwrap_or(' ').to_string();
         header_row = header_row.push(
@@ -158,7 +158,7 @@ fn render_mini_month(
 
     // Day grid
     for week in &month_state.weeks {
-        let mut week_row = row().spacing(SPACING_XXS);
+        let mut week_row = row([]).spacing(SPACING_XXS);
         for day_opt in week {
             if let Some(day) = day_opt {
                 let is_today = today == (year, month as u32, *day);

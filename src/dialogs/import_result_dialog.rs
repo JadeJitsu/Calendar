@@ -42,7 +42,7 @@ pub fn render_import_result_dialog(active_dialog: &ActiveDialog) -> Element<'_, 
     let status_text = text(status_message).size(18);
 
     // Import statistics
-    let mut stats = column().spacing(8);
+    let mut stats = column([]).spacing(8);
 
     stats = stats.push(text(format!("📁 {}: {}", fl!("import-source-file"), source_file_name)).size(12));
     stats = stats.push(text(format!("📅 {}: {}", fl!("import-target-calendar"), calendar_name)).size(12));
@@ -65,7 +65,7 @@ pub fn render_import_result_dialog(active_dialog: &ActiveDialog) -> Element<'_, 
     }
 
     // Main content
-    let content = column()
+    let content = column([])
         .spacing(16)
         .padding(16)
         .push(icon)

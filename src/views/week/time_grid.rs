@@ -22,7 +22,7 @@ pub fn render_time_labels_column<'a>(
     today_in_view: bool,
     current_hour: u32,
 ) -> Element<'a, Message> {
-    let mut col = column().spacing(0);
+    let mut col = column([]).spacing(0);
 
     for hour in 0..24 {
         let is_current_hour = today_in_view && hour == current_hour;
@@ -62,7 +62,7 @@ pub fn render_hour_grid_background(
     is_weekend: bool,
     selection: Option<&SelectionState>,
 ) -> Element<'static, Message> {
-    let mut hour_cells = column().spacing(0);
+    let mut hour_cells = column([]).spacing(0);
 
     for hour in 0..24u32 {
         // Check if this hour cell is within the current selection

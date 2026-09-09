@@ -433,7 +433,7 @@ impl CosmicCalendar {
         let search_bar =
             components::render_search_bar(&self.search_query, &self.search_results);
 
-        cosmic::widget::column()
+        cosmic::widget::column([])
             .spacing(0)
             .push(search_bar)
             .push(cosmic::widget::divider::horizontal::default())

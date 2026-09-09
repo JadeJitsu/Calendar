@@ -71,7 +71,7 @@ pub fn render_timed_event_chip(
 
     // Wrap in container with clip to truncate long text
     container(
-        row()
+        row([])
             .spacing(SPACING_XXS)
             .align_y(cosmic::iced::Alignment::Center)
             .push(dot)

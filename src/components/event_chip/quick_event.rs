@@ -3,8 +3,9 @@
 //! Inline text input for creating new events quickly.
 
 use cosmic::iced::Length;
-use cosmic::iced_widget::text_input;
+use cosmic::widget::text_input;
 use cosmic::widget::container;
+use cosmic::widget::Id;
 use cosmic::Element;
 
 use crate::components::color_picker::parse_hex_color;
@@ -12,8 +13,8 @@ use crate::message::Message;
 use crate::ui_constants::{BORDER_RADIUS, COLOR_DEFAULT_GRAY};
 
 /// ID for the quick event text input - used for auto-focus
-pub fn quick_event_input_id() -> text_input::Id {
-    text_input::Id::new("quick_event_input")
+pub fn quick_event_input_id() -> Id {
+    Id::new("quick_event_input")
 }
 
 /// Render the quick event input field for inline editing
@@ -24,9 +25,9 @@ pub fn render_quick_event_input(
 ) -> Element<'static, Message> {
     let color = parse_hex_color(&calendar_color).unwrap_or(COLOR_DEFAULT_GRAY);
 
-    let input = text_input("New event...", &text)
-        .on_input(Message::QuickEventTextChanged)
-        .on_submit(Message::CommitQuickEvent)
+    let input = text_input("New event...", text)
+        .on_input(|s| Message::QuickEventTextChanged(s))
+        .on_submit(|_| Message::CommitQuickEvent)
         .size(11)
         .padding([2, 4])
         .width(Length::Fill);
@@ -61,10 +62,10 @@ pub fn render_spanning_quick_event_input(
 ) -> Element<'static, Message> {
     let color = parse_hex_color(&calendar_color).unwrap_or(COLOR_DEFAULT_GRAY);
 
-    let input = text_input("New event...", &text)
+    let input = text_input("New event...", text)
         .id(quick_event_input_id())
-        .on_input(Message::QuickEventTextChanged)
-        .on_submit(Message::CommitQuickEvent)
+        .on_input(|s| Message::QuickEventTextChanged(s))
+        .on_submit(|_| Message::CommitQuickEvent)
         .size(14)
         .padding([6, 10])
         .width(Length::Fill);

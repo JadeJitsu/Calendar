@@ -42,11 +42,11 @@ pub fn render_time_grid(
     locale: &LocalePreferences,
     day_columns: &[DayColumn],
 ) -> Element<'static, Message> {
-    let mut grid = column().spacing(0);
+    let mut grid = column([]).spacing(0);
 
     // Render 24 hours
     for hour in 0..24 {
-        let mut hour_row = row().spacing(0);
+        let mut hour_row = row([]).spacing(0);
 
         // Time label - use locale-aware formatting
         let time_label = locale.format_hour(hour);

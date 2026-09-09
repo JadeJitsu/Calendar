@@ -85,11 +85,11 @@ pub fn render_color_indicator<'a>(
 /// Render a color picker palette with all available colors
 #[allow(dead_code)]
 pub fn render_color_palette<'a>(calendar_id: String) -> Element<'a, Message> {
-    let mut color_grid = column().spacing(SPACING_COLOR_CONTAINER);
+    let mut color_grid = column([]).spacing(SPACING_COLOR_CONTAINER);
 
     // Split colors into rows (6 per row)
     for row_colors in CALENDAR_COLORS.chunks(6) {
-        let mut color_row = row().spacing(SPACING_COLOR_CONTAINER);
+        let mut color_row = row([]).spacing(SPACING_COLOR_CONTAINER);
 
         for (hex, _name) in row_colors {
             let color = parse_hex_color(hex).unwrap_or(COLOR_DEFAULT_GRAY);
@@ -129,10 +129,10 @@ pub fn render_quick_color_picker<'a>(
     calendar_id: String,
     current_color: &str,
 ) -> Element<'a, Message> {
-    let mut color_grid = column().spacing(SPACING_COLOR_GRID);
+    let mut color_grid = column([]).spacing(SPACING_COLOR_GRID);
 
     for row_colors in QUICK_PICKER_COLORS {
-        let mut color_row = row().spacing(SPACING_COLOR_GRID);
+        let mut color_row = row([]).spacing(SPACING_COLOR_GRID);
 
         for hex in row_colors {
             let color = parse_hex_color(hex).unwrap_or(COLOR_DEFAULT_GRAY);
