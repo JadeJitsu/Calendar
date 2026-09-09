@@ -5,16 +5,28 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
+/// Default background CalDAV sync interval, in seconds (15 minutes).
+pub const DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS: u64 = 15 * 60;
+
+fn default_background_sync_interval_secs() -> u64 {
+    DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS
+}
+
 /// Application-level settings that persist across sessions
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     pub show_week_numbers: bool,
+    /// How often background CalDAV sync runs, in seconds. Defaults to 15
+    /// minutes; old config files without this field load with the default.
+    #[serde(default = "default_background_sync_interval_secs")]
+    pub background_sync_interval_secs: u64,
 }
 
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
             show_week_numbers: true, // Show week numbers by default
+            background_sync_interval_secs: DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS,
         }
     }
 }
@@ -55,5 +67,34 @@ impl AppSettings {
         path.push("sol-calendar");
         path.push("settings.json");
         path
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_sync_interval_is_15_minutes() {
+        assert_eq!(AppSettings::default().background_sync_interval_secs, 900);
+    }
+
+    #[test]
+    fn serde_default_applies_when_field_missing() {
+        // Old config files have no background_sync_interval_secs — serde must
+        // fill it with the default rather than failing to parse.
+        let json = r#"{"show_week_numbers": true}"#;
+        let settings: AppSettings = serde_json::from_str(json).unwrap();
+        assert!(settings.show_week_numbers);
+        assert_eq!(settings.background_sync_interval_secs, 900);
+    }
+
+    #[test]
+    fn serde_round_trips_sync_interval() {
+        let mut settings = AppSettings::default();
+        settings.background_sync_interval_secs = 300;
+        let json = serde_json::to_string(&settings).unwrap();
+        let back: AppSettings = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.background_sync_interval_secs, 300);
     }
 }
