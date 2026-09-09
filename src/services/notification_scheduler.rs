@@ -135,6 +135,37 @@ impl NotificationScheduler {
     }
 }
 
+/// Desktop notification payloads for a set of due alerts: `(title, body)`.
+///
+/// Kept separate from the actual `notify-rust` send so the message content
+/// is unit-testable without a notification daemon.
+pub fn notification_payloads(due: &[DueNotification]) -> Vec<(String, String)> {
+    due.iter()
+        .map(|n| {
+            let mut body = format!("Starts at {}", n.occurrence_start.format("%H:%M"));
+            if let Some(loc) = &n.event.location {
+                body.push_str(&format!("\n{}", loc));
+            }
+            (n.event.summary.clone(), body)
+        })
+        .collect()
+}
+
+/// Fire desktop notifications for due alerts. Returns the payloads that
+/// were sent (empty if there was nothing due).
+pub fn fire_notifications(due: &[DueNotification]) -> Vec<(String, String)> {
+    let payloads = notification_payloads(due);
+    for (title, body) in &payloads {
+        notify_rust::Notification::new()
+            .summary(title)
+            .body(body)
+            .appname("Calendar")
+            .show()
+            .ok(); // No daemon / headless session: drop silently.
+    }
+    payloads
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -259,6 +290,23 @@ mod tests {
         // The 10th still fires.
         let d2 = Utc.with_ymd_and_hms(2026, 9, 10, 8, 45, 30).unwrap();
         assert_eq!(sched.due_notifications(d2, &[event]).len(), 1);
+    }
+
+    #[test]
+    fn fire_notifications_builds_desktop_payloads() {
+        let mut sched = NotificationScheduler::new();
+        let event = event_at(at(12, 0, 0), AlertTime::FifteenMinutes);
+        let due = sched.due_notifications(at(11, 45, 30), &[event]);
+        let fired = fire_notifications(&due);
+        assert_eq!(fired.len(), 1);
+        // Title is the event summary; body carries the start time.
+        assert_eq!(fired[0].0, "Test");
+        assert!(fired[0].1.contains("12:00"));
+    }
+
+    #[test]
+    fn fire_notifications_empty_for_no_due() {
+        assert!(fire_notifications(&[]).is_empty());
     }
 
     #[test]

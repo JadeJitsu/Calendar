@@ -22,7 +22,10 @@ pub use calendar_handler::{CalendarHandler, NewCalendarData, UpdateCalendarData}
 pub use credentials::{CalDavCredentials, host_of};
 pub use event_handler::EventHandler;
 pub use export_handler::ExportHandler;
-pub use notification_scheduler::{DueNotification, NotificationScheduler, DUE_WINDOW};
+pub use notification_scheduler::{fire_notifications, NotificationScheduler};
+// Public API of the scheduler not yet consumed by other modules.
+#[allow(unused_imports)]
+pub use notification_scheduler::{DueNotification, DUE_WINDOW};
 pub use settings_handler::SettingsHandler;
 
 // Internal types - exported for potential future use but not currently needed externally
