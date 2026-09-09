@@ -582,6 +582,25 @@ pub fn repeat_to_rrule(repeat: &RepeatFrequency, repeat_until: Option<chrono::Na
     }
 }
 
+/// Map an `AlertTime` to minutes before the event start, or `None` when the
+/// alert never fires on its own (`None` / `AtTime` — the latter needs the
+/// event's start instant, which the scheduler resolves separately).
+pub fn alert_minutes(alert: &AlertTime) -> Option<i64> {
+    match alert {
+        AlertTime::None | AlertTime::AtTime => None,
+        AlertTime::FiveMinutes => Some(5),
+        AlertTime::TenMinutes => Some(10),
+        AlertTime::FifteenMinutes => Some(15),
+        AlertTime::ThirtyMinutes => Some(30),
+        AlertTime::OneHour => Some(60),
+        AlertTime::TwoHours => Some(120),
+        AlertTime::OneDay => Some(1440),
+        AlertTime::TwoDays => Some(2880),
+        AlertTime::OneWeek => Some(10080),
+        AlertTime::Custom(mins) => Some(*mins as i64),
+    }
+}
+
 /// Map an `AlertTime` to an iCalendar TRIGGER (negative duration = before start).
 pub fn alert_to_trigger(alert: &AlertTime) -> Option<Trigger> {
     let duration = match alert {
@@ -1042,6 +1061,23 @@ mod user_calendars_fallback_tests {
     /// per-user DAV path used by Nextcloud (and the path Thunderbird is
     /// given directly). Base URLs with or without a trailing slash must
     /// produce the same result.
+    #[test]
+    fn test_alert_minutes_all_variants() {
+        assert_eq!(alert_minutes(&AlertTime::None), None);
+        assert_eq!(alert_minutes(&AlertTime::AtTime), None);
+        assert_eq!(alert_minutes(&AlertTime::FiveMinutes), Some(5));
+        assert_eq!(alert_minutes(&AlertTime::TenMinutes), Some(10));
+        assert_eq!(alert_minutes(&AlertTime::FifteenMinutes), Some(15));
+        assert_eq!(alert_minutes(&AlertTime::ThirtyMinutes), Some(30));
+        assert_eq!(alert_minutes(&AlertTime::OneHour), Some(60));
+        assert_eq!(alert_minutes(&AlertTime::TwoHours), Some(120));
+        assert_eq!(alert_minutes(&AlertTime::OneDay), Some(1440));
+        assert_eq!(alert_minutes(&AlertTime::TwoDays), Some(2880));
+        assert_eq!(alert_minutes(&AlertTime::OneWeek), Some(10080));
+        assert_eq!(alert_minutes(&AlertTime::Custom(45)), Some(45));
+        assert_eq!(alert_minutes(&AlertTime::Custom(0)), Some(0));
+    }
+
     #[test]
     fn test_user_calendars_url_trailing_slash_insensitive() {
         assert_eq!(
