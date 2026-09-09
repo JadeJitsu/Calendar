@@ -1,0 +1,46 @@
+# AUR-style PKGBUILD for xcalendar (JadeJitsu/Calendar).
+#
+# Build:  makepkg -si   (as a regular user, or via paru -S)
+# Install: pacman -U xcalendar-<ver>-<arch>.pkg.tar.zst
+#
+# The app is a self-contained Rust binary; no GTK/glib build deps are needed.
+pkgname=xcalendar
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Native COSMIC desktop calendar app (Rust/libcosmic, CalDAV read+write)"
+arch=(x86_64)
+url="https://github.com/JadeJitsu/Calendar"
+license=(GPL-3.0-or-later)
+depends=(
+    'brotli'
+    'openssl'
+    'libxkbcommon'
+    'zlib'
+    'zstd'
+)
+makedepends=('rust' 'cargo')
+source=(
+    "https://github.com/JadeJitsu/Calendar/archive/refs/tags/v${pkgver}.tar.gz"
+)
+sha256sums=('SKIP')
+
+build() {
+    cd "Calendar-${pkgver}"
+    # makepkg's default CFLAGS/LDFLAGS carry -flto=auto, which breaks linking
+    # of ring's assembly (undefined ring_core_* symbols). Strip LTO.
+    export CFLAGS="-march=native -O3 -pipe -fno-plt -fexceptions"
+    export CXXFLAGS="$CFLAGS"
+    export LDFLAGS="-Wl,-O1 -Wl,--as-needed -Wl,-z,relro -Wl,-z,now"
+    cargo build --release --locked
+}
+
+package() {
+    cd "Calendar-${pkgver}"
+    install -Dm755 target/release/xcalendar -t "${pkgdir}/usr/bin/"
+    install -Dm644 res/dev.xarbit.apps.Calendar.desktop -t "${pkgdir}/usr/share/applications/"
+    install -Dm644 res/dev.xarbit.apps.Calendar.metainfo.xml -t "${pkgdir}/usr/share/metainfo/"
+    install -Dm644 res/dev.xarbit.apps.Calendar.service -t "${pkgdir}/usr/share/dbus-1/services/"
+    # The desktop launcher's PATH does not include the install prefix's bin
+    # dir in all environments; the bare `Exec=xcalendar` works system-wide
+    # because /usr/bin is always on the launcher PATH.
+}
