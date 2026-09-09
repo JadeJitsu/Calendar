@@ -202,12 +202,16 @@ pub fn notification_payloads(due: &[DueNotification]) -> Vec<(String, String)> {
 pub fn fire_notifications(due: &[DueNotification]) -> Vec<(String, String)> {
     let payloads = notification_payloads(due);
     for (title, body) in &payloads {
-        notify_rust::Notification::new()
+        match notify_rust::Notification::new()
             .summary(title)
             .body(body)
             .appname("Calendar")
             .show()
-            .ok(); // No daemon / headless session: drop silently.
+        {
+            Ok(_) => log::info!("Notification shown: {title}"),
+            // No notification daemon / headless session: log, don't fail.
+            Err(e) => log::warn!("Notification failed for {title}: {e}"),
+        }
     }
     payloads
 }
