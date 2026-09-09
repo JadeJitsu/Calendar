@@ -6,7 +6,7 @@
 use crate::caldav::{AlertTime, CalendarEvent, RepeatFrequency, TravelTime};
 use crate::calendars::CalendarManager;
 use chrono::{DateTime, Utc};
-use icalendar::{Calendar, Component, DatePerhapsTime, Event, EventLike};
+use icalendar::{Calendar, Component, DatePerhapsTime, Event, EventLike, Property};
 use log::{debug, error, info, warn};
 use std::error::Error;
 use std::fs;
@@ -74,6 +74,15 @@ impl ExportHandler {
 
         if let Some(ref url) = event.url {
             ical_event.url(url);
+        }
+
+        // ATTENDEE is multi-valued (icalendar routes it to `multi_properties`).
+        // We only store bare emails, so emit `mailto:` with no `CN` display name.
+        for invitee in &event.invitees {
+            ical_event.append_multi_property(Property::new(
+                "ATTENDEE",
+                &format!("mailto:{}", invitee),
+            ));
         }
 
         calendar.push(ical_event);
@@ -859,6 +868,43 @@ mod tests {
         assert!(ical_string.contains("Test Export Event"));
         assert!(ical_string.contains("END:VEVENT"));
         assert!(ical_string.contains("END:VCALENDAR"));
+    }
+
+    /// The live CalDAV write path (`event_to_ical`) must emit one ATTENDEE per
+    /// invitee, and those lines must parse back to the same emails.
+    #[test]
+    fn test_event_to_ical_invitees_round_trip() {
+        let event = CalendarEvent {
+            uid: "live-invitees-1".to_string(),
+            summary: "Live Invitees".to_string(),
+            location: None,
+            all_day: false,
+            start: Utc.with_ymd_and_hms(2025, 12, 1, 10, 0, 0).unwrap(),
+            end: Utc.with_ymd_and_hms(2025, 12, 1, 11, 0, 0).unwrap(),
+            travel_time: TravelTime::None,
+            repeat: RepeatFrequency::Never,
+            repeat_until: None,
+            exception_dates: vec![],
+            invitees: vec![
+                "alice@example.com".to_string(),
+                "bob@example.com".to_string(),
+            ],
+            alert: AlertTime::None,
+            alert_second: None,
+            attachments: vec![],
+            url: None,
+            notes: None,
+        };
+
+        let ical_string = ExportHandler::event_to_ical(&event).to_string();
+        assert!(ical_string.contains("ATTENDEE:mailto:alice@example.com"));
+        assert!(ical_string.contains("ATTENDEE:mailto:bob@example.com"));
+
+        let parsed = ExportHandler::parse_ical_string(&ical_string).expect("parse");
+        assert_eq!(
+            parsed[0].invitees,
+            vec!["alice@example.com".to_string(), "bob@example.com".to_string()]
+        );
     }
 
     #[test]
