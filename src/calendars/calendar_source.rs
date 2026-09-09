@@ -30,6 +30,25 @@ impl CalendarType {
             CalendarType::Other => "Other",
         }
     }
+
+    /// The value persisted in `CalendarConfig.calendar_type`.
+    ///
+    /// Must stay in sync with the load-side check in
+    /// `CalendarManager::with_defaults` — both write and read go through
+    /// this method so the config round-trips. (Regression: the load path
+    /// once compared against a hardcoded lowercase `"caldav"` while the
+    /// save path wrote the Debug form `"CalDav"`, so saved CalDAV
+    /// calendars silently loaded as local calendars and never synced.)
+    pub fn as_config(&self) -> &'static str {
+        match self {
+            CalendarType::Local => "Local",
+            CalendarType::CalDav => "CalDav",
+            CalendarType::Google => "Google",
+            CalendarType::Outlook => "Outlook",
+            CalendarType::ICloud => "ICloud",
+            CalendarType::Other => "Other",
+        }
+    }
 }
 
 /// Metadata about a calendar source
@@ -132,4 +151,22 @@ pub trait CalendarSource: Debug + Send {
     /// Downcast to the concrete source type (used to apply CalDAV sync
     /// results to a `CalDavCalendar` cache).
     fn as_any(&mut self) -> &mut dyn std::any::Any;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `CalendarType::CalDav.as_config()` must match what `save_config`
+    /// writes to disk, so a saved config round-trips back through the
+    /// `calendar_type == ...` check in `CalendarManager::with_defaults`.
+    /// Regression: the load path compared against the lowercase literal
+    /// `"caldav"` while `save_config` wrote the Debug form `"CalDav"`, so
+    /// saved CalDAV calendars silently loaded as local calendars and never
+    /// synced.
+    #[test]
+    fn test_caldav_config_string_round_trips_with_debug_form() {
+        assert_eq!(CalendarType::CalDav.as_config(), format!("{:?}", CalendarType::CalDav));
+        assert_eq!(CalendarType::Local.as_config(), format!("{:?}", CalendarType::Local));
+    }
 }
