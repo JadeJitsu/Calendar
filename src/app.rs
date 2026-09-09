@@ -130,6 +130,8 @@ pub struct CosmicCalendar {
     /// all views sync to show the period containing this date
     pub selected_date: NaiveDate,
     pub calendar_manager: CalendarManager,
+    /// Tracks which event alerts have already fired (dedup across ticks).
+    pub notification_scheduler: crate::services::NotificationScheduler,
     pub show_sidebar: bool,
     /// Track previous condensed state to detect changes and sync sidebar
     pub last_condensed: bool,
@@ -241,6 +243,7 @@ impl CosmicCalendar {
             current_view: CalendarView::Month,
             selected_date: today,
             calendar_manager,
+            notification_scheduler: crate::services::NotificationScheduler::new(),
             show_sidebar: true,
             last_condensed: false, // Will be synced on first render
             show_search: false,

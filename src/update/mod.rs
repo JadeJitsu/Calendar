@@ -48,6 +48,27 @@ fn dismiss_on_focus_loss(app: &mut CosmicCalendar) {
     DialogManager::dismiss_empty_quick_event(&mut app.active_dialog);
 }
 
+/// Check for event alerts that are due and fire desktop notifications.
+///
+/// Driven by the 30-second `TimeTick`. Reads the (already-cached) events from
+/// every enabled calendar, asks the scheduler which alerts fall inside the
+/// due-window, fires a desktop notification for each, and prunes the fired
+/// set so it stays bounded. `fetch_events` is cache-only for both local and
+/// CalDAV sources, so this never touches the network on a tick.
+fn check_event_notifications(app: &mut CosmicCalendar) {
+    use chrono::Utc;
+    use crate::services::fire_notifications;
+
+    let now = Utc::now();
+    let events = app.calendar_manager.get_all_events();
+    let due = app.notification_scheduler.due_notifications(now, &events);
+    if !due.is_empty() {
+        info!("Firing {} event notification(s)", due.len());
+        fire_notifications(&due);
+    }
+    app.notification_scheduler.prune(now);
+}
+
 /// Focus the quick event input field
 /// Returns a Task that focuses the text input for immediate typing
 #[inline]
@@ -498,6 +519,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::TimeTick => {
             // Timer tick to update the current time indicator
             // The view will re-render with the new time automatically
+            check_event_notifications(app);
         }
         Message::ToggleSidebar => {
             app.show_sidebar = !app.show_sidebar;
