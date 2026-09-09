@@ -1418,24 +1418,50 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             app.active_dialog = ActiveDialog::None;
         }
         Message::TrayMinimizeToTray => {
-            // Close button pressed. Only minimize when close-to-tray is on (and
+            // Close button pressed. Only hide when close-to-tray is on (and
             // we're the main window); otherwise this is a no-op. When the
             // setting is on, exit_on_close is false (set in main.rs) so the
-            // process stays alive after the window is minimized.
+            // process stays alive after the window closes.
+            //
+            // We fully close the window rather than minimize it: Wayland's
+            // xdg-shell protocol has no "unminimize" request, so a minimized
+            // window can never be brought back programmatically (winit's own
+            // Wayland backend no-ops `set_minimized(false)` with a "You can't
+            // unminimize the window on Wayland" warning). Closing now and
+            // opening a fresh window in `TrayShowOrRestore` is the only way
+            // to make the tray's "Show" actually work.
             if app.settings.close_to_tray {
                 if let Some(id) = app.core.main_window_id() {
-                    return cosmic::iced::window::minimize(id, true);
+                    app.core.set_main_window_id(None);
+                    return cosmic::iced::window::close(id);
                 }
             }
         }
         Message::TrayShowOrRestore => {
-            // Tray "Show/Restore": un-minimize then raise + focus the main
-            // window. This mirrors the sequence libcosmic itself uses to
-            // restore a minimized window (minimize(false) then gain_focus).
+            // Tray "Show/Restore". If close-to-tray closed the window, there
+            // is nothing to un-minimize (see TrayMinimizeToTray) - open a
+            // fresh window and make it the main window instead. If a window
+            // still exists (close-to-tray is off, or Show was clicked while
+            // just unfocused), just raise + focus it.
             if let Some(id) = app.core.main_window_id() {
-                return cosmic::iced::window::minimize(id, false)
-                    .chain(cosmic::iced::window::gain_focus(id));
+                return cosmic::iced::window::gain_focus(id);
             }
+
+            let mut settings = cosmic::iced::window::Settings {
+                decorations: false,
+                size: cosmic::iced::Size::new(1024.0, 768.0),
+                exit_on_close_request: !app.settings.close_to_tray,
+                ..cosmic::iced::window::Settings::default()
+            };
+            #[cfg(target_os = "linux")]
+            {
+                settings.platform_specific.application_id =
+                    <CosmicCalendar as cosmic::Application>::APP_ID.to_string();
+            }
+
+            let (id, open_task) = cosmic::iced::window::open(settings);
+            app.core.set_main_window_id(Some(id));
+            return open_task.discard();
         }
         Message::TrayQuit => {
             // Tray "Quit": exit the iced runtime cleanly (runs normal shutdown).
