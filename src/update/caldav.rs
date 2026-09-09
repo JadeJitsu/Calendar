@@ -304,13 +304,14 @@ pub fn handle_caldav_sync_started(app: &mut CosmicCalendar, calendar_id: String)
     app.sync_status = Some((calendar_id, true));
 }
 
-/// A calendar sync finished: apply fetched events to the cache.
+/// A calendar sync finished: apply fetched events to the cache and re-arm the
+/// event-alert timer now that the remote events are available.
 pub fn handle_caldav_synced(
     app: &mut CosmicCalendar,
     calendar_id: String,
     events: Vec<CalendarEvent>,
     hrefs: Vec<(String, String)>,
-) {
+) -> Task<Message> {
     info!("CalDAV: Sync complete for '{}' ({} events)", calendar_id, events.len());
     if let Some(source) = app
         .calendar_manager
@@ -324,6 +325,8 @@ pub fn handle_caldav_synced(
     }
     app.sync_status = None;
     app.refresh_cached_events();
+    // Re-arm the precise alert timer with the freshly-synced events.
+    crate::update::arm_notification_timer(app)
 }
 
 /// A calendar sync failed.

@@ -1,9 +1,14 @@
-//! Notification scheduler — decides which event alerts are due "now".
+//! Notification scheduler — decides which event alerts are due "now" and
+//! when the next one will be due.
 //!
-//! Pure, time-injected logic: `due_notifications(now, events)` returns the
-//! alerts whose due instant (occurrence start − alert offset) falls inside
-//! the trailing due-window. The app's 30-second `TimeTick` drives it, and
-//! the `fired` set deduplicates so each (occurrence, alert) fires once.
+//! Pure, time-injected logic:
+//! - `due_notifications(now, events)` returns the alerts whose due instant
+//!   (occurrence start − alert offset) falls inside the trailing due-window.
+//! - `next_due_time(now, events)` returns the earliest *future* due instant,
+//!   so the app can arm a precise one-shot timer to it (tight timing) rather
+//!   than waiting for the next 30-second tick.
+//!
+//! The `fired` set deduplicates so each (occurrence, alert) fires once.
 
 use std::collections::HashSet;
 
@@ -13,10 +18,15 @@ use crate::caldav::{alert_minutes, CalendarEvent, RepeatFrequency};
 use crate::calendars::CalendarManager;
 
 /// How far behind "now" an alert's due instant can be and still be delivered.
-/// Must comfortably exceed the tick interval (30 s) so a tick never skips a
-/// due alert, while staying small enough that a stale alert isn't fired
-/// minutes late.
+/// Comfortably exceeds the tick interval (30 s) so a tick never skips a due
+/// alert, while staying small enough that a stale alert isn't fired minutes
+/// late.
 pub const DUE_WINDOW: Duration = Duration::seconds(60);
+
+/// How far ahead `next_due_time` looks for the next upcoming alert. Generous:
+/// covers the largest fixed offset (OneWeek) plus `Custom`, and recurring
+/// events whose next occurrence may be days away.
+pub const SCHEDULE_HORIZON: Duration = Duration::days(366);
 
 /// An alert that is due right now.
 #[derive(Debug, Clone, PartialEq)]
@@ -61,54 +71,90 @@ impl NotificationScheduler {
         events: &[CalendarEvent],
     ) -> Vec<DueNotification> {
         let mut due = Vec::new();
-        for event in events {
-            // Collect the (index, offset) pairs up front so the loop body can
-            // mutably borrow `self.fired` without holding a borrow of `self`.
-            let mut alerts: Vec<(usize, Option<i64>)> =
-                vec![(0usize, alert_minutes(&event.alert))];
-            if let Some(second) = &event.alert_second {
-                alerts.push((1usize, alert_minutes(second)));
-            }
-            for (occurrence_start, occurrence) in self.occurrences_in_window(event, now) {
-                for (index, offset) in &alerts {
-                    let Some(mins) = offset else {
-                        continue;
-                    };
-                    let due_at = occurrence_start - Duration::minutes(*mins);
-                    if (now - DUE_WINDOW) <= due_at && due_at <= now {
-                        let key = Self::key(&occurrence, occurrence_start, *index);
-                        if self.fired.insert(key) {
-                            due.push(DueNotification {
-                                event: occurrence.clone(),
-                                occurrence_start,
-                                alert_index: *index,
-                            });
-                        }
-                    }
-                }
+        for (_, occurrence_start, occurrence, index) in
+            self.alert_due_instants(events, now - DUE_WINDOW, now)
+        {
+            let key = Self::key(&occurrence, occurrence_start, index);
+            if self.fired.insert(key) {
+                due.push(DueNotification {
+                    event: occurrence,
+                    occurrence_start,
+                    alert_index: index,
+                });
             }
         }
         due
     }
 
-    /// Occurrences of `event` whose alert could be due inside the window:
-    /// `(occurrence_start, event_with_adjusted_dates)`.
-    fn occurrences_in_window(
+    /// The earliest due instant strictly after `now`, or `None` if no alert
+    /// is scheduled within `SCHEDULE_HORIZON`. Used to arm a precise one-shot
+    /// timer so an alert fires at its exact due time instead of on the next
+    /// tick.
+    pub fn next_due_time(
+        &self,
+        now: DateTime<Utc>,
+        events: &[CalendarEvent],
+    ) -> Option<DateTime<Utc>> {
+        let horizon = now + SCHEDULE_HORIZON;
+        self.alert_due_instants(events, now, horizon)
+            .into_iter()
+            .map(|(due_at, _, _, _)| due_at)
+            .min()
+    }
+
+    /// Every alert due-instant for `events` whose due time falls in
+    /// `[range_start, range_end]`, as `(due_at, occurrence_start, occurrence,
+    /// alert_index)`. Shared by `due_notifications` (a trailing window) and
+    /// `next_due_time` (a leading horizon).
+    fn alert_due_instants(
+        &self,
+        events: &[CalendarEvent],
+        range_start: DateTime<Utc>,
+        range_end: DateTime<Utc>,
+    ) -> Vec<(DateTime<Utc>, DateTime<Utc>, CalendarEvent, usize)> {
+        let mut out = Vec::new();
+        for event in events {
+            let mut alerts: Vec<(usize, Option<i64>)> =
+                vec![(0usize, alert_minutes(&event.alert))];
+            if let Some(second) = &event.alert_second {
+                alerts.push((1usize, alert_minutes(second)));
+            }
+            for (occurrence_start, occurrence) in
+                self.occurrences_in_range(event, range_start, range_end)
+            {
+                for (index, offset) in &alerts {
+                    let Some(mins) = offset else {
+                        continue;
+                    };
+                    let due_at = occurrence_start - Duration::minutes(*mins);
+                    if range_start <= due_at && due_at <= range_end {
+                        out.push((due_at, occurrence_start, occurrence.clone(), *index));
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    /// Occurrences of `event` whose alert could fall inside
+    /// `[range_start, range_end]`: `(occurrence_start, event_with_adjusted_dates)`.
+    fn occurrences_in_range(
         &self,
         event: &CalendarEvent,
-        now: DateTime<Utc>,
+        range_start: DateTime<Utc>,
+        range_end: DateTime<Utc>,
     ) -> Vec<(DateTime<Utc>, CalendarEvent)> {
-        // An alert for an occurrence starting at S is due in the window when
-        // S - offset ∈ [now - DUE_WINDOW, now], i.e. S ∈ [now - DUE_WINDOW,
-        // now + max_offset]. Max offset is OneWeek (the largest fixed
+        // An alert for an occurrence starting at S is due in the range when
+        // S - offset ∈ [range_start, range_end], i.e. S ∈ [range_start,
+        // range_end + max_offset]. Max offset is OneWeek (the largest fixed
         // variant); Custom can be larger, so widen the range generously.
         let max_offset = Duration::days(30);
-        let range_start = (now - DUE_WINDOW).date_naive();
-        let range_end = (now + max_offset).date_naive();
+        let date_start = range_start.date_naive();
+        let date_end = (range_end + max_offset).date_naive();
 
         if matches!(event.repeat, RepeatFrequency::Never) {
             let start_date = event.start.date_naive();
-            if (range_start..=range_end).contains(&start_date) {
+            if (date_start..=date_end).contains(&start_date) {
                 return vec![(event.start, event.clone())];
             }
             return vec![];
@@ -116,7 +162,7 @@ impl NotificationScheduler {
 
         // expand_recurring_event already returns each occurrence with
         // start/end adjusted to that date and a per-date uid.
-        CalendarManager::expand_recurring_event(event, range_start, range_end)
+        CalendarManager::expand_recurring_event(event, date_start, date_end)
             .into_iter()
             .map(|(_, occ)| (occ.start, occ))
             .collect()
@@ -239,6 +285,58 @@ mod tests {
         assert_eq!(sched.due_notifications(at(11, 45, 30), &[event.clone()]).len(), 1);
         // Second tick in the same window must not re-fire.
         assert!(sched.due_notifications(at(11, 45, 50), &[event]).is_empty());
+    }
+
+    #[test]
+    fn next_due_time_returns_earliest_future_due() {
+        let sched = NotificationScheduler::new();
+        let event = event_at(at(12, 0, 0), AlertTime::FifteenMinutes);
+        // Due at 11:45:00; now = 11:00 → next due is 11:45.
+        assert_eq!(
+            sched.next_due_time(at(11, 0, 0), &[event]),
+            Some(at(11, 45, 0))
+        );
+    }
+
+    #[test]
+    fn next_due_time_none_when_already_past() {
+        let sched = NotificationScheduler::new();
+        let event = event_at(at(12, 0, 0), AlertTime::FifteenMinutes);
+        // Due at 11:45:00; now = 12:00 → already past, nothing future.
+        assert_eq!(sched.next_due_time(at(12, 0, 0), &[event]), None);
+    }
+
+    #[test]
+    fn next_due_time_picks_earliest_of_two_alerts() {
+        let sched = NotificationScheduler::new();
+        let mut event = event_at(at(12, 0, 0), AlertTime::OneHour);
+        event.alert_second = Some(AlertTime::FifteenMinutes);
+        // 1h due 11:00, 15m due 11:45; now = 10:00 → earliest is 11:00.
+        assert_eq!(
+            sched.next_due_time(at(10, 0, 0), &[event]),
+            Some(at(11, 0, 0))
+        );
+    }
+
+    #[test]
+    fn next_due_time_none_when_no_alerts() {
+        let sched = NotificationScheduler::new();
+        let event = event_at(at(12, 0, 0), AlertTime::None);
+        assert_eq!(sched.next_due_time(at(11, 0, 0), &[event]), None);
+    }
+
+    #[test]
+    fn next_due_time_recurring_next_occurrence() {
+        let sched = NotificationScheduler::new();
+        let mut event = event_at(at(9, 0, 0), AlertTime::FifteenMinutes);
+        event.repeat = RepeatFrequency::Daily;
+        // now = 2026-09-09 12:00 → the 9th's 08:45 is past; next is the
+        // 10th's 08:45.
+        let now = Utc.with_ymd_and_hms(2026, 9, 9, 12, 0, 0).unwrap();
+        assert_eq!(
+            sched.next_due_time(now, &[event]),
+            Some(Utc.with_ymd_and_hms(2026, 9, 10, 8, 45, 0).unwrap())
+        );
     }
 
     #[test]

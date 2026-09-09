@@ -48,14 +48,20 @@ fn dismiss_on_focus_loss(app: &mut CosmicCalendar) {
     DialogManager::dismiss_empty_quick_event(&mut app.active_dialog);
 }
 
-/// Check for event alerts that are due and fire desktop notifications.
+/// Check for event alerts that are due, fire desktop notifications, and re-arm
+/// the precise timer for the next alert.
 ///
-/// Driven by the 30-second `TimeTick`. Reads the (already-cached) events from
-/// every enabled calendar, asks the scheduler which alerts fall inside the
-/// due-window, fires a desktop notification for each, and prunes the fired
-/// set so it stays bounded. `fetch_events` is cache-only for both local and
-/// CalDAV sources, so this never touches the network on a tick.
-fn check_event_notifications(app: &mut CosmicCalendar) {
+/// Called from the 30-second `TimeTick` (backstop: recovers after sleep/wake
+/// and keeps the timer pointed at the true next alert after any event change)
+/// and from the one-shot `NotificationCheck` timer itself (tight timing: fires
+/// at the exact due instant). Reads the (already-cached) events from every
+/// enabled calendar — `fetch_events` is cache-only for both local and CalDAV
+/// sources, so this never touches the network.
+///
+/// Returns a `Task` that sleeps until the next alert's due instant and posts
+/// `NotificationCheck`, chaining the chain. `Task::none()` when nothing is
+/// scheduled within the horizon.
+fn check_event_notifications(app: &mut CosmicCalendar) -> Task<Message> {
     use chrono::Utc;
     use crate::services::fire_notifications;
 
@@ -67,6 +73,33 @@ fn check_event_notifications(app: &mut CosmicCalendar) {
         fire_notifications(&due);
     }
     app.notification_scheduler.prune(now);
+
+    arm_notification_timer(app)
+}
+
+/// Build a one-shot `Task` that sleeps until the next event alert's due
+/// instant and posts `NotificationCheck`. `Task::none()` when nothing is
+/// scheduled within the horizon. Read-only over `app` (does not fire or
+/// mutate the scheduler), so it can be called from `init` and from the
+/// CalDAV-sync-completion path to (re)arm the timer.
+pub(crate) fn arm_notification_timer(app: &CosmicCalendar) -> Task<Message> {
+    use chrono::Utc;
+
+    let now = Utc::now();
+    let events = app.calendar_manager.get_all_events();
+    match app.notification_scheduler.next_due_time(now, &events) {
+        Some(due_at) => {
+            let delay = (due_at - now)
+                .to_std()
+                .unwrap_or_else(|_| std::time::Duration::from_secs(30));
+            debug!("Next event alert due in {:?}", delay);
+            Task::perform(
+                tokio::time::sleep(delay),
+                |_| cosmic::Action::App(Message::NotificationCheck),
+            )
+        }
+        None => Task::none(),
+    }
 }
 
 /// Focus the quick event input field
@@ -519,7 +552,14 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::TimeTick => {
             // Timer tick to update the current time indicator
             // The view will re-render with the new time automatically
-            check_event_notifications(app);
+            // Also a backstop for event notifications: re-arms the precise
+            // timer (recovers after sleep/wake, tracks event changes).
+            return check_event_notifications(app);
+        }
+        Message::NotificationCheck => {
+            // A precise alert timer fired: deliver due notifications and
+            // re-arm for the next one.
+            return check_event_notifications(app);
         }
         Message::ToggleSidebar => {
             app.show_sidebar = !app.show_sidebar;
@@ -1358,7 +1398,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             handle_caldav_sync_started(app, calendar_id);
         }
         Message::CalDavSynced(calendar_id, events, hrefs) => {
-            handle_caldav_synced(app, calendar_id, events, hrefs);
+            return handle_caldav_synced(app, calendar_id, events, hrefs);
         }
         Message::CalDavSyncFailed(calendar_id, error_message) => {
             handle_caldav_sync_failed(app, calendar_id, error_message);

@@ -461,6 +461,11 @@ impl Application for CosmicCalendar {
             }
         }
 
+        // Arm the precise event-alert timer for events already in the local
+        // cache. CalDAV events arrive after the startup sync, and the sync
+        // completion re-arms the timer (see handle_caldav_synced).
+        let arm_task = crate::update::arm_notification_timer(&app);
+
         // Sync CalDAV calendars on startup (no-op if none are configured)
         let has_caldav = app
             .calendar_manager
@@ -469,10 +474,11 @@ impl Application for CosmicCalendar {
             .any(|s| s.info().calendar_type == crate::calendars::CalendarType::CalDav);
         if has_caldav {
             info!("CosmicCalendar: Triggering CalDAV sync on startup");
-            return (app, cosmic::app::Task::done(cosmic::Action::App(Message::SyncCalendars)));
+            let sync_task = cosmic::app::Task::done(cosmic::Action::App(Message::SyncCalendars));
+            return (app, cosmic::app::Task::batch([sync_task, arm_task]));
         }
 
-        (app, cosmic::app::Task::none())
+        (app, arm_task)
     }
 
     fn header_start(&self) -> Vec<Element<'_, Self::Message>> {

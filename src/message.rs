@@ -38,6 +38,9 @@ pub enum Message {
     // UI state
     /// Timer tick for updating current time indicator (every minute)
     TimeTick,
+    /// A scheduled event-alert timer fired: check for due notifications and
+    /// re-arm the precise timer for the next alert.
+    NotificationCheck,
     ToggleSidebar,
     /// Triggered on window resize to sync sidebar with condensed state
     WindowResized,
