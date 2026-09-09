@@ -619,7 +619,10 @@ pub fn alert_to_trigger(alert: &AlertTime) -> Option<Trigger> {
     Some(Trigger::before_start(duration))
 }
 
-/// Serialize a `CalendarEvent` to a VCALENDAR string for PUT.
+/// Build a full VEVENT for a `CalendarEvent`. This is the single source of
+/// truth for event serialization — both the test-only `calendar_event_to_ics`
+/// and the live CalDAV write path (`ExportHandler::event_to_ical`) use it, so
+/// recurrence/exception/reminder/attendee/all-day can't drift between them.
 ///
 /// icalendar 0.16 quirks handled here:
 /// - no RRULE emitter → `add_property("RRULE", ...)`
@@ -627,8 +630,7 @@ pub fn alert_to_trigger(alert: &AlertTime) -> Option<Trigger> {
 ///   `DateTime<Utc>`), all-day events emit `VALUE=DATE`
 /// - `all_day()` sets DTSTART and DTEND to the *same* date, so a multi-day
 ///   all-day event gets a manual DTEND overwrite
-pub fn calendar_event_to_ics(event: &CalendarEvent) -> String {
-    let mut calendar = Calendar::new();
+pub fn build_event(event: &CalendarEvent) -> Event {
     let mut ev = Event::new();
 
     ev.uid(&event.uid);
@@ -681,7 +683,13 @@ pub fn calendar_event_to_ics(event: &CalendarEvent) -> String {
         ev.alarm(Alarm::display("Reminder", trigger));
     }
 
-    calendar.push(ev);
+    ev
+}
+
+/// Serialize a `CalendarEvent` to a VCALENDAR string for PUT.
+pub fn calendar_event_to_ics(event: &CalendarEvent) -> String {
+    let mut calendar = Calendar::new();
+    calendar.push(build_event(event));
     calendar.to_string()
 }
 

@@ -6,7 +6,7 @@
 use crate::caldav::{AlertTime, CalendarEvent, RepeatFrequency, TravelTime};
 use crate::calendars::CalendarManager;
 use chrono::{DateTime, Utc};
-use icalendar::{Calendar, Component, DatePerhapsTime, Event, EventLike, Property};
+use icalendar::{Calendar, Component, DatePerhapsTime, Event, EventLike};
 use log::{debug, error, info, warn};
 use std::error::Error;
 use std::fs;
@@ -56,36 +56,11 @@ impl ExportHandler {
     pub fn event_to_ical(event: &CalendarEvent) -> Calendar {
         debug!("ExportHandler: Converting event '{}' (uid={}) to iCal", event.summary, event.uid);
 
+        // Delegate to the shared VEVENT builder so the live CalDAV PUT path
+        // serializes the full event (recurrence, exceptions, reminder,
+        // attendees, all-day) — not just summary/location/notes/url.
         let mut calendar = Calendar::new();
-
-        let mut ical_event = Event::new();
-        ical_event.summary(&event.summary);
-        ical_event.uid(&event.uid);
-        ical_event.starts(event.start);
-        ical_event.ends(event.end);
-
-        if let Some(ref location) = event.location {
-            ical_event.location(location);
-        }
-
-        if let Some(ref notes) = event.notes {
-            ical_event.description(notes);
-        }
-
-        if let Some(ref url) = event.url {
-            ical_event.url(url);
-        }
-
-        // ATTENDEE is multi-valued (icalendar routes it to `multi_properties`).
-        // We only store bare emails, so emit `mailto:` with no `CN` display name.
-        for invitee in &event.invitees {
-            ical_event.append_multi_property(Property::new(
-                "ATTENDEE",
-                &format!("mailto:{}", invitee),
-            ));
-        }
-
-        calendar.push(ical_event);
+        calendar.push(crate::caldav::build_event(event));
         debug!("ExportHandler: Event conversion complete");
         calendar
     }
@@ -905,6 +880,51 @@ mod tests {
             parsed[0].invitees,
             vec!["alice@example.com".to_string(), "bob@example.com".to_string()]
         );
+    }
+
+    /// The live CalDAV write path must serialize the full event, not just
+    /// summary/location/notes/attendees: recurrence, exception dates, the
+    /// reminder (VALARM), and a DTSTAMP must all survive a PUT round-trip.
+    #[test]
+    fn test_event_to_ical_full_round_trip() {
+        let event = CalendarEvent {
+            uid: "live-full-1".to_string(),
+            summary: "Weekly Sync".to_string(),
+            location: Some("Room 42".to_string()),
+            all_day: false,
+            start: Utc.with_ymd_and_hms(2026, 9, 10, 9, 0, 0).unwrap(),
+            end: Utc.with_ymd_and_hms(2026, 9, 10, 10, 30, 0).unwrap(),
+            travel_time: TravelTime::None,
+            repeat: RepeatFrequency::Biweekly,
+            repeat_until: None,
+            exception_dates: vec![chrono::NaiveDate::from_ymd_opt(2026, 9, 24).unwrap()],
+            invitees: vec!["alice@example.com".to_string()],
+            alert: AlertTime::FifteenMinutes,
+            alert_second: None,
+            attachments: vec![],
+            url: None,
+            notes: Some("agenda in the notes".to_string()),
+        };
+
+        let ical_string = ExportHandler::event_to_ical(&event).to_string();
+
+        // The ICS must carry the recurrence, exception, reminder, and stamp.
+        assert!(ical_string.contains("RRULE:FREQ=WEEKLY;INTERVAL=2"));
+        assert!(ical_string.contains("EXDATE"));
+        assert!(ical_string.contains("BEGIN:VALARM"));
+        assert!(ical_string.contains("DTSTAMP"));
+
+        // And the model fields must parse back intact.
+        let parsed = ExportHandler::parse_ical_string(&ical_string).expect("parse");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].repeat, RepeatFrequency::Biweekly);
+        assert_eq!(
+            parsed[0].exception_dates,
+            vec![chrono::NaiveDate::from_ymd_opt(2026, 9, 24).unwrap()]
+        );
+        assert_eq!(parsed[0].alert, AlertTime::FifteenMinutes);
+        assert_eq!(parsed[0].location.as_deref(), Some("Room 42"));
+        assert_eq!(parsed[0].notes.as_deref(), Some("agenda in the notes"));
     }
 
     #[test]
