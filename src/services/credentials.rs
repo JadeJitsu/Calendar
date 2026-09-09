@@ -85,7 +85,6 @@ impl CalDavCredentials {
 
     /// Delete a stored password from the keyring. A missing entry is not an
     /// error.
-    #[allow(dead_code)] // Reserved for future account-removal flow
     pub fn delete(server_url: &str, username: &str) -> Result<(), CredentialError> {
         let entry = Self::entry(server_url, username)?;
         match entry.delete_credential() {

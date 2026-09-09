@@ -1,8 +1,9 @@
 //! Calendar management handlers (create, edit, delete, toggle, color)
 
 use crate::app::CosmicCalendar;
+use crate::calendars::{CalDavCalendar, CalendarSource, CalendarType};
 use crate::dialogs::{ActiveDialog, DialogManager};
-use crate::services::{CalendarHandler, NewCalendarData, UpdateCalendarData};
+use crate::services::{CalendarHandler, CalDavCredentials, host_of, NewCalendarData, UpdateCalendarData};
 use chrono::Local;
 use cosmic::app::Task;
 use log::{debug, error, info, warn};
@@ -184,6 +185,29 @@ pub fn handle_request_delete_calendar(app: &mut CosmicCalendar, calendar_id: Str
     );
 }
 
+/// Resolve the keyring credential key for a CalDAV calendar by id.
+///
+/// Returns `(collection_url, username)` — the same pair `store`/`load` use,
+/// so `CalDavCredentials::delete` hits the identical keyring entry
+/// (`host_of(url)@username`). `None` for non-CalDAV calendars or unknown ids.
+///
+/// Must be called *before* the source is removed from the manager.
+fn caldav_credential_key(
+    sources: &mut [Box<dyn CalendarSource>],
+    calendar_id: &str,
+) -> Option<(String, String)> {
+    let source = sources.iter_mut().find(|s| s.info().id == calendar_id)?;
+    if source.info().calendar_type != CalendarType::CalDav {
+        return None;
+    }
+    let Some(caldav) = source.as_any().downcast_ref::<CalDavCalendar>() else {
+        return None;
+    };
+    // Pull the fields out before any other borrow of `source` — `as_any()`
+    // holds a mutable borrow.
+    Some((caldav.collection_url().to_string(), caldav.username().to_string()))
+}
+
 /// Confirm and delete the calendar
 pub fn handle_confirm_delete_calendar(app: &mut CosmicCalendar) {
     // Extract data from active_dialog before closing
@@ -197,9 +221,32 @@ pub fn handle_confirm_delete_calendar(app: &mut CosmicCalendar) {
 
     debug!("handle_confirm_delete_calendar: Deleting '{}'", calendar_id);
 
+    // Resolve the keyring credential key *before* the source is removed.
+    let credential_key = caldav_credential_key(app.calendar_manager.sources_mut(), &calendar_id);
+
     match CalendarHandler::delete(&mut app.calendar_manager, &calendar_id) {
         Ok(()) => {
             info!("Calendar '{}' deleted", calendar_id);
+
+            // Clean up the keyring credential for a removed CalDAV account.
+            // A missing entry is not an error; a real failure is logged
+            // (host only) but does not block the delete.
+            if let Some((collection_url, username)) = credential_key {
+                if let Err(e) = CalDavCredentials::delete(&collection_url, &username) {
+                    error!(
+                        "CalDAV: Failed to delete keyring credential for '{}' ({}): {}",
+                        calendar_id,
+                        host_of(&collection_url),
+                        e
+                    );
+                } else {
+                    info!(
+                        "CalDAV: Removed keyring credential for '{}' ({})",
+                        calendar_id,
+                        host_of(&collection_url)
+                    );
+                }
+            }
 
             // If we deleted the selected calendar, select another one
             if app.selected_calendar_id.as_ref() == Some(&calendar_id) {
@@ -256,4 +303,50 @@ pub fn handle_export_calendar_dialog(
             }
         },
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::calendars::{CalDavCalendar, CalendarSource};
+
+    fn caldav_source(id: &str, url: &str, username: &str) -> Box<dyn CalendarSource> {
+        Box::new(
+            CalDavCalendar::new(
+                id.to_string(),
+                "Test".to_string(),
+                url.to_string(),
+                username.to_string(),
+                "secret".to_string(),
+            )
+            .expect("HTTPS CalDAV source should construct"),
+        )
+    }
+
+    #[test]
+    fn credential_key_resolves_caldav_source() {
+        let mut sources: Vec<Box<dyn CalendarSource>> =
+            vec![caldav_source("cal-1", "https://caldav.example.com/dav/user", "jdoe")];
+        let key = caldav_credential_key(&mut sources, "cal-1");
+        assert_eq!(
+            key,
+            Some((
+                "https://caldav.example.com/dav/user".to_string(),
+                "jdoe".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn credential_key_ignores_unknown_id() {
+        let mut sources: Vec<Box<dyn CalendarSource>> =
+            vec![caldav_source("cal-1", "https://caldav.example.com/dav/user", "jdoe")];
+        assert_eq!(caldav_credential_key(&mut sources, "nope"), None);
+    }
+
+    #[test]
+    fn credential_key_ignores_empty_sources() {
+        let mut sources: Vec<Box<dyn CalendarSource>> = Vec::new();
+        assert_eq!(caldav_credential_key(&mut sources, "cal-1"), None);
+    }
 }
