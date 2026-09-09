@@ -576,7 +576,7 @@ impl Application for CosmicCalendar {
 
         // Background CalDAV sync tick (every 15 minutes; the handler skips
         // when no CalDAV calendar is enabled or a sync is already running).
-        let background_sync_sub = cosmic::iced::time::every(crate::update::BACKGROUND_SYNC_INTERVAL)
+        let background_sync_sub = cosmic::iced::time::every(crate::update::background_sync_interval())
             .map(|_| Message::BackgroundSync);
 
         Subscription::batch([event_sub, timer_sub, background_sync_sub])

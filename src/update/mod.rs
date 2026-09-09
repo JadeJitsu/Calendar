@@ -1485,9 +1485,22 @@ mod background_sync_tests {
     }
 }
 
-/// How often the background CalDAV sync runs.
+/// How often the background CalDAV sync runs (default).
 pub const BACKGROUND_SYNC_INTERVAL: std::time::Duration =
     std::time::Duration::from_secs(15 * 60);
+
+/// Effective background sync interval: `BACKGROUND_SYNC_INTERVAL`, overridable
+/// via `XCAL_SYNC_INTERVAL_SECS` (whole seconds, minimum 10) for testing.
+pub fn background_sync_interval() -> std::time::Duration {
+    parse_sync_interval(std::env::var("XCAL_SYNC_INTERVAL_SECS").ok())
+}
+
+fn parse_sync_interval(raw: Option<String>) -> std::time::Duration {
+    match raw.as_deref().and_then(|s| s.trim().parse::<u64>().ok()) {
+        Some(secs) if secs >= 10 => std::time::Duration::from_secs(secs),
+        _ => BACKGROUND_SYNC_INTERVAL,
+    }
+}
 
 /// Decide whether a background CalDAV sync should run now.
 ///
@@ -1511,5 +1524,30 @@ pub(crate) fn background_sync_due(
             now.signed_duration_since(ts).num_seconds() >= BACKGROUND_SYNC_INTERVAL.as_secs() as i64
         }
         None => true,
+    }
+}
+
+#[cfg(test)]
+mod background_sync_interval_tests {
+    use super::*;
+
+    #[test]
+    fn default_interval_is_15_minutes() {
+        assert_eq!(parse_sync_interval(None), BACKGROUND_SYNC_INTERVAL);
+        assert_eq!(parse_sync_interval(Some("".to_string())), BACKGROUND_SYNC_INTERVAL);
+        assert_eq!(parse_sync_interval(Some("not-a-number".to_string())), BACKGROUND_SYNC_INTERVAL);
+    }
+
+    #[test]
+    fn parses_valid_override() {
+        assert_eq!(parse_sync_interval(Some("60".to_string())), std::time::Duration::from_secs(60));
+        assert_eq!(parse_sync_interval(Some("3600".to_string())), std::time::Duration::from_secs(3600));
+    }
+
+    #[test]
+    fn rejects_silently_too_short() {
+        // Under 10 s would hammer the server; fall back to the default.
+        assert_eq!(parse_sync_interval(Some("5".to_string())), BACKGROUND_SYNC_INTERVAL);
+        assert_eq!(parse_sync_interval(Some("0".to_string())), BACKGROUND_SYNC_INTERVAL);
     }
 }
