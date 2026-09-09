@@ -66,6 +66,21 @@ install:
     install -Dm0644 {{metainfo-src}} {{metainfo-dst}}
     install -Dm0644 {{dbus-service-src}} {{dbus-service-dst}}
 
+# Install the application to the user prefix (~/.local), no root required.
+# Creates any missing target directories and refreshes the desktop database.
+install-user:
+    @mkdir -p ~/.local/bin ~/.local/share/applications ~/.local/share/metainfo ~/.local/share/dbus-1/services
+    install -Dm0755 {{bin-src}} ~/.local/bin/{{name}}
+    # The desktop launcher's PATH does not include ~/.local/bin (only the
+    # interactive shell rc files add it), so a bare `Exec=xcalendar` fails
+    # when clicked. Rewrite it to the absolute installed path.
+    install -Dm0644 {{desktop-src}} ~/.local/share/applications/{{desktop}}
+    sed -i "s|^Exec=.*|Exec=$HOME/.local/bin/{{name}} %u|" ~/.local/share/applications/{{desktop}}
+    install -Dm0644 {{metainfo-src}} ~/.local/share/metainfo/{{metainfo}}
+    install -Dm0644 {{dbus-service-src}} ~/.local/share/dbus-1/services/{{dbus-service}}
+    @update-desktop-database ~/.local/share/applications 2>/dev/null || true
+    @echo "✅ Installed to ~/.local"
+
 # Vendor dependencies
 vendor:
     mkdir -p .cargo
