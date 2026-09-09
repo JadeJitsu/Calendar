@@ -8,8 +8,9 @@
 - [x] **Event invites (attendees)** — `ATTENDEE` ICS round-trip on the live CalDAV write path; `src/services/export_handler.rs`
 - [x] **Event search** — live cross-calendar search (summary/location/notes/invitees); `src/services/search.rs` + `src/components/search.rs`
 - [x] **CalDAV write path full serializer** — live `event_to_ical` now delegates to shared `caldav::build_event`, so recurrence/reminders/all-day/attendees survive a PUT
-- [x] **System tray icon + close-to-tray** — always-visible StatusNotifierItem (Show/Quit) on a dedicated GTK thread (libappindicator needs a running GTK loop); `close_to_tray` setting minimizes the window to the tray on close instead of exiting; `src/services/tray.rs`
+- [x] **System tray icon + close-to-tray** — always-visible StatusNotifierItem (Show/Quit) on a dedicated GTK thread (libappindicator needs a running GTK loop); `close_to_tray` setting hides the window to the tray on close instead of exiting; `src/services/tray.rs`
 - [x] **Dock icon (native build)** — fixed the app-id mismatch: the non-Flatpak build advertised `…Calendar.Devel`, which broke both the window icon lookup and the dock's window→launcher match; `APP_ID` is now always `dev.xarbit.apps.Calendar`
+- [x] **Fix tray "Show" not restoring a closed-to-tray window** — `TrayShowOrRestore` used to un-minimize the window, but Wayland's xdg-shell has no "unminimize" request (winit no-ops `set_minimized(false)`); close-to-tray now fully closes the window and Show reopens a fresh one; `src/update/mod.rs`
 
 ## Current Sprint: Event Management
 

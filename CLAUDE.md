@@ -112,7 +112,8 @@ Service handlers centralize business logic and act as middleware between the UI/
   - Always-visible tray icon with Show/Quit menu; `init_tray()` is idempotent and non-fatal
   - **Linux: the icon is built on a spawned GTK thread that runs `gtk::main()`** — the libappindicator backend only registers once a GTK loop is running, so building it on the iced UI thread leaves the tray empty with no error
   - Menu clicks cross to the UI thread via an `mpsc` channel drained by `tray_event_stream()` (an iced `Subscription`)
-  - `close_to_tray` (in `settings.rs`) gates whether a window close minimizes to tray instead of exiting
+  - `close_to_tray` (in `settings.rs`) gates whether a window close hides to tray instead of exiting
+  - `TrayMinimizeToTray`/`TrayShowOrRestore` (in `update/mod.rs`) fully close and reopen the window rather than minimize/un-minimize it — Wayland's xdg-shell has no "unminimize" request (winit's Wayland backend no-ops `set_minimized(false)`), so a minimized window could never be restored from the tray
 
 ### Constants
 - `ui_constants.rs` - UI dimensions, spacing, and color values (consolidated)
