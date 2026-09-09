@@ -111,7 +111,6 @@ This project is in **active development**. Core calendar functionality — event
 
 ### 🚧 Work In Progress
 
-- [ ] CalDAV write path for recurrence/reminders/all-day (the live `event_to_ical` PUT path currently emits summary/location/notes/url/attendees but not RRULE/EXDATE/VALARM/DTSTAMP — a fuller serializer exists in `calendar_event_to_ics` and is the refactor target)
 - [ ] Google Calendar support
 - [ ] iCloud Calendar support
 

@@ -97,9 +97,9 @@ Service handlers centralize business logic and act as middleware between the UI/
   - Detect remote calendar requirements
 
 - `services/export_handler.rs` - Import/Export + ICS round-trip
-  - `event_to_ical` — the **live** CalDAV PUT serializer (summary/location/notes/url/ATTENDEE; does NOT yet emit RRULE/EXDATE/VALARM/DTSTAMP)
+  - `event_to_ical` — the **live** CalDAV PUT serializer; delegates to `caldav::build_event` so it emits the full event (summary/location/notes/url/RRULE/EXDATE/VALARM/DTSTAMP/ATTENDEE/all-day)
   - `parse_ical_string` / `ical_event_to_calendar_event` — import (reads RRULE/EXDATE/VALARM/ATTENDEE)
-  - `calendar_event_to_ics` (in `caldav.rs`) is a fuller serializer used only in tests — the refactor target for the live write path
+  - `caldav::build_event` is the single source of truth for VEVENT serialization (used by both the live PUT path and the test-only `calendar_event_to_ics`)
 
 - `services/search.rs` - Pure event search
   - `search_events(query, (calendar_id, color, &CalendarEvent)) -> Vec<SearchResult>`

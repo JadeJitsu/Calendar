@@ -7,9 +7,7 @@
 - [x] **Settings dialog** — week numbers + background sync interval; `src/components/settings_dialog.rs`
 - [x] **Event invites (attendees)** — `ATTENDEE` ICS round-trip on the live CalDAV write path; `src/services/export_handler.rs`
 - [x] **Event search** — live cross-calendar search (summary/location/notes/invitees); `src/services/search.rs` + `src/components/search.rs`
-
-### Open from that work
-- [ ] Route the live CalDAV write path (`event_to_ical`) through the fuller `calendar_event_to_ics` serializer so recurrence/reminders/all-day survive a PUT (currently only summary/location/notes/url/attendees are written)
+- [x] **CalDAV write path full serializer** — live `event_to_ical` now delegates to shared `caldav::build_event`, so recurrence/reminders/all-day/attendees survive a PUT
 
 ## Current Sprint: Event Management
 
