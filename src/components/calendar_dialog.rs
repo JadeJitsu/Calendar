@@ -11,7 +11,7 @@ use crate::fl;
 use crate::message::Message;
 use crate::styles::color_button_style;
 use crate::ui_constants::{
-    BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_SELECTED, COLOR_BORDER_LIGHT, COLOR_BORDER_SELECTED,
+    BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_SELECTED, border_light, border_selected,
     COLOR_BUTTON_SIZE_SMALL, COLOR_DEFAULT_GRAY, SPACING_COLOR_GRID,
 };
 
@@ -52,17 +52,17 @@ pub fn render_calendar_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
             } else {
                 BORDER_WIDTH_HIGHLIGHT
             };
-            let border_color = if is_selected {
-                COLOR_BORDER_SELECTED
-            } else {
-                COLOR_BORDER_LIGHT
-            };
 
             let color_button = button::custom(
                 container(widget::text(""))
                     .width(COLOR_BUTTON_SIZE_SMALL)
                     .height(COLOR_BUTTON_SIZE_SMALL)
-                    .style(move |_theme: &cosmic::Theme| {
+                    .style(move |theme: &cosmic::Theme| {
+                        let border_color = if is_selected {
+                            border_selected(theme)
+                        } else {
+                            border_light(theme)
+                        };
                         color_button_style(color, COLOR_BUTTON_SIZE_SMALL, border_width, border_color)
                     }),
             )

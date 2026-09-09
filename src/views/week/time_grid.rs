@@ -12,7 +12,7 @@ use crate::message::Message;
 use crate::selection::SelectionState;
 use crate::styles::weekend_background;
 use crate::ui_constants::{
-    PADDING_SMALL, FONT_SIZE_SMALL, COLOR_DAY_CELL_BORDER,
+    PADDING_SMALL, FONT_SIZE_SMALL, day_cell_border,
     HOUR_ROW_HEIGHT, TIME_LABEL_WIDTH, BORDER_WIDTH_THIN, COLOR_CURRENT_TIME,
 };
 
@@ -37,7 +37,7 @@ pub fn render_time_labels_column<'a>(
             .height(Length::Fixed(HOUR_ROW_HEIGHT))
             .padding(PADDING_SMALL)
             .align_y(alignment::Vertical::Top)
-            .style(move |_theme: &cosmic::Theme| container::Style {
+            .style(move |theme: &cosmic::Theme| container::Style {
                 text_color: if is_current_hour {
                     Some(COLOR_CURRENT_TIME)
                 } else {
@@ -45,7 +45,7 @@ pub fn render_time_labels_column<'a>(
                 },
                 border: Border {
                     width: BORDER_WIDTH_THIN,
-                    color: COLOR_DAY_CELL_BORDER,
+                    color: day_cell_border(theme),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -93,13 +93,13 @@ fn render_clickable_hour_cell(date: NaiveDate, hour: u32, is_weekend: bool, is_s
                     accent.red, accent.green, accent.blue, 0.2
                 )))
             } else {
-                weekend_background(is_weekend)
+                weekend_background(theme, is_weekend)
             };
             container::Style {
                 background,
                 border: Border {
                     width: BORDER_WIDTH_THIN,
-                    color: COLOR_DAY_CELL_BORDER,
+                    color: day_cell_border(theme),
                     ..Default::default()
                 },
                 ..Default::default()

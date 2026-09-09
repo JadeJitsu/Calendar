@@ -6,15 +6,18 @@ use cosmic::widget::container;
 use crate::ui_constants::{
     SHADOW_OPACITY, SHADOW_OFFSET_X, SHADOW_OFFSET_Y, SHADOW_BLUR_RADIUS,
     BORDER_RADIUS, BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_NORMAL,
-    COLOR_DAY_CELL_BORDER, COLOR_WEEKEND_BACKGROUND, COLOR_TODAY_BLUE
+    COLOR_TODAY_BLUE
+};
+use crate::color_constants::{
+    day_cell_border, weekend_tint, adjacent_month_text,
 };
 
 /// Returns the weekend background if is_weekend is true, None otherwise.
 /// Use this instead of repeating the `if is_weekend { Some(Background::Color(...)) } else { None }` pattern.
 #[inline]
-pub fn weekend_background(is_weekend: bool) -> Option<Background> {
+pub fn weekend_background(theme: &cosmic::Theme, is_weekend: bool) -> Option<Background> {
     if is_weekend {
-        Some(Background::Color(COLOR_WEEKEND_BACKGROUND))
+        Some(Background::Color(weekend_tint(theme)))
     } else {
         None
     }
@@ -57,7 +60,7 @@ pub fn today_filled_style(theme: &cosmic::Theme) -> container::Style {
 /// Style for selected day cell - border with accent color, preserving weekend background
 pub fn selected_day_style(theme: &cosmic::Theme, is_weekend: bool) -> container::Style {
     container::Style {
-        background: weekend_background(is_weekend),
+        background: weekend_background(theme, is_weekend),
         border: Border {
             color: theme.cosmic().accent_color().into(),
             width: BORDER_WIDTH_HIGHLIGHT,
@@ -83,11 +86,11 @@ pub fn today_circle_style(_theme: &cosmic::Theme, size: f32) -> container::Style
 }
 
 /// Style for regular day cell with optional weekend background
-pub fn day_cell_style(is_weekend: bool) -> container::Style {
+pub fn day_cell_style(theme: &cosmic::Theme, is_weekend: bool) -> container::Style {
     container::Style {
-        background: weekend_background(is_weekend),
+        background: weekend_background(theme, is_weekend),
         border: Border {
-            color: COLOR_DAY_CELL_BORDER,
+            color: day_cell_border(theme),
             width: BORDER_WIDTH_NORMAL,
             radius: BORDER_RADIUS.into(),
         },
@@ -96,16 +99,16 @@ pub fn day_cell_style(is_weekend: bool) -> container::Style {
 }
 
 /// Style for adjacent month day cells (previous/next month) - grayed out
-pub fn adjacent_month_day_style() -> container::Style {
+pub fn adjacent_month_day_style(theme: &cosmic::Theme) -> container::Style {
     container::Style {
         background: None,
         border: Border {
-            color: COLOR_DAY_CELL_BORDER,
+            color: day_cell_border(theme),
             width: BORDER_WIDTH_NORMAL,
             radius: BORDER_RADIUS.into(),
         },
-        // Gray text for adjacent month days
-        text_color: Some(Color::from_rgba(0.5, 0.5, 0.5, 0.5)),
+        // Dimmed text for adjacent month days
+        text_color: Some(adjacent_month_text(theme)),
         ..Default::default()
     }
 }
@@ -119,8 +122,8 @@ pub fn adjacent_month_selected_style(theme: &cosmic::Theme) -> container::Style 
             width: BORDER_WIDTH_HIGHLIGHT,
             radius: BORDER_RADIUS.into(),
         },
-        // Gray text for adjacent month days (same as non-selected)
-        text_color: Some(Color::from_rgba(0.5, 0.5, 0.5, 0.5)),
+        // Dimmed text for adjacent month days (same as non-selected)
+        text_color: Some(adjacent_month_text(theme)),
         ..Default::default()
     }
 }
@@ -169,8 +172,8 @@ pub fn adjacent_month_selection_style(theme: &cosmic::Theme) -> container::Style
             width: BORDER_WIDTH_NORMAL,
             radius: BORDER_RADIUS.into(),
         },
-        // Gray text for adjacent month days
-        text_color: Some(Color::from_rgba(0.5, 0.5, 0.5, 0.5)),
+        // Dimmed text for adjacent month days
+        text_color: Some(adjacent_month_text(theme)),
         ..Default::default()
     }
 }
@@ -178,12 +181,12 @@ pub fn adjacent_month_selection_style(theme: &cosmic::Theme) -> container::Style
 /// Style for a grid cell with border and optional weekend background
 /// Used in time grid rendering for hour slots
 #[allow(dead_code)] // Reserved for future time grid customization
-pub fn grid_cell_style(is_weekend: bool) -> container::Style {
+pub fn grid_cell_style(theme: &cosmic::Theme, is_weekend: bool) -> container::Style {
     container::Style {
-        background: weekend_background(is_weekend),
+        background: weekend_background(theme, is_weekend),
         border: Border {
             width: BORDER_WIDTH_NORMAL,
-            color: COLOR_DAY_CELL_BORDER,
+            color: day_cell_border(theme),
             ..Default::default()
         },
         ..Default::default()
@@ -192,11 +195,11 @@ pub fn grid_cell_style(is_weekend: bool) -> container::Style {
 
 /// Style for a bordered cell without weekend background
 /// Used for time labels and header cells
-pub fn bordered_cell_style() -> container::Style {
+pub fn bordered_cell_style(theme: &cosmic::Theme) -> container::Style {
     container::Style {
         border: Border {
             width: BORDER_WIDTH_NORMAL,
-            color: COLOR_DAY_CELL_BORDER,
+            color: day_cell_border(theme),
             ..Default::default()
         },
         ..Default::default()
@@ -209,14 +212,15 @@ pub fn drag_target_style(theme: &cosmic::Theme, is_weekend: bool) -> container::
     let accent = theme.cosmic().accent_color();
     // Highlight background to show this is the drop target
     let target_bg = Color::from_rgba(accent.red, accent.green, accent.blue, 0.25);
+    let weekend_bg = weekend_tint(theme);
 
     container::Style {
         background: Some(Background::Color(if is_weekend {
             // Blend with weekend background
             Color::from_rgba(
-                (COLOR_WEEKEND_BACKGROUND.r + target_bg.r) / 2.0,
-                (COLOR_WEEKEND_BACKGROUND.g + target_bg.g) / 2.0,
-                (COLOR_WEEKEND_BACKGROUND.b + target_bg.b) / 2.0,
+                (weekend_bg.r + target_bg.r) / 2.0,
+                (weekend_bg.g + target_bg.g) / 2.0,
+                (weekend_bg.b + target_bg.b) / 2.0,
                 0.5,
             )
         } else {

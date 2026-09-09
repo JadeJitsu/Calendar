@@ -9,7 +9,7 @@ use crate::locale::LocalePreferences;
 use crate::message::Message;
 use crate::styles::weekend_background;
 use crate::ui_constants::{
-    PADDING_SMALL, FONT_SIZE_SMALL, COLOR_DAY_CELL_BORDER,
+    PADDING_SMALL, FONT_SIZE_SMALL, day_cell_border,
     HOUR_ROW_HEIGHT, TIME_LABEL_WIDTH, BORDER_WIDTH_THIN
 };
 
@@ -60,10 +60,10 @@ pub fn render_time_grid(
             .height(Length::Fixed(HOUR_ROW_HEIGHT))
             .padding(PADDING_SMALL)
             .align_y(alignment::Vertical::Top)
-            .style(|_theme: &cosmic::Theme| container::Style {
+            .style(|theme: &cosmic::Theme| container::Style {
                 border: Border {
                     width: BORDER_WIDTH_THIN,
-                    color: COLOR_DAY_CELL_BORDER,
+                    color: day_cell_border(theme),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -78,11 +78,11 @@ pub fn render_time_grid(
                 container(widget::text(""))
                     .width(Length::Fill)
                     .height(Length::Fixed(HOUR_ROW_HEIGHT))
-                    .style(move |_theme: &cosmic::Theme| container::Style {
-                        background: weekend_background(is_weekend),
+                    .style(move |theme: &cosmic::Theme| container::Style {
+                        background: weekend_background(theme, is_weekend),
                         border: Border {
                             width: BORDER_WIDTH_THIN,
-                            color: COLOR_DAY_CELL_BORDER,
+                            color: day_cell_border(theme),
                             ..Default::default()
                         },
                         ..Default::default()

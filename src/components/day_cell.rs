@@ -49,7 +49,7 @@ fn apply_day_cell_style<'a>(
     } else if is_in_selection {
         base.style(move |theme: &cosmic::Theme| selection_highlight_style(theme, is_weekend))
     } else {
-        base.style(move |_theme: &cosmic::Theme| day_cell_style(is_weekend))
+        base.style(move |theme: &cosmic::Theme| day_cell_style(theme, is_weekend))
     }
 }
 
@@ -232,7 +232,7 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                     .padding(PADDING_DAY_CELL_VERTICAL)
                     .width(Length::Fill)
                     .height(Length::Fill)
-                    .style(|_theme: &cosmic::Theme| adjacent_month_day_style())
+                    .style(|theme: &cosmic::Theme| adjacent_month_day_style(theme))
                     .into()
             }
         } else {

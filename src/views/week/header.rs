@@ -19,7 +19,7 @@ use crate::message::Message;
 use crate::models::WeekState;
 use crate::styles::{today_filled_style, weekend_background};
 use crate::ui_constants::{
-    PADDING_SMALL, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, COLOR_DAY_CELL_BORDER,
+    PADDING_SMALL, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, day_cell_border,
     TIME_LABEL_WIDTH, BORDER_WIDTH_THIN, SPACING_TINY, BORDER_RADIUS,
 };
 
@@ -63,11 +63,11 @@ pub fn render_header_section<'a>(
                 .height(Length::Fixed(DAY_HEADER_HEIGHT))
                 .padding(PADDING_SMALL)
                 .center_x(Length::Fill)
-                .style(move |_theme: &cosmic::Theme| container::Style {
-                    background: weekend_background(is_weekend),
+                .style(move |theme: &cosmic::Theme| container::Style {
+                    background: weekend_background(theme, is_weekend),
                     border: Border {
                         width: BORDER_WIDTH_THIN,
-                        color: COLOR_DAY_CELL_BORDER,
+                        color: day_cell_border(theme),
                         ..Default::default()
                     },
                     ..Default::default()
@@ -124,10 +124,10 @@ fn render_all_day_section<'a>(
         .height(Length::Fixed(height))
         .padding(PADDING_SMALL)
         .align_y(alignment::Vertical::Top)
-        .style(|_theme: &cosmic::Theme| container::Style {
+        .style(|theme: &cosmic::Theme| container::Style {
             border: Border {
                 width: BORDER_WIDTH_THIN,
-                color: COLOR_DAY_CELL_BORDER,
+                color: day_cell_border(theme),
                 ..Default::default()
             },
             ..Default::default()
@@ -146,11 +146,11 @@ fn render_all_day_section<'a>(
             .width(Length::Fill)
             .height(Length::Fixed(height))
             .padding([2, 2])
-            .style(move |_theme: &cosmic::Theme| container::Style {
-                background: weekend_background(is_weekend),
+            .style(move |theme: &cosmic::Theme| container::Style {
+                background: weekend_background(theme, is_weekend),
                 border: Border {
                     width: BORDER_WIDTH_THIN,
-                    color: COLOR_DAY_CELL_BORDER,
+                    color: day_cell_border(theme),
                     ..Default::default()
                 },
                 ..Default::default()

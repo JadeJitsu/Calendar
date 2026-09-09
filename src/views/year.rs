@@ -10,7 +10,7 @@ use crate::message::Message;
 use crate::models::YearState;
 use crate::ui_constants::{
     BORDER_RADIUS, FONT_SIZE_SMALL, PADDING_SMALL, PADDING_MEDIUM, PADDING_TINY,
-    SPACING_MEDIUM, SPACING_SMALL, SPACING_XXS, COLOR_DAY_CELL_BORDER, BORDER_WIDTH_THIN
+    SPACING_MEDIUM, SPACING_SMALL, SPACING_XXS, day_cell_border, BORDER_WIDTH_THIN
 };
 
 // Minimum size for month boxes - ensures all content is readable
@@ -205,11 +205,11 @@ fn render_mini_month(
     container(mini_calendar)
         .width(Length::Fixed(box_size))
         .height(Length::Fixed(box_size))
-        .style(|_theme: &cosmic::Theme| {
+        .style(|theme: &cosmic::Theme| {
             container::Style {
                 border: Border {
                     width: BORDER_WIDTH_THIN,
-                    color: COLOR_DAY_CELL_BORDER,
+                    color: day_cell_border(theme),
                     radius: 8.0.into(),
                 },
                 ..Default::default()

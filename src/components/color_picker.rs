@@ -10,7 +10,7 @@ use crate::styles::color_button_style;
 use crate::ui_constants::{
     COLOR_BUTTON_SIZE_SMALL, COLOR_BUTTON_SIZE_MEDIUM, COLOR_BUTTON_SIZE_LARGE,
     SPACING_COLOR_GRID, SPACING_COLOR_CONTAINER, PADDING_STANDARD,
-    COLOR_DEFAULT_GRAY, COLOR_BORDER_LIGHT, COLOR_BORDER_SELECTED,
+    COLOR_DEFAULT_GRAY, border_light, border_selected,
     BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_SELECTED
 };
 
@@ -73,8 +73,8 @@ pub fn render_color_indicator<'a>(
         container(widget::text(""))
             .width(size)
             .height(size)
-            .style(move |_theme: &cosmic::Theme| {
-                color_button_style(color, size, BORDER_WIDTH_HIGHLIGHT, COLOR_BORDER_LIGHT)
+            .style(move |theme: &cosmic::Theme| {
+                color_button_style(color, size, BORDER_WIDTH_HIGHLIGHT, border_light(theme))
             })
     )
     .on_press(Message::ToggleColorPicker(calendar_id))
@@ -100,8 +100,8 @@ pub fn render_color_palette<'a>(calendar_id: String) -> Element<'a, Message> {
                 container(widget::text(""))
                     .width(COLOR_BUTTON_SIZE_MEDIUM)
                     .height(COLOR_BUTTON_SIZE_MEDIUM)
-                    .style(move |_theme: &cosmic::Theme| {
-                        color_button_style(color, COLOR_BUTTON_SIZE_MEDIUM, BORDER_WIDTH_HIGHLIGHT, COLOR_BORDER_LIGHT)
+                    .style(move |theme: &cosmic::Theme| {
+                        color_button_style(color, COLOR_BUTTON_SIZE_MEDIUM, BORDER_WIDTH_HIGHLIGHT, border_light(theme))
                     })
             )
             .on_press(Message::ChangeCalendarColor(calendar_id_clone, hex_owned))
@@ -141,13 +141,17 @@ pub fn render_quick_color_picker<'a>(
             let is_selected = current_color == hex;
 
             let border_width = if is_selected { BORDER_WIDTH_SELECTED } else { BORDER_WIDTH_HIGHLIGHT };
-            let border_color = if is_selected { COLOR_BORDER_SELECTED } else { COLOR_BORDER_LIGHT };
 
             let color_button = button::custom(
                 container(widget::text(""))
                     .width(COLOR_BUTTON_SIZE_SMALL)
                     .height(COLOR_BUTTON_SIZE_SMALL)
-                    .style(move |_theme: &cosmic::Theme| {
+                    .style(move |theme: &cosmic::Theme| {
+                        let border_color = if is_selected {
+                            border_selected(theme)
+                        } else {
+                            border_light(theme)
+                        };
                         color_button_style(color, COLOR_BUTTON_SIZE_SMALL, border_width, border_color)
                     })
             )

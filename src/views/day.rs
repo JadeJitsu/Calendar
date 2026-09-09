@@ -50,7 +50,7 @@ fn render_all_day_section(day_state: &DayState) -> Element<'static, Message> {
             .width(Length::Fill)
             .height(Length::Fixed(ALL_DAY_HEADER_HEIGHT))
             .padding(PADDING_SMALL)
-            .style(|_theme: &cosmic::Theme| bordered_cell_style())
+            .style(|theme: &cosmic::Theme| bordered_cell_style(theme))
     );
 
     header_row.into()
