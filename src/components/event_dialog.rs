@@ -309,13 +309,30 @@ pub fn render_event_dialog<'a>(
         RepeatFrequency::Never,
         RepeatFrequency::Daily,
         RepeatFrequency::Weekly,
+        RepeatFrequency::Biweekly,
         RepeatFrequency::Monthly,
         RepeatFrequency::Yearly,
+        RepeatFrequency::Custom(String::new()),
     ];
+
+    /// Compare two RepeatFrequency values by variant only, so a
+    /// `Custom("FREQ=...")` still highlights the `Custom` button.
+    fn same_repeat_variant(a: &RepeatFrequency, b: &RepeatFrequency) -> bool {
+        matches!(
+            (a, b),
+            (RepeatFrequency::Never, RepeatFrequency::Never)
+                | (RepeatFrequency::Daily, RepeatFrequency::Daily)
+                | (RepeatFrequency::Weekly, RepeatFrequency::Weekly)
+                | (RepeatFrequency::Biweekly, RepeatFrequency::Biweekly)
+                | (RepeatFrequency::Monthly, RepeatFrequency::Monthly)
+                | (RepeatFrequency::Yearly, RepeatFrequency::Yearly)
+                | (RepeatFrequency::Custom(_), RepeatFrequency::Custom(_))
+        )
+    }
 
     let mut repeat_buttons = row([]).spacing(4);
     for opt in repeat_options.iter() {
-        let is_selected = &state.repeat == opt;
+        let is_selected = same_repeat_variant(&state.repeat, opt);
         let opt_clone = opt.clone();
         repeat_buttons = repeat_buttons.push(
             button::custom(text(repeat_label(opt)).size(12))
@@ -329,6 +346,66 @@ pub fn render_event_dialog<'a>(
         );
     }
 
+    // Custom RRULE text input, shown only when Custom is selected
+    let repeat_control: Element<'_, Message> = if matches!(state.repeat, RepeatFrequency::Custom(_)) {
+        let rrule_input = widget::text_input(fl!("repeat-custom-rrule-placeholder"), &state.custom_rrule_input)
+            .on_input(|s| Message::EventDialogCustomRruleChanged(s))
+            .width(Length::Fill);
+        column([])
+            .spacing(4)
+            .push(repeat_buttons)
+            .push(rrule_input)
+            .into()
+    } else {
+        repeat_buttons.into()
+    };
+
+    // Repeat-until (UNTIL) row, shown when the event repeats
+    let repeat_until_row: Option<Element<'_, Message>> =
+        if !matches!(state.repeat, RepeatFrequency::Never) {
+            let until_text = text(&state.repeat_until_input).width(Length::Fixed(100.0));
+            let until_btn = button::custom(
+                row([])
+                    .spacing(8)
+                    .align_y(cosmic::iced::Alignment::Center)
+                    .push(until_text)
+                    .push(widget::icon::from_name("x-office-calendar-symbolic").size(16)),
+            )
+            .on_press(Message::EventDialogToggleRepeatUntilPicker)
+            .padding([4, 8])
+            .class(cosmic::theme::Button::Standard);
+
+            let until_with_picker: Element<'_, Message> = if state.repeat_until_picker_open {
+                let until_popup = container(
+                    calendar(
+                        &state.repeat_until_calendar,
+                        Message::EventDialogRepeatUntilChanged,
+                        || Message::EventDialogRepeatUntilCalendarPrev,
+                        || Message::EventDialogRepeatUntilCalendarNext,
+                        Weekday::Monday,
+                    )
+                )
+                .style(popup_container_style);
+                popover(until_btn)
+                    .popup(until_popup)
+                    .on_close(Message::EventDialogToggleRepeatUntilPicker)
+                    .into()
+            } else {
+                until_btn.into()
+            };
+
+            Some(
+                row([])
+                    .spacing(8)
+                    .align_y(cosmic::iced::Alignment::Center)
+                    .push(text(fl!("event-repeat-until")).size(12))
+                    .push(until_with_picker)
+                    .into(),
+            )
+        } else {
+            None
+        };
+
     let schedule_section = settings::section()
         .title(fl!("event-schedule-section"))
         .add(
@@ -337,7 +414,14 @@ pub fn render_event_dialog<'a>(
         )
         .add(
             settings::item::builder(fl!("event-repeat"))
-                .control(repeat_buttons),
+                .control(repeat_control),
+        )
+        .add(
+            settings::item::builder(fl!("event-repeat-until"))
+                .control(
+                    repeat_until_row
+                        .unwrap_or_else(|| widget::text("").into()),
+                ),
         );
 
     // === Calendar Section ===

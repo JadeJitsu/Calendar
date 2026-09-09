@@ -90,6 +90,16 @@ pub struct EventDialogState {
     pub travel_time: crate::caldav::TravelTime,
     /// Repeat/recurrence settings
     pub repeat: crate::caldav::RepeatFrequency,
+    /// Optional end date for the recurrence (emitted as RRULE UNTIL)
+    pub repeat_until: Option<chrono::NaiveDate>,
+    /// Repeat-until input buffer (for editing)
+    pub repeat_until_input: String,
+    /// Whether the repeat-until calendar picker is open
+    pub repeat_until_picker_open: bool,
+    /// Calendar model for the repeat-until picker
+    pub repeat_until_calendar: CalendarModel,
+    /// Custom RRULE text input buffer (used when repeat is Custom)
+    pub custom_rrule_input: String,
     /// Selected calendar ID for the event
     pub calendar_id: String,
     /// Invitees (email addresses)

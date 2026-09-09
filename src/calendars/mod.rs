@@ -280,14 +280,53 @@ impl CalendarManager {
         // Determine the end date for recurrence
         let recurrence_end = event.repeat_until.unwrap_or(range_end);
 
-        // Start from the event's start date or range_start, whichever is later
-        let mut current_date = if event_start_date < range_start {
-            // Fast-forward to first occurrence within range
-            // This is a simplification - ideal would be to calculate exact first occurrence
-            event_start_date
-        } else {
-            event_start_date
-        };
+        // Start from the event's start date, fast-forwarding to the first
+        // occurrence at or after range_start for the simple frequencies.
+        // Without this, a daily event that started >1000 days before the
+        // range would hit the iteration cap and return nothing.
+        //
+        // For month/year steps we jump to the k-th occurrence with a single
+        // `checked_add_months` and then step forward at most `interval`
+        // times: each step is defined relative to the previous date, and
+        // `checked_add_months` is not compositional (Jan 31 + 2 months =
+        // Mar 31, but two single-month steps land on Mar 28), so the jump
+        // must be one addition from the start date, followed by normal steps.
+        let mut current_date = event_start_date;
+        if range_start > current_date {
+            current_date = match &event.repeat {
+                RepeatFrequency::Daily => range_start,
+                RepeatFrequency::Weekly => {
+                    let weeks = ((range_start - event_start_date).num_days() + 6) / 7;
+                    event_start_date + Duration::weeks(weeks)
+                }
+                RepeatFrequency::Biweekly => {
+                    let weeks = ((range_start - event_start_date).num_days() + 13) / 14;
+                    event_start_date + Duration::weeks(weeks * 2)
+                }
+                RepeatFrequency::Monthly | RepeatFrequency::Yearly => {
+                    let step_months = match event.repeat {
+                        RepeatFrequency::Monthly => 1,
+                        _ => 12,
+                    };
+                    let start_months =
+                        i64::from(event_start_date.year()) * 12 + i64::from(event_start_date.month());
+                    let range_months =
+                        i64::from(range_start.year()) * 12 + i64::from(range_start.month());
+                    let k = ((range_months - start_months).max(0) / step_months) * step_months;
+                    let mut d = event_start_date
+                        .checked_add_months(Months::new(k as u32))
+                        .unwrap_or(event_start_date);
+                    while d < range_start {
+                        d = d
+                            .checked_add_months(Months::new(step_months as u32))
+                            .unwrap_or(d + Duration::days(30 * step_months));
+                    }
+                    d
+                }
+                // Custom rules have no closed-form step; iterate as before.
+                _ => current_date,
+            };
+        }
 
         // Limit iterations to prevent infinite loops (max 1000 occurrences per query)
         let max_iterations = 1000;
@@ -327,7 +366,7 @@ impl CalendarManager {
                         .unwrap_or(current_date + Duration::days(365))
                 },
                 RepeatFrequency::Custom(rrule) => {
-                    match Self::next_custom_occurrence(current_date, rrule) {
+                    match Self::next_custom_occurrence(current_date, event_start_date, rrule) {
                         Some(next) => next,
                         None => break,
                     }
@@ -340,11 +379,22 @@ impl CalendarManager {
     }
 
     /// Compute the next occurrence date for a `Custom` RRULE string, or `None`
-    /// if the rule is unparseable (which stops the expansion loop). Supports
-    /// the common `FREQ` values with an optional `INTERVAL`; anything else
-    /// (e.g. `BYDAY`/`BYMONTHDAY` week-by-week rules) is not modelled and stops
-    /// expansion rather than guessing.
-    fn next_custom_occurrence(current_date: NaiveDate, rrule: &str) -> Option<NaiveDate> {
+    /// if the rule is unparseable (which stops the expansion loop).
+    /// `start_date` is the event's DTSTART date — the anchor that `INTERVAL`
+    /// is relative to, per RFC 5545. Supports:
+    /// - `FREQ=DAILY|WEEKLY|MONTHLY|YEARLY` with optional `INTERVAL`
+    /// - `FREQ=WEEKLY;BYDAY=MO,TU,...` — listed weekdays in order, only in
+    ///   weeks that are a multiple of `interval` weeks after the start week
+    /// - `FREQ=MONTHLY;BYMONTHDAY=n[,n...]` — listed day(s) of month, in
+    ///   months a multiple of `interval` months after the start month
+    /// - `FREQ=YEARLY;BYMONTH=m;BYMONTHDAY=n` — n-th of month m, in years a
+    ///   multiple of `interval` years after the start year
+    /// Rules without a `FREQ` component stop expansion rather than guessing.
+    fn next_custom_occurrence(
+        current_date: NaiveDate,
+        start_date: NaiveDate,
+        rrule: &str,
+    ) -> Option<NaiveDate> {
         let upper = rrule.to_ascii_uppercase();
         let parts: Vec<&str> = upper.split(';').collect();
         let freq = parts
@@ -357,17 +407,138 @@ impl CalendarManager {
             .and_then(|p| p.strip_prefix("INTERVAL="))
             .and_then(|s| s.parse::<u32>().ok())
             .unwrap_or(1)
-            .max(1);
+            .max(1) as i64;
+        let byday = parts
+            .iter()
+            .find(|p| p.starts_with("BYDAY="))
+            .and_then(|p| p.strip_prefix("BYDAY="));
+        let bymonthday = parts
+            .iter()
+            .find(|p| p.starts_with("BYMONTHDAY="))
+            .and_then(|p| p.strip_prefix("BYMONTHDAY="));
+        let bymonth = parts
+            .iter()
+            .find(|p| p.starts_with("BYMONTH="))
+            .and_then(|p| p.strip_prefix("BYMONTH="));
 
         match freq {
-            "DAILY" => Some(current_date + Duration::days(interval as i64)),
-            "WEEKLY" => Some(current_date + Duration::weeks(interval as i64)),
-            "MONTHLY" => current_date
-                .checked_add_months(Months::new(interval))
-                .or_else(|| Some(current_date + Duration::days(30 * interval as i64))),
-            "YEARLY" => current_date
-                .checked_add_months(Months::new(12 * interval))
-                .or_else(|| Some(current_date + Duration::days(365 * interval as i64))),
+            "DAILY" => Some(current_date + Duration::days(interval)),
+            "WEEKLY" => match byday {
+                Some(days) if !days.is_empty() => {
+                    let weekdays: Vec<chrono::Weekday> = days
+                        .split(',')
+                        .filter_map(|d| match d.trim() {
+                            "MO" => Some(chrono::Weekday::Mon),
+                            "TU" => Some(chrono::Weekday::Tue),
+                            "WE" => Some(chrono::Weekday::Wed),
+                            "TH" => Some(chrono::Weekday::Thu),
+                            "FR" => Some(chrono::Weekday::Fri),
+                            "SA" => Some(chrono::Weekday::Sat),
+                            "SU" => Some(chrono::Weekday::Sun),
+                            _ => None,
+                        })
+                        .collect();
+                    if weekdays.is_empty() {
+                        None
+                    } else {
+                        // Week index of a date = weeks between its
+                        // week-starting Monday and the start date's Monday.
+                        // (A plain day-difference from DTSTART is wrong when
+                        // DTSTART is not a Monday.)
+                        let start_monday = start_date - Duration::days(
+                            start_date.weekday().num_days_from_monday() as i64,
+                        );
+                        // Advance day by day to the next listed weekday in an
+                        // in-cycle week. Bounded: one full cycle plus a week.
+                        let mut d = current_date;
+                        for _ in 0..7 * interval + 7 {
+                            d = d + Duration::days(1);
+                            let d_monday = d - Duration::days(d.weekday().num_days_from_monday() as i64);
+                            let week_idx = (d_monday - start_monday).num_days() / 7;
+                            if week_idx % interval == 0 && weekdays.contains(&d.weekday()) {
+                                return Some(d);
+                            }
+                        }
+                        None
+                    }
+                }
+                _ => Some(current_date + Duration::weeks(interval)),
+            },
+            "MONTHLY" => match bymonthday {
+                Some(days) => {
+                    let days: Vec<i64> = days
+                        .split(',')
+                        .filter_map(|d| d.trim().parse::<i64>().ok())
+                        .collect();
+                    if days.is_empty() {
+                        None
+                    } else {
+                        let start_idx =
+                            i64::from(start_date.year()) * 12 + i64::from(start_date.month());
+                        let mut idx =
+                            i64::from(current_date.year()) * 12 + i64::from(current_date.month());
+                        // Bounded: one full interval cycle plus a year.
+                        for _ in 0..interval + 12 {
+                            if (idx - start_idx) % interval == 0 {
+                                let y = ((idx - 1) / 12) as i32;
+                                let m = ((idx - 1) % 12 + 1) as u32;
+                                for &dy in &days {
+                                    let dim = NaiveDate::from_ymd_opt(y, m, 1)
+                                        .map(|d| d.num_days_in_month() as i64)
+                                        .unwrap_or(31);
+                                    if dy > dim {
+                                        continue;
+                                    }
+                                    if let Some(c) = NaiveDate::from_ymd_opt(y, m, dy as u32) {
+                                        if c > current_date {
+                                            return Some(c);
+                                        }
+                                    }
+                                }
+                            }
+                            idx += 1;
+                        }
+                        None
+                    }
+                }
+                _ => current_date
+                    .checked_add_months(Months::new(interval as u32))
+                    .or_else(|| Some(current_date + Duration::days(30 * interval))),
+            },
+            "YEARLY" => {
+                let month = bymonth
+                    .and_then(|m| m.split(',').next())
+                    .and_then(|m| m.trim().parse::<i64>().ok());
+                let day = bymonthday
+                    .and_then(|d| d.split(',').next())
+                    .and_then(|d| d.trim().parse::<i64>().ok());
+                match (month, day) {
+                    (Some(m), Some(dy)) if (1..=12).contains(&m) && (1..=31).contains(&dy) => {
+                        let start_year = start_date.year();
+                        let mut y = current_date.year();
+                        // Bounded: one full interval cycle plus two years.
+                        for _ in 0..interval as i32 + 2 {
+                            if (y - start_year) % interval as i32 == 0 {
+                                let dim = NaiveDate::from_ymd_opt(y, m as u32, 1)
+                                    .map(|d| d.num_days_in_month() as i64)
+                                    .unwrap_or(31);
+                                if dy <= dim {
+                                    if let Some(c) = NaiveDate::from_ymd_opt(y, m as u32, dy as u32) {
+                                        if c > current_date {
+                                            return Some(c);
+                                        }
+                                    }
+                                }
+                            }
+                            y += 1;
+                        }
+                        None
+                    }
+                    _ => current_date
+                        .checked_add_months(Months::new(12 * interval as u32))
+                        .or_else(|| Some(current_date + Duration::days(365 * interval))),
+                }
+            }
             _ => None,
         }
     }
@@ -723,6 +894,142 @@ mod tests {
         assert_eq!(
             occurrences[0].0,
             NaiveDate::from_ymd_opt(2026, 9, 1).unwrap()
+        );
+    }
+
+    /// `FREQ=WEEKLY;BYDAY=MO,WE,FR`: DTSTART is always the first occurrence
+    /// (2026-09-01 is a Tuesday), then the listed weekdays in order.
+    #[test]
+    fn test_expand_custom_weekly_byday() {
+        let event = custom_event("FREQ=WEEKLY;BYDAY=MO,WE,FR", vec![]);
+        let range_start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let range_end = NaiveDate::from_ymd_opt(2026, 9, 15).unwrap();
+        let occurrences = CalendarManager::expand_recurring_event(&event, range_start, range_end);
+        let dates: Vec<NaiveDate> = occurrences.iter().map(|(d, _)| *d).collect();
+        assert_eq!(
+            dates,
+            vec![
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),  // DTSTART (Tue)
+                NaiveDate::from_ymd_opt(2026, 9, 2).unwrap(),  // Wed
+                NaiveDate::from_ymd_opt(2026, 9, 4).unwrap(),  // Fri
+                NaiveDate::from_ymd_opt(2026, 9, 7).unwrap(),  // Mon
+                NaiveDate::from_ymd_opt(2026, 9, 9).unwrap(),  // Wed
+                NaiveDate::from_ymd_opt(2026, 9, 11).unwrap(), // Fri
+                NaiveDate::from_ymd_opt(2026, 9, 14).unwrap(), // Mon
+            ]
+        );
+    }
+
+    /// `FREQ=WEEKLY;INTERVAL=2;BYDAY=MO`: occurrences only in every second
+    /// week, counted from the week containing DTSTART (2026-09-01, a Tuesday,
+    /// is in the week of Aug 31). Mondays of weeks 2 and 4: Sep 14, Sep 28.
+    #[test]
+    fn test_expand_custom_weekly_byday_interval_2() {
+        let event = custom_event("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO", vec![]);
+        let range_start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let range_end = NaiveDate::from_ymd_opt(2026, 10, 10).unwrap();
+        let occurrences = CalendarManager::expand_recurring_event(&event, range_start, range_end);
+        let dates: Vec<NaiveDate> = occurrences.iter().map(|(d, _)| *d).collect();
+        assert_eq!(
+            dates,
+            vec![
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),  // DTSTART (Tue)
+                NaiveDate::from_ymd_opt(2026, 9, 14).unwrap(), // Mon, week 2
+                NaiveDate::from_ymd_opt(2026, 9, 28).unwrap(), // Mon, week 4
+            ]
+        );
+    }
+
+    /// `FREQ=MONTHLY;BYMONTHDAY=15`: DTSTART first, then the 15th of each month.
+    #[test]
+    fn test_expand_custom_monthly_bymonthday() {
+        let event = custom_event("FREQ=MONTHLY;BYMONTHDAY=15", vec![]);
+        let range_start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let range_end = NaiveDate::from_ymd_opt(2026, 11, 30).unwrap();
+        let occurrences = CalendarManager::expand_recurring_event(&event, range_start, range_end);
+        let dates: Vec<NaiveDate> = occurrences.iter().map(|(d, _)| *d).collect();
+        assert_eq!(
+            dates,
+            vec![
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),  // DTSTART
+                NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 10, 15).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 11, 15).unwrap(),
+            ]
+        );
+    }
+
+    /// `FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=1`: DTSTART first, then Mar 1 each year.
+    #[test]
+    fn test_expand_custom_yearly_bymonth_bymonthday() {
+        let event = custom_event("FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=1", vec![]);
+        let range_start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let range_end = NaiveDate::from_ymd_opt(2027, 6, 30).unwrap();
+        let occurrences = CalendarManager::expand_recurring_event(&event, range_start, range_end);
+        let dates: Vec<NaiveDate> = occurrences.iter().map(|(d, _)| *d).collect();
+        assert_eq!(
+            dates,
+            vec![
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(), // DTSTART
+                NaiveDate::from_ymd_opt(2027, 3, 1).unwrap(),
+            ]
+        );
+    }
+
+    /// A daily event whose start is >1000 days before the range must still
+    /// expand within the range — expansion fast-forwards instead of iterating
+    /// from the start date (which would hit the 1000-iteration cap and return
+    /// nothing).
+    #[test]
+    fn test_expand_fast_forwards_past_iteration_cap() {
+        let mut event = custom_event("FREQ=DAILY", vec![]);
+        event.repeat = RepeatFrequency::Daily;
+        event.start = chrono::DateTime::parse_from_rfc3339("2023-01-01T10:00:00Z")
+            .unwrap()
+            .with_timezone(&chrono::Utc);
+        event.end = chrono::DateTime::parse_from_rfc3339("2023-01-01T11:00:00Z")
+            .unwrap()
+            .with_timezone(&chrono::Utc);
+        let range_start = NaiveDate::from_ymd_opt(2026, 9, 1).unwrap();
+        let range_end = NaiveDate::from_ymd_opt(2026, 9, 5).unwrap();
+        let occurrences = CalendarManager::expand_recurring_event(&event, range_start, range_end);
+        let dates: Vec<NaiveDate> = occurrences.iter().map(|(d, _)| *d).collect();
+        assert_eq!(
+            dates,
+            vec![
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 2).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 3).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 4).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 5).unwrap(),
+            ]
+        );
+    }
+
+    /// A weekly event far in the past: occurrences land on the same weekday
+    /// as the start date (2023-01-02 is a Monday).
+    #[test]
+    fn test_expand_weekly_far_future_range() {
+        let mut event = custom_event("FREQ=WEEKLY", vec![]);
+        event.repeat = RepeatFrequency::Weekly;
+        event.start = chrono::DateTime::parse_from_rfc3339("2023-01-02T10:00:00Z")
+            .unwrap()
+            .with_timezone(&chrono::Utc);
+        event.end = chrono::DateTime::parse_from_rfc3339("2023-01-02T11:00:00Z")
+            .unwrap()
+            .with_timezone(&chrono::Utc);
+        let range_start = NaiveDate::from_ymd_opt(2026, 9, 7).unwrap();
+        let range_end = NaiveDate::from_ymd_opt(2026, 9, 28).unwrap();
+        let occurrences = CalendarManager::expand_recurring_event(&event, range_start, range_end);
+        let dates: Vec<NaiveDate> = occurrences.iter().map(|(d, _)| *d).collect();
+        assert_eq!(
+            dates,
+            vec![
+                NaiveDate::from_ymd_opt(2026, 9, 7).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 14).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 21).unwrap(),
+                NaiveDate::from_ymd_opt(2026, 9, 28).unwrap(),
+            ]
         );
     }
 }

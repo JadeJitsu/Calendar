@@ -449,6 +449,11 @@ pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
             .unwrap_or_else(|| "10:00".to_string()),
         travel_time: TravelTime::None,
         repeat: RepeatFrequency::Never,
+        repeat_until: None,
+        repeat_until_input: String::new(),
+        repeat_until_picker_open: false,
+        repeat_until_calendar: CalendarModel::new(crate::dates::to_jiff(today), crate::dates::to_jiff(today)),
+        custom_rrule_input: String::new(),
         calendar_id,
         invitees: vec![],
         invitee_input: String::new(),
@@ -514,7 +519,21 @@ pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, calendar_id: Stri
             .map(|t| t.format("%H:%M").to_string())
             .unwrap_or_else(|| "10:00".to_string()),
         travel_time: event.travel_time,
-        repeat: event.repeat,
+        repeat: event.repeat.clone(),
+        repeat_until: event.repeat_until,
+        repeat_until_input: event
+            .repeat_until
+            .map(|d| d.format("%Y-%m-%d").to_string())
+            .unwrap_or_default(),
+        repeat_until_picker_open: false,
+        repeat_until_calendar: CalendarModel::new(
+            crate::dates::to_jiff(event.repeat_until.unwrap_or(start_date)),
+            crate::dates::to_jiff(event.repeat_until.unwrap_or(start_date)),
+        ),
+        custom_rrule_input: match &event.repeat {
+            RepeatFrequency::Custom(rrule) => rrule.clone(),
+            _ => String::new(),
+        },
         calendar_id,
         invitees: event.invitees,
         invitee_input: String::new(),
@@ -573,6 +592,13 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) -> Task<Message> {
     let start = Utc.from_utc_datetime(&dialog.start_date.and_time(start_time));
     let end = Utc.from_utc_datetime(&dialog.end_date.and_time(end_time));
 
+    // A Custom rule is only kept if its RRULE text is non-empty and well-formed
+    // (starts with FREQ=); otherwise fall back to Never. `repeat_until` is
+    // dropped for non-repeating events.
+    let resolved_repeat = crate::caldav::resolve_custom_rrule(&dialog.repeat);
+    let resolved_repeat_until =
+        if matches!(resolved_repeat, RepeatFrequency::Never) { None } else { dialog.repeat_until };
+
     let event = CalendarEvent {
         uid: dialog.editing_uid.clone().unwrap_or_else(|| Uuid::new_v4().to_string()),
         summary: title.to_string(),
@@ -585,8 +611,8 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) -> Task<Message> {
         start,
         end,
         travel_time: dialog.travel_time,
-        repeat: dialog.repeat,
-        repeat_until: None, // TODO: Add to dialog state
+        repeat: resolved_repeat,
+        repeat_until: resolved_repeat_until,
         exception_dates: vec![], // Exception dates are preserved when editing existing events
         invitees: dialog.invitees,
         alert: dialog.alert,

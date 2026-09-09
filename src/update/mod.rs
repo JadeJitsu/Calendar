@@ -33,6 +33,7 @@ use cosmic::iced::widget::scrollable;
 use log::{debug, error, info, warn};
 
 use crate::app::CosmicCalendar;
+use crate::caldav::RepeatFrequency;
 use crate::components::{quick_event_input_id, search_input_id};
 use crate::dialogs::{ActiveDialog, DialogManager};
 use crate::message::Message;
@@ -1151,7 +1152,73 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::EventDialogRepeatChanged(repeat) => {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
-                dialog.repeat = repeat;
+                // When switching to Custom with an empty RRULE buffer, seed it
+                // from the previously-selected custom rule (if any) so the
+                // text isn't lost by toggling back and forth.
+                if matches!(repeat, RepeatFrequency::Custom(_))
+                    && dialog.custom_rrule_input.is_empty()
+                {
+                    if let RepeatFrequency::Custom(prev) = &dialog.repeat {
+                        dialog.custom_rrule_input = prev.clone();
+                    }
+                }
+                // A non-custom selection keeps its own RRULE text in the enum;
+                // the buffer is the source of truth only for Custom.
+                dialog.repeat = match repeat {
+                    RepeatFrequency::Custom(_) => RepeatFrequency::Custom(
+                        dialog.custom_rrule_input.clone(),
+                    ),
+                    other => other,
+                };
+                // Closing the repeat-until picker when the event stops repeating
+                if matches!(dialog.repeat, RepeatFrequency::Never) {
+                    dialog.repeat_until_picker_open = false;
+                }
+            }
+        }
+        Message::EventDialogRepeatUntilInputChanged(input) => {
+            #[allow(deprecated)]
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.repeat_until_input = input.clone();
+                if let Ok(date) = NaiveDate::parse_from_str(&input, "%Y-%m-%d") {
+                    dialog.repeat_until = Some(date);
+                }
+            }
+        }
+        Message::EventDialogRepeatUntilChanged(date) => {
+            #[allow(deprecated)]
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.repeat_until = Some(crate::dates::from_jiff(date));
+                dialog.repeat_until_input = date.to_string();
+                dialog.repeat_until_calendar.set_selected_visible(date);
+                dialog.repeat_until_picker_open = false;
+            }
+        }
+        Message::EventDialogToggleRepeatUntilPicker => {
+            #[allow(deprecated)]
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.repeat_until_picker_open = !dialog.repeat_until_picker_open;
+            }
+        }
+        Message::EventDialogRepeatUntilCalendarPrev => {
+            #[allow(deprecated)]
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.repeat_until_calendar.show_prev_month();
+            }
+        }
+        Message::EventDialogRepeatUntilCalendarNext => {
+            #[allow(deprecated)]
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.repeat_until_calendar.show_next_month();
+            }
+        }
+        Message::EventDialogCustomRruleChanged(input) => {
+            #[allow(deprecated)]
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.custom_rrule_input = input.clone();
+                if matches!(dialog.repeat, RepeatFrequency::Custom(_)) {
+                    dialog.repeat = RepeatFrequency::Custom(input);
+                }
             }
         }
         Message::EventDialogCalendarChanged(calendar_id) => {

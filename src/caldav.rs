@@ -584,6 +584,22 @@ pub fn repeat_to_rrule(repeat: &RepeatFrequency, repeat_until: Option<chrono::Na
     }
 }
 
+/// Resolve a user-authored `Custom` RRULE for storage. An empty or
+/// malformed rule (must start with `FREQ=`) is rejected and downgraded to
+/// `Never` rather than stored, so a broken rule can't silently produce a
+/// non-recurring event with a dangling RRULE.
+pub fn resolve_custom_rrule(repeat: &RepeatFrequency) -> RepeatFrequency {
+    match repeat {
+        RepeatFrequency::Custom(rrule)
+            if rrule.trim().is_empty()
+                || !rrule.trim().to_ascii_uppercase().starts_with("FREQ=") =>
+        {
+            RepeatFrequency::Never
+        }
+        other => other.clone(),
+    }
+}
+
 /// Map an `AlertTime` to minutes before the event start, or `None` when the
 /// alert never fires on its own (`None` / `AtTime` — the latter needs the
 /// event's start instant, which the scheduler resolves separately).
@@ -756,6 +772,34 @@ mod tests {
             repeat_to_rrule(&RepeatFrequency::Custom("FREQ=DAILY;BYDAY=MO".into()), None).as_deref(),
             Some("FREQ=DAILY;BYDAY=MO")
         );
+    }
+
+    #[test]
+    fn test_resolve_custom_rrule() {
+        // A well-formed custom rule is kept as-is.
+        assert_eq!(
+            resolve_custom_rrule(&RepeatFrequency::Custom("FREQ=WEEKLY;BYDAY=MO".into())),
+            RepeatFrequency::Custom("FREQ=WEEKLY;BYDAY=MO".into())
+        );
+        // Empty and whitespace-only rules downgrade to Never.
+        assert_eq!(resolve_custom_rrule(&RepeatFrequency::Custom("".into())), RepeatFrequency::Never);
+        assert_eq!(
+            resolve_custom_rrule(&RepeatFrequency::Custom("   ".into())),
+            RepeatFrequency::Never
+        );
+        // A rule without FREQ= is malformed -> Never.
+        assert_eq!(
+            resolve_custom_rrule(&RepeatFrequency::Custom("INTERVAL=2".into())),
+            RepeatFrequency::Never
+        );
+        // Case-insensitive FREQ prefix.
+        assert_eq!(
+            resolve_custom_rrule(&RepeatFrequency::Custom("freq=daily".into())),
+            RepeatFrequency::Custom("freq=daily".into())
+        );
+        // Non-custom variants pass through untouched.
+        assert_eq!(resolve_custom_rrule(&RepeatFrequency::Weekly), RepeatFrequency::Weekly);
+        assert_eq!(resolve_custom_rrule(&RepeatFrequency::Never), RepeatFrequency::Never);
     }
 
     #[test]

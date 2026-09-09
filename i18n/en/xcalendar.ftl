@@ -94,6 +94,7 @@ event-ends = Ends
 event-datetime-section = Date & Time
 event-travel-time = Travel Time
 event-repeat = Repeat
+event-repeat-until = Repeat until
 event-schedule-section = Schedule
 event-calendar = Calendar
 event-no-calendar = No calendar
@@ -127,6 +128,7 @@ repeat-biweekly = Every 2 weeks
 repeat-monthly = Monthly
 repeat-yearly = Yearly
 repeat-custom = Custom
+repeat-custom-rrule-placeholder = RRULE, e.g. FREQ=WEEKLY;BYDAY=MO,FR
 
 # Alert Options
 alert-none = None

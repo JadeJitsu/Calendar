@@ -203,6 +203,18 @@ pub enum Message {
     EventDialogTravelTimeChanged(TravelTime),
     /// Update repeat frequency in dialog
     EventDialogRepeatChanged(RepeatFrequency),
+    /// Update the repeat-until (UNTIL) date input text
+    EventDialogRepeatUntilInputChanged(String),
+    /// Set the repeat-until (UNTIL) date from the calendar picker
+    EventDialogRepeatUntilChanged(jiff::civil::Date),
+    /// Toggle the repeat-until calendar picker
+    EventDialogToggleRepeatUntilPicker,
+    /// Navigate repeat-until calendar to previous month
+    EventDialogRepeatUntilCalendarPrev,
+    /// Navigate repeat-until calendar to next month
+    EventDialogRepeatUntilCalendarNext,
+    /// Update the custom RRULE text input
+    EventDialogCustomRruleChanged(String),
     /// Update selected calendar in dialog
     EventDialogCalendarChanged(String),
     /// Update invitee input text
