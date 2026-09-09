@@ -1,5 +1,16 @@
 # Calendar - Development TODO
 
+## Recently Completed ✅ (2026-09-09)
+
+- [x] **Event notifications/alerts** — precise one-shot desktop notifications (fires at the exact due instant); `src/services/notification_scheduler.rs`
+- [x] **Background CalDAV sync** — TimeTick-driven, configurable interval (Settings); `src/update/caldav.rs`
+- [x] **Settings dialog** — week numbers + background sync interval; `src/components/settings_dialog.rs`
+- [x] **Event invites (attendees)** — `ATTENDEE` ICS round-trip on the live CalDAV write path; `src/services/export_handler.rs`
+- [x] **Event search** — live cross-calendar search (summary/location/notes/invitees); `src/services/search.rs` + `src/components/search.rs`
+
+### Open from that work
+- [ ] Route the live CalDAV write path (`event_to_ical`) through the fuller `calendar_event_to_ics` serializer so recurrence/reminders/all-day survive a PUT (currently only summary/location/notes/url/attendees are written)
+
 ## Current Sprint: Event Management
 
 ### Completed ✅

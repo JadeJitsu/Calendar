@@ -96,10 +96,17 @@ Service handlers centralize business logic and act as middleware between the UI/
   - Track sync status and errors
   - Detect remote calendar requirements
 
-- `services/export_handler.rs` - Import/Export
-  - Export events to iCalendar (.ics) format
-  - Export single events or entire calendars
-  - Read iCalendar files (import WIP)
+- `services/export_handler.rs` - Import/Export + ICS round-trip
+  - `event_to_ical` — the **live** CalDAV PUT serializer (summary/location/notes/url/ATTENDEE; does NOT yet emit RRULE/EXDATE/VALARM/DTSTAMP)
+  - `parse_ical_string` / `ical_event_to_calendar_event` — import (reads RRULE/EXDATE/VALARM/ATTENDEE)
+  - `calendar_event_to_ics` (in `caldav.rs`) is a fuller serializer used only in tests — the refactor target for the live write path
+
+- `services/search.rs` - Pure event search
+  - `search_events(query, (calendar_id, color, &CalendarEvent)) -> Vec<SearchResult>`
+  - Case-insensitive substring over summary/location/notes/invitees
+
+- `services/notification_scheduler.rs` - Alert timing
+  - Due-window + per-(occurrence,alert) dedup; `next_due_time` drives the precise one-shot timer
 
 ### Constants
 - `ui_constants.rs` - UI dimensions, spacing, and color values (consolidated)
@@ -396,6 +403,8 @@ pub enum ActiveDialog {
 | New calendar type | Implement `CalendarSource` trait in `calendars/` |
 | Improve repeating events | `caldav.rs` (RepeatFrequency), expansion logic in views |
 | Add new view | `views/` module, `models/` state, `CalendarView` enum |
+| Change search behavior | `services/search.rs` (pure core), `app.rs` (`compute_search_results`), `components/search.rs` (UI) |
+| Change CalDAV write fields | `services/export_handler.rs` (`event_to_ical`) — the live PUT path |
 
 ## Development Flags (Debug Only)
 

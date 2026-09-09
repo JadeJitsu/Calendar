@@ -28,7 +28,7 @@ The application supports the CalDAV protocol (RFC 4791) for synchronizing events
 
 ## Current Status
 
-This project is in **active development**. The UI foundation is in place, but core calendar functionality is still being implemented.
+This project is in **active development**. Core calendar functionality — event CRUD, CalDAV read/write, reminders, background sync, search, and attendees — is implemented; remaining work is listed under "Work In Progress" below.
 
 ### ✅ Implemented Features
 
@@ -62,7 +62,18 @@ This project is in **active development**. The UI foundation is in place, but co
 - Event editing dialog with full details
 - Drag-and-drop event rescheduling (month and week views)
 - Event deletion
+- Event invitees (attendees) — round-tripped through CalDAV as `ATTENDEE`
 - SQLite database persistence
+
+#### Notifications & Background Sync
+- Event reminders/alerts with precise one-shot desktop notifications (fires at the exact due instant, not on a polling tick)
+- Background CalDAV sync on a configurable interval (Settings → sync interval: 5/15/30 min or 1 hour)
+- Settings dialog (week numbers, background sync interval)
+
+#### Search
+- Live event search (header search button) across all enabled calendars
+- Case-insensitive match on summary, location, notes, and invitee emails
+- Click a result to open that event for editing
 
 #### Navigation & Controls
 - View switcher buttons (Day/Week/Month/Year) in toolbar
@@ -96,13 +107,13 @@ This project is in **active development**. The UI foundation is in place, but co
 - Full event sync on startup and on demand (menu → Sync), with per-calendar sync/error indicators in the sidebar
 - Write-back: create/edit/delete events via CalDAV PUT/DELETE (last-writer-wins, no `If-Match` yet)
 - Recurring events (RRULE in/out), all-day events, TZID-aware datetime conversion
+- Attendees: `ATTENDEE` properties are written on create/edit and read back on sync
 
 ### 🚧 Work In Progress
 
-- [ ] Event notifications/alerts
-- [ ] Background sync (periodic re-sync timer)
-- [ ] Search functionality
-- [ ] Event invitees
+- [ ] CalDAV write path for recurrence/reminders/all-day (the live `event_to_ical` PUT path currently emits summary/location/notes/url/attendees but not RRULE/EXDATE/VALARM/DTSTAMP — a fuller serializer exists in `calendar_event_to_ics` and is the refactor target)
+- [ ] Google Calendar support
+- [ ] iCloud Calendar support
 
 ## Building
 
@@ -139,10 +150,11 @@ src/
 ├── selection.rs            # Drag selection and event drag state
 │
 ├── update/                 # Message handling (split by domain)
-│   ├── mod.rs              # Main message dispatcher
+│   ├── mod.rs              # Main message dispatcher (+ background sync, search)
 │   ├── navigation.rs       # View navigation handlers
 │   ├── calendar.rs         # Calendar management handlers
 │   ├── event.rs            # Event CRUD handlers
+│   ├── caldav.rs           # CalDAV sync + event write-back handlers
 │   └── selection/          # Selection and drag handlers
 │
 ├── models/                 # Domain models and state
@@ -167,7 +179,9 @@ src/
 │   ├── toolbar.rs          # Navigation toolbar
 │   ├── time_grid.rs        # Hour-based time grid for week/day views
 │   ├── event_chip.rs       # Event display chips
-│   └── header_menu.rs      # Application menu bar
+│   ├── header_menu.rs      # Application menu bar
+│   ├── search.rs           # Search bar (input + results list)
+│   └── settings_dialog.rs  # Settings dialog (week numbers, sync interval)
 │
 ├── dialogs/                # Dialog management
 │   ├── mod.rs              # Dialog types and state
@@ -176,7 +190,10 @@ src/
 ├── services/               # Business logic services
 │   ├── calendar_handler.rs # Calendar CRUD operations
 │   ├── event_handler.rs    # Event CRUD operations
-│   └── settings_handler.rs # Settings persistence
+│   ├── settings_handler.rs # Settings persistence
+│   ├── search.rs           # Pure event search (query → results)
+│   ├── export_handler.rs   # iCalendar import/export + ICS round-trip
+│   └── notification_scheduler.rs # Due-window + precise alert timing
 │
 ├── database/               # Data persistence
 │   └── schema.rs           # SQLite schema and queries
