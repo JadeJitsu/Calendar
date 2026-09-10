@@ -54,6 +54,15 @@
   </keywords>
 
   <releases>
+    <release version="0.4.0" date="2026-09-10">
+      <description>
+        <p>Tray mini calendar.</p>
+        <ul>
+          <li>A new "Mini Calendar" tray menu item opens a small popup window with the same compact month grid as the sidebar</li>
+          <li>The mini calendar (sidebar and popup) can now show ISO week numbers, controlled by the existing week-numbers setting</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-09-10">
       <description>
         <p>CalDAV write safety.</p>

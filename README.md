@@ -71,7 +71,8 @@ This project is in **active development**. Core calendar functionality — event
 - Settings dialog (week numbers, background sync interval, close-to-tray)
 
 #### System Tray
-- Always-visible system tray icon (StatusNotifierItem on Wayland/COSMIC) with a **Show** / **Quit** menu
+- Always-visible system tray icon (StatusNotifierItem on Wayland/COSMIC) with a **Show** / **Mini Calendar** / **Quit** menu
+- **Mini Calendar**: opens a small popup window with the same compact month grid as the sidebar (prev/next month, day selection, optional week numbers) — clicking it again focuses the existing popup instead of opening a duplicate
 - **Close to tray** setting (Settings): when enabled, clicking the window's close button closes the window (not the process) and the tray's **Show** item opens a fresh one — Wayland's xdg-shell protocol has no "unminimize" request, so minimizing the window would leave Show with no way to bring it back
 - On Linux the tray icon is created on a dedicated GTK thread that pumps a GTK main loop (the `tray-icon` Linux backend is libappindicator, which only registers once a GTK loop is running)
 

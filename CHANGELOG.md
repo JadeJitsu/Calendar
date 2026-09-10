@@ -10,6 +10,22 @@ All notable changes to the Calendar app are documented here.
 - Bump `patch` for fixes, `minor` for new features, `major` for breaking
   changes. Update this file in the same commit as the version bump.
 
+## [0.4.0] — 2026-09-10
+
+### Added
+- **Tray "Mini Calendar" popup.** A third tray menu item, next to Show/Quit,
+  opens a small standalone window showing the same compact month grid as
+  the sidebar (reused as-is via libcosmic's `view_window` hook — no
+  duplicated state). Prev/next month and day selection work exactly like
+  the sidebar version. Clicking the menu item again focuses the existing
+  popup instead of opening a duplicate; closing the popup only clears its
+  own tracked window id, independent of the main window's.
+- **Week numbers in the mini calendar.** `render_mini_calendar` gained a
+  `show_week_numbers` flag, gated on the existing `settings.show_week_numbers`
+  toggle (the same one that already controls week numbers in the main month
+  view), so both the sidebar mini calendar and the new tray popup show ISO
+  week numbers.
+
 ## [0.3.0] — 2026-09-10
 
 ### Added
