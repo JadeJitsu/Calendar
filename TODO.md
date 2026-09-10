@@ -50,7 +50,7 @@
 
 ### Technical debt
 - [ ] Replace remaining `eprintln!` with proper logging
-- [ ] Consider CI (build gates are now green — `cargo clippy --all-targets` + `cargo test` are safe to gate on)
+- [x] **CI** — GitHub Actions (`.github/workflows/ci.yml`) gates `main` on `cargo build --all-targets`, `cargo test`, and `cargo clippy --all-targets`. Clippy is gated on exit code (not `-D warnings`) until the pre-existing warnings are cleaned up.
 
 ---
 
