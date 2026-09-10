@@ -10,6 +10,19 @@ All notable changes to the Calendar app are documented here.
 - Bump `patch` for fixes, `minor` for new features, `major` for breaking
   changes. Update this file in the same commit as the version bump.
 
+## [0.4.1] — 2026-09-10
+
+### Added
+- **iCloud quick-setup preset.** The Add CalDAV Account dialog gained an
+  "iCloud" button that pre-fills the server URL with `caldav.icloud.com`.
+  The dialog's help note switches to iCloud-specific guidance (use your
+  Apple ID email as the username, and an app-specific password generated
+  at appleid.apple.com — not your regular Apple ID password) whenever the
+  entered URL matches iCloud's host, falling back to the existing generic
+  HTTPS/keyring note otherwise. No backend changes: iCloud is a standard
+  CalDAV server, so the existing discovery and write-back code already
+  works against it.
+
 ## [0.4.0] — 2026-09-10
 
 ### Added

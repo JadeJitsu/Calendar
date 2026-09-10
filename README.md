@@ -108,17 +108,17 @@ This project is in **active development**. Core calendar functionality — event
 
 #### CalDAV (RFC 4791)
 - Add-account dialog (HTTPS-only, Basic auth; password stored in the system keyring, never in the config file)
+- **iCloud quick-setup**: a preset button pre-fills the server URL for `caldav.icloud.com` and swaps in guidance for using an Apple ID email + an app-specific password (generated at appleid.apple.com) — iCloud is a standard CalDAV server, so no separate sync engine is needed
 - RFC 4791 discovery: `current-user-principal` → `calendar-home-set` → calendar list
 - **Discovery fallback**: when the server doesn't expose `calendar-home-set` (observed on Nextcloud 34 — the property 404s even though the collections exist), discovery falls back to listing `{base}/calendars/{uid}/` directly, the path direct-URL clients like Thunderbird use
 - Full event sync on startup and on demand (menu → Sync), with per-calendar sync/error indicators in the sidebar
-- Write-back: create/edit/delete events via CalDAV PUT/DELETE (last-writer-wins, no `If-Match` yet)
+- Write-back: create/edit/delete events via CalDAV PUT/DELETE, with `If-Match`/ETag optimistic concurrency (a stale write is rejected with a 412 and the calendar auto re-syncs instead of silently clobbering the server's copy)
 - Recurring events (RRULE in/out), all-day events, TZID-aware datetime conversion
 - Attendees: `ATTENDEE` properties are written on create/edit and read back on sync
 
 ### 🚧 Work In Progress
 
-- [ ] Google Calendar support
-- [ ] iCloud Calendar support
+- [ ] Google Calendar support (a quick-setup preset like iCloud's, once Google's CalDAV bridge/OAuth needs are scoped)
 
 ## Building
 
@@ -149,7 +149,7 @@ flatpak install --user dev.jadejitsu.apps.Calendar.flatpak
 flatpak run dev.jadejitsu.apps.Calendar
 ```
 
-**Latest release: [v0.3.0](https://github.com/JadeJitsu/Calendar/releases/tag/v0.3.0-flatpak)** — CalDAV write safety (If-Match/ETag optimistic concurrency; a server-side change since the last sync now rejects the write with a 412 and an auto re-sync instead of silently clobbering it). See [CHANGELOG.md](CHANGELOG.md).
+**Latest release: [v0.4.1](https://github.com/JadeJitsu/Calendar/releases/tag/v0.4.1-flatpak)** — iCloud quick-setup preset in the Add CalDAV dialog. See [CHANGELOG.md](CHANGELOG.md).
 
 To build the bundle yourself from the manifest `dev.jadejitsu.apps.Calendar.yml` (runtime `org.freedesktop.Platform` 25.08 + `rust-stable` SDK extension):
 

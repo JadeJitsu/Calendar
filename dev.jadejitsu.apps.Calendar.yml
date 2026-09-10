@@ -1,5 +1,5 @@
 app-id: dev.jadejitsu.apps.Calendar
-version: "0.4.0"
+version: "0.4.1"
 runtime: org.freedesktop.Platform
 runtime-version: "25.08"
 sdk: org.freedesktop.Sdk
