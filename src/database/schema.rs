@@ -3,7 +3,7 @@
 
 use chrono::{DateTime, Utc};
 use log::{debug, info};
-use rusqlite::{Connection, params, Result as SqlResult};
+use rusqlite::{params, Connection, Result as SqlResult};
 use std::error::Error;
 use std::path::PathBuf;
 
@@ -300,16 +300,26 @@ impl Database {
     // Note: Calendar metadata (name, color, enabled) is stored in config file
 
     /// Insert a new event
-    pub fn insert_event(&self, calendar_id: &str, event: &CalendarEvent) -> Result<(), Box<dyn Error>> {
+    pub fn insert_event(
+        &self,
+        calendar_id: &str,
+        event: &CalendarEvent,
+    ) -> Result<(), Box<dyn Error>> {
         let travel_time = serde_json::to_string(&event.travel_time)?;
         let repeat = serde_json::to_string(&event.repeat)?;
         let invitees = serde_json::to_string(&event.invitees)?;
         let alert = serde_json::to_string(&event.alert)?;
-        let alert_second = event.alert_second.as_ref().map(|a| serde_json::to_string(a)).transpose()?;
+        let alert_second = event
+            .alert_second
+            .as_ref()
+            .map(|a| serde_json::to_string(a))
+            .transpose()?;
         let attachments = serde_json::to_string(&event.attachments)?;
         let repeat_until = event.repeat_until.map(|d| d.format("%Y-%m-%d").to_string());
         // Convert exception_dates to JSON array of date strings
-        let exception_dates: Vec<String> = event.exception_dates.iter()
+        let exception_dates: Vec<String> = event
+            .exception_dates
+            .iter()
             .map(|d| d.format("%Y-%m-%d").to_string())
             .collect();
         let exception_dates_json = serde_json::to_string(&exception_dates)?;
@@ -345,16 +355,26 @@ impl Database {
 
     /// Update an existing event
     #[allow(dead_code)] // Used by LocalCalendar trait implementation
-    pub fn update_event(&self, calendar_id: &str, event: &CalendarEvent) -> Result<(), Box<dyn Error>> {
+    pub fn update_event(
+        &self,
+        calendar_id: &str,
+        event: &CalendarEvent,
+    ) -> Result<(), Box<dyn Error>> {
         let travel_time = serde_json::to_string(&event.travel_time)?;
         let repeat = serde_json::to_string(&event.repeat)?;
         let invitees = serde_json::to_string(&event.invitees)?;
         let alert = serde_json::to_string(&event.alert)?;
-        let alert_second = event.alert_second.as_ref().map(|a| serde_json::to_string(a)).transpose()?;
+        let alert_second = event
+            .alert_second
+            .as_ref()
+            .map(|a| serde_json::to_string(a))
+            .transpose()?;
         let attachments = serde_json::to_string(&event.attachments)?;
         let repeat_until = event.repeat_until.map(|d| d.format("%Y-%m-%d").to_string());
         // Convert exception_dates to JSON array of date strings
-        let exception_dates: Vec<String> = event.exception_dates.iter()
+        let exception_dates: Vec<String> = event
+            .exception_dates
+            .iter()
             .map(|d| d.format("%Y-%m-%d").to_string())
             .collect();
         let exception_dates_json = serde_json::to_string(&exception_dates)?;
@@ -407,13 +427,16 @@ impl Database {
     pub fn delete_event(&self, calendar_id: &str, uid: &str) -> Result<bool, Box<dyn Error>> {
         let rows = self.conn.execute(
             "DELETE FROM events WHERE calendar_id = ?1 AND uid = ?2",
-            params![calendar_id, uid]
+            params![calendar_id, uid],
         )?;
         Ok(rows > 0)
     }
 
     /// Get all events for a calendar
-    pub fn get_events_for_calendar(&self, calendar_id: &str) -> Result<Vec<CalendarEvent>, Box<dyn Error>> {
+    pub fn get_events_for_calendar(
+        &self,
+        calendar_id: &str,
+    ) -> Result<Vec<CalendarEvent>, Box<dyn Error>> {
         let mut stmt = self.conn.prepare(
             r#"SELECT uid, summary, location, all_day, start_time, end_time,
                       travel_time, repeat, repeat_until, exception_dates, invitees, alert, alert_second,
@@ -421,48 +444,54 @@ impl Database {
                FROM events WHERE calendar_id = ?1"#
         )?;
 
-        let events = stmt.query_map(params![calendar_id], |row| {
-            let start_str: String = row.get(4)?;
-            let end_str: String = row.get(5)?;
-            let travel_time_str: String = row.get(6)?;
-            let repeat_str: String = row.get(7)?;
-            let repeat_until_str: Option<String> = row.get(8)?;
-            let exception_dates_str: String = row.get::<_, Option<String>>(9)?.unwrap_or_else(|| "[]".to_string());
-            let invitees_str: String = row.get(10)?;
-            let alert_str: String = row.get(11)?;
-            let alert_second_str: Option<String> = row.get(12)?;
-            let attachments_str: String = row.get(13)?;
+        let events = stmt
+            .query_map(params![calendar_id], |row| {
+                let start_str: String = row.get(4)?;
+                let end_str: String = row.get(5)?;
+                let travel_time_str: String = row.get(6)?;
+                let repeat_str: String = row.get(7)?;
+                let repeat_until_str: Option<String> = row.get(8)?;
+                let exception_dates_str: String = row
+                    .get::<_, Option<String>>(9)?
+                    .unwrap_or_else(|| "[]".to_string());
+                let invitees_str: String = row.get(10)?;
+                let alert_str: String = row.get(11)?;
+                let alert_second_str: Option<String> = row.get(12)?;
+                let attachments_str: String = row.get(13)?;
 
-            // Parse exception_dates from JSON array of date strings
-            let exception_dates_strings: Vec<String> = serde_json::from_str(&exception_dates_str).unwrap_or_default();
-            let exception_dates: Vec<chrono::NaiveDate> = exception_dates_strings.iter()
-                .filter_map(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
-                .collect();
+                // Parse exception_dates from JSON array of date strings
+                let exception_dates_strings: Vec<String> =
+                    serde_json::from_str(&exception_dates_str).unwrap_or_default();
+                let exception_dates: Vec<chrono::NaiveDate> = exception_dates_strings
+                    .iter()
+                    .filter_map(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
+                    .collect();
 
-            Ok(CalendarEvent {
-                uid: row.get(0)?,
-                summary: row.get(1)?,
-                location: row.get(2)?,
-                all_day: row.get(3)?,
-                start: DateTime::parse_from_rfc3339(&start_str)
-                    .map(|dt| dt.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
-                end: DateTime::parse_from_rfc3339(&end_str)
-                    .map(|dt| dt.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
-                travel_time: serde_json::from_str(&travel_time_str).unwrap_or_default(),
-                repeat: serde_json::from_str(&repeat_str).unwrap_or_default(),
-                repeat_until: repeat_until_str.and_then(|s| chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
-                exception_dates,
-                invitees: serde_json::from_str(&invitees_str).unwrap_or_default(),
-                alert: serde_json::from_str(&alert_str).unwrap_or_default(),
-                alert_second: alert_second_str.and_then(|s| serde_json::from_str(&s).ok()),
-                attachments: serde_json::from_str(&attachments_str).unwrap_or_default(),
-                url: row.get(14)?,
-                notes: row.get(15)?,
-            })
-        })?
-        .collect::<SqlResult<Vec<_>>>()?;
+                Ok(CalendarEvent {
+                    uid: row.get(0)?,
+                    summary: row.get(1)?,
+                    location: row.get(2)?,
+                    all_day: row.get(3)?,
+                    start: DateTime::parse_from_rfc3339(&start_str)
+                        .map(|dt| dt.with_timezone(&Utc))
+                        .unwrap_or_else(|_| Utc::now()),
+                    end: DateTime::parse_from_rfc3339(&end_str)
+                        .map(|dt| dt.with_timezone(&Utc))
+                        .unwrap_or_else(|_| Utc::now()),
+                    travel_time: serde_json::from_str(&travel_time_str).unwrap_or_default(),
+                    repeat: serde_json::from_str(&repeat_str).unwrap_or_default(),
+                    repeat_until: repeat_until_str
+                        .and_then(|s| chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
+                    exception_dates,
+                    invitees: serde_json::from_str(&invitees_str).unwrap_or_default(),
+                    alert: serde_json::from_str(&alert_str).unwrap_or_default(),
+                    alert_second: alert_second_str.and_then(|s| serde_json::from_str(&s).ok()),
+                    attachments: serde_json::from_str(&attachments_str).unwrap_or_default(),
+                    url: row.get(14)?,
+                    notes: row.get(15)?,
+                })
+            })?
+            .collect::<SqlResult<Vec<_>>>()?;
 
         Ok(events)
     }

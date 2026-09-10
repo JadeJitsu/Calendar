@@ -11,11 +11,11 @@ use cosmic::app::Task;
 use log::{debug, error, info, warn};
 
 use crate::app::CosmicCalendar;
-use crate::calendars::{CalDavCalendar, CalendarSource, CalendarType};
 use crate::caldav::{CalDavClient, CalendarEvent, DiscoveredCalendar};
+use crate::calendars::{CalDavCalendar, CalendarSource, CalendarType};
 use crate::dialogs::{ActiveDialog, DialogManager};
 use crate::message::Message;
-use crate::services::{CalDavCredentials, ExportHandler, host_of};
+use crate::services::{host_of, CalDavCredentials, ExportHandler};
 
 /// Open the add CalDAV account dialog.
 pub fn handle_open_add_caldav_dialog(app: &mut CosmicCalendar) {
@@ -252,8 +252,9 @@ pub fn handle_sync_calendars(app: &mut CosmicCalendar) -> Task<Message> {
                 async move {
                     tokio::task::spawn_blocking(move || {
                         password.and_then(|password| {
-                            let client = CalDavClient::new(collection_url.clone(), username, password)
-                                .map_err(|e| e.to_string())?;
+                            let client =
+                                CalDavClient::new(collection_url.clone(), username, password)
+                                    .map_err(|e| e.to_string())?;
                             let pairs = client
                                 .fetch_events(&collection_url)
                                 .map_err(|e| e.to_string())?;
@@ -349,7 +350,11 @@ pub fn handle_caldav_synced(
     events: Vec<CalendarEvent>,
     hrefs: Vec<(String, String)>,
 ) -> Task<Message> {
-    info!("CalDAV: Sync complete for '{}' ({} events)", calendar_id, events.len());
+    info!(
+        "CalDAV: Sync complete for '{}' ({} events)",
+        calendar_id,
+        events.len()
+    );
     if let Some(source) = app
         .calendar_manager
         .sources_mut()
@@ -377,7 +382,10 @@ pub fn handle_caldav_sync_failed(
     calendar_id: String,
     error_message: String,
 ) {
-    error!("CalDAV: Sync failed for '{}': {}", calendar_id, error_message);
+    error!(
+        "CalDAV: Sync failed for '{}': {}",
+        calendar_id, error_message
+    );
     // Persist the error so the sidebar can show an error tint on this
     // calendar. The bool is `is_syncing` — `false` here means "errored",
     // distinct from `None` (idle/cleared).
@@ -449,7 +457,10 @@ pub fn handle_caldav_write_failed(
     calendar_id: String,
     error_message: String,
 ) {
-    error!("CalDAV: Write failed for '{}': {}", calendar_id, error_message);
+    error!(
+        "CalDAV: Write failed for '{}': {}",
+        calendar_id, error_message
+    );
     // No toast/notification widget exists in this app yet — the error is
     // logged. The sync-status indicator covers sync failures; write failures
     // surface via the log for now.
@@ -529,7 +540,10 @@ pub fn write_caldav_event(
                 }
             }
             Err(e) => {
-                error!("CalDAV: Write failed for '{}' ({}): {}", calendar_id, uid, e);
+                error!(
+                    "CalDAV: Write failed for '{}' ({}): {}",
+                    calendar_id, uid, e
+                );
                 cosmic::Action::App(Message::CalDavWriteFailed(calendar_id.clone(), e))
             }
         },
@@ -567,9 +581,7 @@ pub fn delete_caldav_event(
     Task::perform(
         async move {
             tokio::task::spawn_blocking(move || {
-                client
-                    .delete_event(&href, None)
-                    .map_err(|e| e.to_string())
+                client.delete_event(&href, None).map_err(|e| e.to_string())
             })
             .await
             .unwrap_or_else(|e| Err(format!("Delete task panicked: {}", e)))
@@ -583,7 +595,10 @@ pub fn delete_caldav_event(
                 ))
             }
             Err(e) => {
-                error!("CalDAV: Delete failed for '{}' ({}): {}", calendar_id, uid, e);
+                error!(
+                    "CalDAV: Delete failed for '{}' ({}): {}",
+                    calendar_id, uid, e
+                );
                 cosmic::Action::App(Message::CalDavWriteFailed(calendar_id.clone(), e))
             }
         },

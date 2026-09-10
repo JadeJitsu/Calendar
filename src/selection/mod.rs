@@ -50,7 +50,7 @@ mod state;
 
 // Re-export public types
 #[allow(unused_imports)] // Part of selection API
-pub use drag::{DragPreviewInfo, DragTarget, EventDragState, is_drag_active, set_drag_active};
+pub use drag::{is_drag_active, set_drag_active, DragPreviewInfo, DragTarget, EventDragState};
 #[allow(unused_imports)] // Part of selection API, used by tests
 pub use point::SelectionPoint;
 #[allow(unused_imports)] // Part of selection API, used by tests
@@ -223,7 +223,13 @@ mod tests {
         let mut state = EventDragState::new();
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
-        state.start("cal-1".to_string(), "event-123".to_string(), date, "Test Event".to_string(), "#0000ff".to_string());
+        state.start(
+            "cal-1".to_string(),
+            "event-123".to_string(),
+            date,
+            "Test Event".to_string(),
+            "#0000ff".to_string(),
+        );
 
         assert!(state.is_active);
         assert_eq!(state.event_uid, Some("event-123".to_string()));
@@ -239,7 +245,14 @@ mod tests {
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let time = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
 
-        state.start_with_time("cal-1".to_string(), "event-123".to_string(), date, time, "Test Event".to_string(), "#0000ff".to_string());
+        state.start_with_time(
+            "cal-1".to_string(),
+            "event-123".to_string(),
+            date,
+            time,
+            "Test Event".to_string(),
+            "#0000ff".to_string(),
+        );
 
         assert!(state.is_active);
         assert_eq!(state.original_time, Some(time));
@@ -252,7 +265,13 @@ mod tests {
         let original = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let target = NaiveDate::from_ymd_opt(2024, 1, 18).unwrap();
 
-        state.start("cal-1".to_string(), "event-123".to_string(), original, "Test Event".to_string(), "#0000ff".to_string());
+        state.start(
+            "cal-1".to_string(),
+            "event-123".to_string(),
+            original,
+            "Test Event".to_string(),
+            "#0000ff".to_string(),
+        );
         state.update(target);
 
         assert!(state.is_active);
@@ -266,7 +285,13 @@ mod tests {
         let original = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let target = NaiveDate::from_ymd_opt(2024, 1, 18).unwrap();
 
-        state.start("cal-1".to_string(), "event-123".to_string(), original, "Test Event".to_string(), "#0000ff".to_string());
+        state.start(
+            "cal-1".to_string(),
+            "event-123".to_string(),
+            original,
+            "Test Event".to_string(),
+            "#0000ff".to_string(),
+        );
         state.update(target);
         let result = state.end();
 
@@ -284,7 +309,13 @@ mod tests {
         let mut state = EventDragState::new();
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
-        state.start("cal-1".to_string(), "event-123".to_string(), date, "Test Event".to_string(), "#0000ff".to_string());
+        state.start(
+            "cal-1".to_string(),
+            "event-123".to_string(),
+            date,
+            "Test Event".to_string(),
+            "#0000ff".to_string(),
+        );
         // Don't update - target stays same as original
         let result = state.end();
 
@@ -299,7 +330,14 @@ mod tests {
         let original_time = NaiveTime::from_hms_opt(9, 0, 0).unwrap();
         let target_time = NaiveTime::from_hms_opt(14, 0, 0).unwrap();
 
-        state.start_with_time("cal-1".to_string(), "event-123".to_string(), date, original_time, "Test Event".to_string(), "#0000ff".to_string());
+        state.start_with_time(
+            "cal-1".to_string(),
+            "event-123".to_string(),
+            date,
+            original_time,
+            "Test Event".to_string(),
+            "#0000ff".to_string(),
+        );
         state.update_with_time(date, target_time);
         let result = state.end_with_time();
 
@@ -319,7 +357,13 @@ mod tests {
         let original = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let target = NaiveDate::from_ymd_opt(2024, 1, 18).unwrap();
 
-        state.start("cal-1".to_string(), "event-123".to_string(), original, "Test Event".to_string(), "#0000ff".to_string());
+        state.start(
+            "cal-1".to_string(),
+            "event-123".to_string(),
+            original,
+            "Test Event".to_string(),
+            "#0000ff".to_string(),
+        );
         state.update(target);
 
         assert_eq!(state.get_offset(), Some(3)); // 3 days forward
@@ -330,7 +374,13 @@ mod tests {
         let mut state = EventDragState::new();
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
-        state.start("cal-1".to_string(), "event-123".to_string(), date, "Test Event".to_string(), "#0000ff".to_string());
+        state.start(
+            "cal-1".to_string(),
+            "event-123".to_string(),
+            date,
+            "Test Event".to_string(),
+            "#0000ff".to_string(),
+        );
         assert!(state.is_active);
 
         state.cancel();

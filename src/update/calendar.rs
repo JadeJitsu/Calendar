@@ -3,7 +3,9 @@
 use crate::app::CosmicCalendar;
 use crate::calendars::{CalDavCalendar, CalendarSource, CalendarType};
 use crate::dialogs::{ActiveDialog, DialogManager};
-use crate::services::{CalendarHandler, CalDavCredentials, host_of, NewCalendarData, UpdateCalendarData};
+use crate::services::{
+    host_of, CalDavCredentials, CalendarHandler, NewCalendarData, UpdateCalendarData,
+};
 use chrono::Local;
 use cosmic::app::Task;
 use log::{debug, error, info, warn};
@@ -26,7 +28,10 @@ pub fn handle_toggle_calendar(app: &mut CosmicCalendar, id: String) {
 
 /// Change a calendar's color and save configuration
 pub fn handle_change_calendar_color(app: &mut CosmicCalendar, id: String, color: String) {
-    debug!("handle_change_calendar_color: Changing color for '{}' to '{}'", id, color);
+    debug!(
+        "handle_change_calendar_color: Changing color for '{}' to '{}'",
+        id, color
+    );
 
     match CalendarHandler::change_color(&mut app.calendar_manager, &id, color.clone()) {
         Ok(()) => {
@@ -61,7 +66,10 @@ pub fn handle_open_calendar_dialog_create(app: &mut CosmicCalendar) {
 
 /// Open the calendar dialog in Edit mode for a specific calendar
 pub fn handle_open_calendar_dialog_edit(app: &mut CosmicCalendar, calendar_id: String) {
-    debug!("handle_open_calendar_dialog_edit: Opening edit dialog for '{}'", calendar_id);
+    debug!(
+        "handle_open_calendar_dialog_edit: Opening edit dialog for '{}'",
+        calendar_id
+    );
 
     match CalendarHandler::get_info(&app.calendar_manager, &calendar_id) {
         Ok((name, color, _enabled)) => {
@@ -84,12 +92,12 @@ pub fn handle_open_calendar_dialog_edit(app: &mut CosmicCalendar, calendar_id: S
 pub fn handle_confirm_calendar_dialog(app: &mut CosmicCalendar) {
     // Extract data from active_dialog before closing
     let dialog_data = match &app.active_dialog {
-        ActiveDialog::CalendarCreate { name, color } => {
-            Some((None, name.clone(), color.clone()))
-        }
-        ActiveDialog::CalendarEdit { calendar_id, name, color } => {
-            Some((Some(calendar_id.clone()), name.clone(), color.clone()))
-        }
+        ActiveDialog::CalendarCreate { name, color } => Some((None, name.clone(), color.clone())),
+        ActiveDialog::CalendarEdit {
+            calendar_id,
+            name,
+            color,
+        } => Some((Some(calendar_id.clone()), name.clone(), color.clone())),
         _ => None,
     };
 
@@ -109,7 +117,10 @@ pub fn handle_confirm_calendar_dialog(app: &mut CosmicCalendar) {
     match calendar_id_opt {
         None => {
             // Create mode
-            debug!("handle_confirm_calendar_dialog: Creating calendar '{}'", name);
+            debug!(
+                "handle_confirm_calendar_dialog: Creating calendar '{}'",
+                name
+            );
 
             match CalendarHandler::create(
                 &mut app.calendar_manager,
@@ -131,7 +142,10 @@ pub fn handle_confirm_calendar_dialog(app: &mut CosmicCalendar) {
         }
         Some(calendar_id) => {
             // Edit mode
-            debug!("handle_confirm_calendar_dialog: Updating calendar '{}'", calendar_id);
+            debug!(
+                "handle_confirm_calendar_dialog: Updating calendar '{}'",
+                calendar_id
+            );
 
             match CalendarHandler::update(
                 &mut app.calendar_manager,
@@ -168,7 +182,10 @@ pub fn handle_delete_selected_calendar(app: &mut CosmicCalendar) {
 
 /// Open the delete calendar confirmation dialog for a specific calendar
 pub fn handle_request_delete_calendar(app: &mut CosmicCalendar, calendar_id: String) {
-    debug!("handle_request_delete_calendar: Requesting delete for '{}'", calendar_id);
+    debug!(
+        "handle_request_delete_calendar: Requesting delete for '{}'",
+        calendar_id
+    );
 
     // Get calendar info using the handler
     let calendar_name = match CalendarHandler::get_info(&app.calendar_manager, &calendar_id) {
@@ -205,7 +222,10 @@ fn caldav_credential_key(
     };
     // Pull the fields out before any other borrow of `source` — `as_any()`
     // holds a mutable borrow.
-    Some((caldav.collection_url().to_string(), caldav.username().to_string()))
+    Some((
+        caldav.collection_url().to_string(),
+        caldav.username().to_string(),
+    ))
 }
 
 /// Confirm and delete the calendar
@@ -250,7 +270,8 @@ pub fn handle_confirm_delete_calendar(app: &mut CosmicCalendar) {
 
             // If we deleted the selected calendar, select another one
             if app.selected_calendar_id.as_ref() == Some(&calendar_id) {
-                app.selected_calendar_id = CalendarHandler::get_first_calendar_id(&app.calendar_manager);
+                app.selected_calendar_id =
+                    CalendarHandler::get_first_calendar_id(&app.calendar_manager);
                 app.update_selected_calendar_color();
             }
 
@@ -268,7 +289,10 @@ pub fn handle_export_calendar_dialog(
     calendar_id: String,
     calendar_name: String,
 ) -> Task<crate::message::Message> {
-    debug!("handle_export_calendar_dialog: Exporting calendar '{}' ({})", calendar_name, calendar_id);
+    debug!(
+        "handle_export_calendar_dialog: Exporting calendar '{}' ({})",
+        calendar_name, calendar_id
+    );
 
     // Generate suggested filename: CalendarName-YYYY-MM-DD.ics
     let today = Local::now().format("%Y-%m-%d").to_string();
@@ -296,7 +320,10 @@ pub fn handle_export_calendar_dialog(
         },
         |result| {
             if let Some((calendar_id, path)) = result {
-                cosmic::Action::App(crate::message::Message::ExportCalendarToFile(calendar_id, path))
+                cosmic::Action::App(crate::message::Message::ExportCalendarToFile(
+                    calendar_id,
+                    path,
+                ))
             } else {
                 // User cancelled
                 cosmic::Action::App(crate::message::Message::None)
@@ -325,8 +352,11 @@ mod tests {
 
     #[test]
     fn credential_key_resolves_caldav_source() {
-        let mut sources: Vec<Box<dyn CalendarSource>> =
-            vec![caldav_source("cal-1", "https://caldav.example.com/dav/user", "jdoe")];
+        let mut sources: Vec<Box<dyn CalendarSource>> = vec![caldav_source(
+            "cal-1",
+            "https://caldav.example.com/dav/user",
+            "jdoe",
+        )];
         let key = caldav_credential_key(&mut sources, "cal-1");
         assert_eq!(
             key,
@@ -339,8 +369,11 @@ mod tests {
 
     #[test]
     fn credential_key_ignores_unknown_id() {
-        let mut sources: Vec<Box<dyn CalendarSource>> =
-            vec![caldav_source("cal-1", "https://caldav.example.com/dav/user", "jdoe")];
+        let mut sources: Vec<Box<dyn CalendarSource>> = vec![caldav_source(
+            "cal-1",
+            "https://caldav.example.com/dav/user",
+            "jdoe",
+        )];
         assert_eq!(caldav_credential_key(&mut sources, "nope"), None);
     }
 

@@ -9,7 +9,7 @@ use crate::components::{render_calendar_list, render_mini_calendar};
 use crate::dialogs::ActiveDialog;
 use crate::message::Message;
 use crate::models::CalendarState;
-use crate::ui_constants::{SIDEBAR_WIDTH, SPACING_LARGE, PADDING_STANDARD};
+use crate::ui_constants::{PADDING_STANDARD, SIDEBAR_WIDTH, SPACING_LARGE};
 
 /// Render the left sidebar: the mini month calendar above the list of
 /// calendars (with per-calendar enable toggles and sync status).
@@ -32,7 +32,7 @@ pub fn render_sidebar<'a>(
         column([])
             .spacing(SPACING_LARGE)
             .padding(PADDING_STANDARD)
-            .push(calendars_section)
+            .push(calendars_section),
     );
 
     // Bottom section with mini calendar (fixed at bottom)

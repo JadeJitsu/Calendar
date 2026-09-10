@@ -8,7 +8,7 @@ use cosmic::{widget, Element};
 
 use crate::components::spacer::vertical_spacer;
 use crate::message::Message;
-use crate::ui_constants::{HOUR_ROW_HEIGHT, COLOR_CURRENT_TIME, BORDER_RADIUS};
+use crate::ui_constants::{BORDER_RADIUS, COLOR_CURRENT_TIME, HOUR_ROW_HEIGHT};
 
 /// Render the current time indicator as a separate overlay layer
 /// This is rendered on top of events so the red line is always visible
@@ -54,7 +54,7 @@ pub fn render_time_indicator_layer(
                 .style(|_theme: &cosmic::Theme| container::Style {
                     background: Some(Background::Color(COLOR_CURRENT_TIME)),
                     ..Default::default()
-                })
+                }),
         )
         .width(Length::Fill)
         .height(Length::Fixed(dot_size))
@@ -75,7 +75,7 @@ pub fn render_time_indicator_layer(
                 .style(|_theme: &cosmic::Theme| container::Style {
                     background: Some(Background::Color(COLOR_CURRENT_TIME)),
                     ..Default::default()
-                })
+                }),
         )
         .width(Length::Fill)
         .height(Length::Fixed(dot_size))

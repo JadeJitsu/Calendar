@@ -24,7 +24,11 @@ pub fn render_import_dialog<'a>(
             events,
             source_file_name,
             selected_calendar_id,
-        } => (events, source_file_name.as_str(), selected_calendar_id.as_ref()),
+        } => (
+            events,
+            source_file_name.as_str(),
+            selected_calendar_id.as_ref(),
+        ),
         _ => return widget::text("").into(), // Should not happen
     };
 
@@ -37,24 +41,21 @@ pub fn render_import_dialog<'a>(
         .push(text(source_file_name).size(12));
 
     // Event count info
-    let event_info = column([]).spacing(8).push(
-        text(fl!(
-            "import-event-count",
-            count = (event_count as i64)
-        ))
-        .size(14),
-    );
+    let event_info = column([])
+        .spacing(8)
+        .push(text(fl!("import-event-count", count = (event_count as i64))).size(14));
 
     // Calendar selection with radio buttons
-    let mut calendar_control =
-        column([]).spacing(8).push(text(fl!("import-target-calendar")).size(14));
+    let mut calendar_control = column([])
+        .spacing(8)
+        .push(text(fl!("import-target-calendar")).size(14));
 
     if calendars.is_empty() {
         calendar_control = calendar_control.push(text("(No calendars available)").size(12));
     } else {
         // Determine selected calendar (use first if none selected)
-        let selected_id: Option<&String> = selected_calendar_id
-            .or_else(|| calendars.first().map(|cal| &cal.info().id));
+        let selected_id: Option<&String> =
+            selected_calendar_id.or_else(|| calendars.first().map(|cal| &cal.info().id));
 
         // Create radio button for each calendar
         for calendar in calendars {
@@ -62,12 +63,9 @@ pub fn render_import_dialog<'a>(
             let calendar_id = &info.id;
             let calendar_name = &info.name;
 
-            let radio_button = radio(
-                calendar_name.as_str(),
-                calendar_id,
-                selected_id,
-                |id| Message::SelectImportCalendar(id.to_string()),
-            );
+            let radio_button = radio(calendar_name.as_str(), calendar_id, selected_id, |id| {
+                Message::SelectImportCalendar(id.to_string())
+            });
 
             calendar_control = calendar_control.push(radio_button);
         }
@@ -93,11 +91,8 @@ pub fn render_import_dialog<'a>(
         }
 
         // Wrap event list in a scrollable container with fixed height
-        let scrollable_events = scrollable(
-            container(event_list)
-                .padding(8)
-        )
-        .height(Length::Fixed(200.0));
+        let scrollable_events =
+            scrollable(container(event_list).padding(8)).height(Length::Fixed(200.0));
 
         column([])
             .spacing(8)

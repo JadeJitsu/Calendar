@@ -146,7 +146,10 @@ impl CalendarSource for CalDavCalendar {
     }
 
     fn remote_config(&self) -> Option<(String, String)> {
-        Some((self.collection_url().to_string(), self.username().to_string()))
+        Some((
+            self.collection_url().to_string(),
+            self.username().to_string(),
+        ))
     }
 
     fn as_any(&mut self) -> &mut dyn std::any::Any {

@@ -2,15 +2,17 @@
 //!
 //! Renders all-day events as colored background bars.
 
-use cosmic::iced::Length;
 use cosmic::iced::widget::text::Wrapping;
+use cosmic::iced::Length;
 use cosmic::widget::container;
 use cosmic::{widget, Element};
 
 use crate::message::Message;
 use crate::ui_constants::{BORDER_RADIUS, BORDER_WIDTH_HIGHLIGHT};
 
-use super::types::{ChipOpacity, ChipSelectionState, SpanPosition, span_border_radius, span_padding};
+use super::types::{
+    span_border_radius, span_padding, ChipOpacity, ChipSelectionState, SpanPosition,
+};
 
 /// Render an all-day event chip with colored background bar.
 ///
@@ -35,8 +37,11 @@ pub fn render_all_day_chip(
 
     // Calculate opacity based on selection state
     let opacity = selection.map_or(
-        ChipOpacity { background: 0.3, text: 1.0 },
-        |s| ChipOpacity::from_state(s.is_selected, s.is_being_dragged)
+        ChipOpacity {
+            background: 0.3,
+            text: 1.0,
+        },
+        |s| ChipOpacity::from_state(s.is_selected, s.is_being_dragged),
     );
     let is_selected = selection.map_or(false, |s| s.is_selected);
 
@@ -44,19 +49,25 @@ pub fn render_all_day_chip(
         .padding(padding)
         .width(Length::Fill)
         .clip(true)
-        .style(move |_theme: &cosmic::Theme| {
-            container::Style {
-                background: Some(cosmic::iced::Background::Color(
-                    color.scale_alpha(opacity.background)
-                )),
-                border: cosmic::iced::Border {
-                    color: if is_selected { color } else { cosmic::iced::Color::TRANSPARENT },
-                    width: if is_selected { BORDER_WIDTH_HIGHLIGHT } else { 0.0 },
-                    radius: border_radius.into(),
+        .style(move |_theme: &cosmic::Theme| container::Style {
+            background: Some(cosmic::iced::Background::Color(
+                color.scale_alpha(opacity.background),
+            )),
+            border: cosmic::iced::Border {
+                color: if is_selected {
+                    color
+                } else {
+                    cosmic::iced::Color::TRANSPARENT
                 },
-                text_color: Some(color.scale_alpha(opacity.text)),
-                ..Default::default()
-            }
+                width: if is_selected {
+                    BORDER_WIDTH_HIGHLIGHT
+                } else {
+                    0.0
+                },
+                radius: border_radius.into(),
+            },
+            text_color: Some(color.scale_alpha(opacity.text)),
+            ..Default::default()
         })
         .into()
 }

@@ -22,7 +22,10 @@ use super::types::{ChipSelectionState, DisplayEvent};
 /// * `event` - The display event with span metadata
 /// * `current_date` - The date of the cell being rendered (for span position calculation)
 #[allow(dead_code)]
-pub fn render_event_chip(event: DisplayEvent, current_date: NaiveDate) -> Element<'static, Message> {
+pub fn render_event_chip(
+    event: DisplayEvent,
+    current_date: NaiveDate,
+) -> Element<'static, Message> {
     let color = parse_hex_color(&event.color).unwrap_or(COLOR_DEFAULT_GRAY);
 
     // Check if this event is in the past
@@ -104,7 +107,13 @@ pub fn render_clickable_event_chip(
     // - on_double_click: Open edit dialog
     // Pass calendar_id, summary and color for the floating drag preview
     let mut area = mouse_area(chip)
-        .on_press(Message::DragEventStart(calendar_id.clone(), uid.clone(), current_date, drag_summary, drag_color))
+        .on_press(Message::DragEventStart(
+            calendar_id.clone(),
+            uid.clone(),
+            current_date,
+            drag_summary,
+            drag_color,
+        ))
         .on_release(Message::DragEventEnd)
         .on_double_click(Message::OpenEditEventDialog(calendar_id, uid));
 

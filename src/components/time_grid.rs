@@ -9,8 +9,8 @@ use crate::locale::LocalePreferences;
 use crate::message::Message;
 use crate::styles::weekend_background;
 use crate::ui_constants::{
-    PADDING_SMALL, FONT_SIZE_SMALL, day_cell_border,
-    HOUR_ROW_HEIGHT, TIME_LABEL_WIDTH, BORDER_WIDTH_THIN
+    day_cell_border, BORDER_WIDTH_THIN, FONT_SIZE_SMALL, HOUR_ROW_HEIGHT, PADDING_SMALL,
+    TIME_LABEL_WIDTH,
 };
 
 /// Information about a single day column in the time grid
@@ -52,22 +52,19 @@ pub fn render_time_grid(
         let time_label = locale.format_hour(hour);
 
         hour_row = hour_row.push(
-            container(
-                widget::text(time_label)
-                    .size(FONT_SIZE_SMALL)
-            )
-            .width(Length::Fixed(TIME_LABEL_WIDTH))
-            .height(Length::Fixed(HOUR_ROW_HEIGHT))
-            .padding(PADDING_SMALL)
-            .align_y(alignment::Vertical::Top)
-            .style(|theme: &cosmic::Theme| container::Style {
-                border: Border {
-                    width: BORDER_WIDTH_THIN,
-                    color: day_cell_border(theme),
+            container(widget::text(time_label).size(FONT_SIZE_SMALL))
+                .width(Length::Fixed(TIME_LABEL_WIDTH))
+                .height(Length::Fixed(HOUR_ROW_HEIGHT))
+                .padding(PADDING_SMALL)
+                .align_y(alignment::Vertical::Top)
+                .style(|theme: &cosmic::Theme| container::Style {
+                    border: Border {
+                        width: BORDER_WIDTH_THIN,
+                        color: day_cell_border(theme),
+                        ..Default::default()
+                    },
                     ..Default::default()
-                },
-                ..Default::default()
-            })
+                }),
         );
 
         // Day columns
@@ -86,7 +83,7 @@ pub fn render_time_grid(
                             ..Default::default()
                         },
                         ..Default::default()
-                    })
+                    }),
             );
         }
 
@@ -103,4 +100,3 @@ pub fn render_time_column_placeholder(height: f32) -> Element<'static, Message> 
         .height(Length::Fixed(height))
         .into()
 }
-

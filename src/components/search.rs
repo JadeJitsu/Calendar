@@ -5,8 +5,8 @@
 use chrono::{Datelike, Utc};
 use cosmic::iced::{Alignment, Length};
 use cosmic::widget::text_input;
-use cosmic::widget::{button, column, container, row, scrollable, text};
 use cosmic::widget::Id;
+use cosmic::widget::{button, column, container, row, scrollable, text};
 use cosmic::{widget, Element};
 
 use crate::components::parse_color_safe;
@@ -71,10 +71,7 @@ fn render_result_row(r: &SearchResult) -> Element<'_, Message> {
 
 /// Render the search bar (input + results). `results` is the live filter
 /// output for the current `query`.
-pub fn render_search_bar<'a>(
-    query: &'a str,
-    results: &'a [SearchResult],
-) -> Element<'a, Message> {
+pub fn render_search_bar<'a>(query: &'a str, results: &'a [SearchResult]) -> Element<'a, Message> {
     let placeholder = fl!("search-placeholder");
     let input = text_input(placeholder, query)
         .id(search_input_id())
@@ -102,11 +99,7 @@ pub fn render_search_bar<'a>(
         column([])
             .spacing(SPACING_SMALL)
             .push(input)
-            .push(
-                scrollable(rows)
-                    .height(Length::Shrink)
-                    .width(Length::Fill),
-            )
+            .push(scrollable(rows).height(Length::Shrink).width(Length::Fill))
             .into()
     };
 

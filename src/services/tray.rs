@@ -24,7 +24,7 @@ use std::sync::{Mutex, OnceLock};
 
 use futures_util::Stream;
 use rust_embed::RustEmbed;
-use tray_icon::menu::{Menu, MenuItem, MenuEvent};
+use tray_icon::menu::{Menu, MenuEvent, MenuItem};
 use tray_icon::{Icon, TrayIconBuilder};
 
 use crate::fl;
@@ -179,9 +179,9 @@ fn load_icon() -> Option<Icon> {
     let mut decoder = png::Decoder::new(Cursor::new(bytes));
     // Normalize the output to 8-bit RGBA regardless of the source color type
     // (the bundled asset is RGBA, but this keeps it robust to re-encoding).
-    decoder.set_transformations(png::Transformations::EXPAND
-        | png::Transformations::ALPHA
-        | png::Transformations::STRIP_16);
+    decoder.set_transformations(
+        png::Transformations::EXPAND | png::Transformations::ALPHA | png::Transformations::STRIP_16,
+    );
     let mut reader = match decoder.read_info() {
         Ok(reader) => reader,
         Err(e) => {

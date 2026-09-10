@@ -5,9 +5,9 @@
 
 use std::sync::{Arc, Mutex};
 
+use super::{Protocol, ProtocolResult};
 use crate::caldav::CalendarEvent;
 use crate::database::Database;
-use super::{Protocol, ProtocolResult};
 
 /// Local protocol using SQLite database for event storage.
 #[allow(dead_code)] // Foundation for future protocol-based architecture
@@ -27,22 +27,34 @@ impl LocalProtocol {
 
 impl Protocol for LocalProtocol {
     fn fetch_events(&self, calendar_id: &str) -> ProtocolResult<Vec<CalendarEvent>> {
-        let db = self.db.lock().map_err(|e| format!("Database lock error: {}", e))?;
+        let db = self
+            .db
+            .lock()
+            .map_err(|e| format!("Database lock error: {}", e))?;
         db.get_events_for_calendar(calendar_id)
     }
 
     fn add_event(&mut self, calendar_id: &str, event: &CalendarEvent) -> ProtocolResult<()> {
-        let db = self.db.lock().map_err(|e| format!("Database lock error: {}", e))?;
+        let db = self
+            .db
+            .lock()
+            .map_err(|e| format!("Database lock error: {}", e))?;
         db.insert_event(calendar_id, event)
     }
 
     fn update_event(&mut self, calendar_id: &str, event: &CalendarEvent) -> ProtocolResult<()> {
-        let db = self.db.lock().map_err(|e| format!("Database lock error: {}", e))?;
+        let db = self
+            .db
+            .lock()
+            .map_err(|e| format!("Database lock error: {}", e))?;
         db.update_event(calendar_id, event)
     }
 
     fn delete_event(&mut self, calendar_id: &str, uid: &str) -> ProtocolResult<bool> {
-        let db = self.db.lock().map_err(|e| format!("Database lock error: {}", e))?;
+        let db = self
+            .db
+            .lock()
+            .map_err(|e| format!("Database lock error: {}", e))?;
         db.delete_event(calendar_id, uid)
     }
 
@@ -105,7 +117,9 @@ mod tests {
         assert_eq!(events[0].summary, "Protocol Test");
 
         // Delete event
-        let deleted = protocol.delete_event("test-cal", "protocol-test-1").unwrap();
+        let deleted = protocol
+            .delete_event("test-cal", "protocol-test-1")
+            .unwrap();
         assert!(deleted);
 
         // Verify deletion

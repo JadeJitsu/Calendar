@@ -114,8 +114,7 @@ impl NotificationScheduler {
     ) -> Vec<(DateTime<Utc>, DateTime<Utc>, CalendarEvent, usize)> {
         let mut out = Vec::new();
         for event in events {
-            let mut alerts: Vec<(usize, Option<i64>)> =
-                vec![(0usize, alert_minutes(&event.alert))];
+            let mut alerts: Vec<(usize, Option<i64>)> = vec![(0usize, alert_minutes(&event.alert))];
             if let Some(second) = &event.alert_second {
                 alerts.push((1usize, alert_minutes(second)));
             }
@@ -219,8 +218,8 @@ pub fn fire_notifications(due: &[DueNotification]) -> Vec<(String, String)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{NaiveDate, TimeZone};
     use crate::caldav::AlertTime;
+    use chrono::{NaiveDate, TimeZone};
 
     fn event_at(start: DateTime<Utc>, alert: AlertTime) -> CalendarEvent {
         CalendarEvent {
@@ -286,7 +285,12 @@ mod tests {
     fn dedupes_within_same_scheduler() {
         let mut sched = NotificationScheduler::new();
         let event = event_at(at(12, 0, 0), AlertTime::FifteenMinutes);
-        assert_eq!(sched.due_notifications(at(11, 45, 30), &[event.clone()]).len(), 1);
+        assert_eq!(
+            sched
+                .due_notifications(at(11, 45, 30), &[event.clone()])
+                .len(),
+            1
+        );
         // Second tick in the same window must not re-fire.
         assert!(sched.due_notifications(at(11, 45, 50), &[event]).is_empty());
     }

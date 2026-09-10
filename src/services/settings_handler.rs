@@ -47,7 +47,10 @@ impl SettingsHandler {
         match AppSettings::load() {
             Ok(settings) => {
                 info!("SettingsHandler: Settings loaded successfully");
-                debug!("SettingsHandler: show_week_numbers={}", settings.show_week_numbers);
+                debug!(
+                    "SettingsHandler: show_week_numbers={}",
+                    settings.show_week_numbers
+                );
                 Ok(settings)
             }
             Err(e) => {
@@ -71,7 +74,10 @@ impl SettingsHandler {
     /// Toggle week numbers display and save
     pub fn toggle_week_numbers(settings: &mut AppSettings) -> SettingsResult<()> {
         let new_value = !settings.show_week_numbers;
-        info!("SettingsHandler: Toggling week numbers: {} -> {}", settings.show_week_numbers, new_value);
+        info!(
+            "SettingsHandler: Toggling week numbers: {} -> {}",
+            settings.show_week_numbers, new_value
+        );
         settings.show_week_numbers = new_value;
         Self::save(settings)
     }

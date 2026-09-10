@@ -82,7 +82,10 @@ impl CalendarHandler {
             counter += 1;
         }
 
-        debug!("CalendarHandler: Generated unique ID '{}' from name '{}'", unique_id, name);
+        debug!(
+            "CalendarHandler: Generated unique ID '{}' from name '{}'",
+            unique_id, name
+        );
         unique_id
     }
 
@@ -116,11 +119,16 @@ impl CalendarHandler {
         let id = Self::generate_id(&data.name, manager);
 
         // Add the calendar
-        debug!("CalendarHandler: Adding calendar id='{}' name='{}' color='{}'",
-               id, data.name, data.color);
+        debug!(
+            "CalendarHandler: Adding calendar id='{}' name='{}' color='{}'",
+            id, data.name, data.color
+        );
         manager.add_local_calendar(id.clone(), data.name.clone(), data.color);
 
-        info!("CalendarHandler: Successfully created calendar '{}' (id={})", data.name, id);
+        info!(
+            "CalendarHandler: Successfully created calendar '{}' (id={})",
+            data.name, id
+        );
         Ok(id)
     }
 
@@ -137,14 +145,20 @@ impl CalendarHandler {
             .iter_mut()
             .find(|c| c.info().id == calendar_id)
             .ok_or_else(|| {
-                error!("CalendarHandler: Calendar '{}' not found for update", calendar_id);
+                error!(
+                    "CalendarHandler: Calendar '{}' not found for update",
+                    calendar_id
+                );
                 CalendarError::NotFound(calendar_id.to_string())
             })?;
 
         // Apply updates
         if let Some(name) = data.name {
             if name.trim().is_empty() {
-                warn!("CalendarHandler: Update rejected - empty name for '{}'", calendar_id);
+                warn!(
+                    "CalendarHandler: Update rejected - empty name for '{}'",
+                    calendar_id
+                );
                 return Err(CalendarError::ValidationError(
                     "Calendar name cannot be empty".to_string(),
                 ));
@@ -164,42 +178,53 @@ impl CalendarHandler {
         }
 
         // Save configuration
-        manager
-            .save_config()
-            .map_err(|e| {
-                error!("CalendarHandler: Failed to save config: {}", e);
-                CalendarError::ConfigError(e.to_string())
-            })?;
+        manager.save_config().map_err(|e| {
+            error!("CalendarHandler: Failed to save config: {}", e);
+            CalendarError::ConfigError(e.to_string())
+        })?;
 
-        info!("CalendarHandler: Successfully updated calendar '{}'", calendar_id);
+        info!(
+            "CalendarHandler: Successfully updated calendar '{}'",
+            calendar_id
+        );
         Ok(())
     }
 
     /// Toggle a calendar's enabled state
-    pub fn toggle_enabled(manager: &mut CalendarManager, calendar_id: &str) -> CalendarResult<bool> {
-        debug!("CalendarHandler: Toggling enabled state for '{}'", calendar_id);
+    pub fn toggle_enabled(
+        manager: &mut CalendarManager,
+        calendar_id: &str,
+    ) -> CalendarResult<bool> {
+        debug!(
+            "CalendarHandler: Toggling enabled state for '{}'",
+            calendar_id
+        );
 
         let calendar = manager
             .sources_mut()
             .iter_mut()
             .find(|c| c.info().id == calendar_id)
             .ok_or_else(|| {
-                error!("CalendarHandler: Calendar '{}' not found for toggle", calendar_id);
+                error!(
+                    "CalendarHandler: Calendar '{}' not found for toggle",
+                    calendar_id
+                );
                 CalendarError::NotFound(calendar_id.to_string())
             })?;
 
         let new_state = !calendar.is_enabled();
         calendar.set_enabled(new_state);
 
-        info!("CalendarHandler: Calendar '{}' enabled={}", calendar_id, new_state);
+        info!(
+            "CalendarHandler: Calendar '{}' enabled={}",
+            calendar_id, new_state
+        );
 
         // Save configuration
-        manager
-            .save_config()
-            .map_err(|e| {
-                error!("CalendarHandler: Failed to save config after toggle: {}", e);
-                CalendarError::ConfigError(e.to_string())
-            })?;
+        manager.save_config().map_err(|e| {
+            error!("CalendarHandler: Failed to save config after toggle: {}", e);
+            CalendarError::ConfigError(e.to_string())
+        })?;
 
         Ok(new_state)
     }
@@ -210,7 +235,10 @@ impl CalendarHandler {
         calendar_id: &str,
         color: String,
     ) -> CalendarResult<()> {
-        info!("CalendarHandler: Changing color for '{}' to '{}'", calendar_id, color);
+        info!(
+            "CalendarHandler: Changing color for '{}' to '{}'",
+            calendar_id, color
+        );
         Self::update(
             manager,
             calendar_id,
@@ -227,11 +255,17 @@ impl CalendarHandler {
         info!("CalendarHandler: Deleting calendar '{}'", calendar_id);
 
         if !manager.delete_calendar(calendar_id) {
-            error!("CalendarHandler: Calendar '{}' not found for deletion", calendar_id);
+            error!(
+                "CalendarHandler: Calendar '{}' not found for deletion",
+                calendar_id
+            );
             return Err(CalendarError::NotFound(calendar_id.to_string()));
         }
 
-        info!("CalendarHandler: Successfully deleted calendar '{}'", calendar_id);
+        info!(
+            "CalendarHandler: Successfully deleted calendar '{}'",
+            calendar_id
+        );
         Ok(())
     }
 
@@ -240,7 +274,10 @@ impl CalendarHandler {
         manager: &CalendarManager,
         calendar_id: &str,
     ) -> CalendarResult<(String, String, bool)> {
-        debug!("CalendarHandler: Getting info for calendar '{}'", calendar_id);
+        debug!(
+            "CalendarHandler: Getting info for calendar '{}'",
+            calendar_id
+        );
 
         let calendar = manager
             .sources()

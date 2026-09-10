@@ -1,7 +1,7 @@
 //! Locale-aware formatting and settings based on system configuration.
 
-use std::env;
 use chrono::Datelike;
+use std::env;
 
 /// Date format order
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -86,7 +86,12 @@ impl LocalePreferences {
     }
 
     /// Format a date range for week view (e.g., "Nov 24 - 30, 2024" or "24 - 30 Nov, 2024")
-    pub fn format_week_range(&self, first_day: &chrono::NaiveDate, last_day: &chrono::NaiveDate, week_number: u32) -> String {
+    pub fn format_week_range(
+        &self,
+        first_day: &chrono::NaiveDate,
+        last_day: &chrono::NaiveDate,
+        week_number: u32,
+    ) -> String {
         match self.date_format {
             DateFormat::MDY => {
                 // US format: "W48 - Nov 24 - 30, 2024"
@@ -217,8 +222,7 @@ fn detect_24_hour_format(locale: &str) -> bool {
 
     // Explicit 12-hour format locales
     let twelve_hour_locales = [
-        "en_us", "en_ca", "en_au", "en_nz", "en_ph",
-        "fil_ph", "tl_ph"
+        "en_us", "en_ca", "en_au", "en_nz", "en_ph", "fil_ph", "tl_ph",
     ];
 
     // Check if it's a known 12-hour locale
@@ -240,16 +244,13 @@ fn detect_first_day_of_week(locale: &str) -> chrono::Weekday {
 
     // Locales that start week on Sunday
     let sunday_locales = [
-        "en_us", "en_ca", "en_au", "en_nz", "en_ph",
-        "ja_jp", "ko_kr", "zh_cn", "zh_tw", "zh_hk",
-        "he_il", "ar_sa", "ar_ae", "ar_eg",
-        "fil_ph", "tl_ph", "pt_br"
+        "en_us", "en_ca", "en_au", "en_nz", "en_ph", "ja_jp", "ko_kr", "zh_cn", "zh_tw", "zh_hk",
+        "he_il", "ar_sa", "ar_ae", "ar_eg", "fil_ph", "tl_ph", "pt_br",
     ];
 
     // Locales that start week on Saturday
     let saturday_locales = [
-        "ar_iq", "ar_ly", "ar_om", "ar_qa", "ar_sd",
-        "ar_sy", "ar_ye"
+        "ar_iq", "ar_ly", "ar_om", "ar_qa", "ar_sd", "ar_sy", "ar_ye",
     ];
 
     // Check for Sunday-starting locales
@@ -275,14 +276,11 @@ fn detect_date_format(locale: &str) -> DateFormat {
     let locale_lower = locale.to_lowercase();
 
     // MDY (Month-Day-Year) - Primarily US
-    let mdy_locales = [
-        "en_us", "en_ca", "en_ph", "fil_ph", "tl_ph"
-    ];
+    let mdy_locales = ["en_us", "en_ca", "en_ph", "fil_ph", "tl_ph"];
 
     // YMD (Year-Month-Day) - ISO 8601, East Asian countries
     let ymd_locales = [
-        "ja_jp", "ko_kr", "zh_cn", "zh_tw", "zh_hk", "zh_sg",
-        "hu_hu", "lt_lt", "mn_mn", "ko_kp"
+        "ja_jp", "ko_kr", "zh_cn", "zh_tw", "zh_hk", "zh_sg", "hu_hu", "lt_lt", "mn_mn", "ko_kp",
     ];
 
     // Check for MDY locales

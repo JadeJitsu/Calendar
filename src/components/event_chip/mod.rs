@@ -18,7 +18,7 @@ mod types;
 mod unified;
 
 // Re-export public types (only what's actually used externally)
-pub use types::{ChipOpacity, DisplayEvent, span_border_radius_from_flags};
+pub use types::{span_border_radius_from_flags, ChipOpacity, DisplayEvent};
 
 // Re-export rendering functions (only what's actually used externally)
 pub use compact::render_compact_events;

@@ -29,18 +29,33 @@ fn main() {
         .send()
         .expect("send");
     let status = resp.status();
-    let ctype = resp.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("?").to_string();
+    let ctype = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("?")
+        .to_string();
     let body = resp.text().unwrap_or_default();
     println!("=== GET {list_url}");
     println!("status: {status}  content-type: {ctype}");
-    println!("body (first 2000 chars):\n{}", body.chars().take(2000).collect::<String>());
+    println!(
+        "body (first 2000 chars):\n{}",
+        body.chars().take(2000).collect::<String>()
+    );
 
     // 2. If the list is OCS-wrapped JSON, grab the first calendar id/uri and
     //    fetch its events to capture that shape too.
     if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
         if let Some(cal) = json["ocs"]["data"].as_array().and_then(|a| a.first()) {
-            let id = cal.get("id").and_then(|v| v.as_i64()).map(|v| v.to_string())
-                .or_else(|| cal.get("uri").and_then(|v| v.as_str()).map(|s| s.to_string()))
+            let id = cal
+                .get("id")
+                .and_then(|v| v.as_i64())
+                .map(|v| v.to_string())
+                .or_else(|| {
+                    cal.get("uri")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string())
+                })
                 .unwrap_or_default();
             let uri = cal.get("uri").and_then(|v| v.as_str()).unwrap_or("?");
             println!("\nfirst calendar: id={id} uri={uri}");
@@ -52,11 +67,19 @@ fn main() {
                 .send()
                 .expect("send");
             let status = resp.status();
-            let ctype = resp.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("?").to_string();
+            let ctype = resp
+                .headers()
+                .get("content-type")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("?")
+                .to_string();
             let body = resp.text().unwrap_or_default();
             println!("=== GET {ev_url}");
             println!("status: {status}  content-type: {ctype}");
-            println!("body (first 1200 chars):\n{}", body.chars().take(1200).collect::<String>());
+            println!(
+                "body (first 1200 chars):\n{}",
+                body.chars().take(1200).collect::<String>()
+            );
         }
     }
 }

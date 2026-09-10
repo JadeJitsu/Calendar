@@ -6,27 +6,28 @@
 //! - `events`: Date event chip rendering
 //! - `selection`: Quick event selection overlay
 
+mod events;
 mod header;
 mod overlay;
-mod events;
 mod selection;
 
 use chrono::{Datelike, NaiveDate};
 use cosmic::iced::widget::stack;
 use cosmic::iced::{alignment, Length, Size};
-use cosmic::widget::{column, container, row, responsive};
+use cosmic::widget::{column, container, responsive, row};
 use cosmic::{widget, Element};
 
 use crate::components::spacer::fill_spacer;
-use crate::components::{render_day_cell_with_events, DayCellConfig, DisplayEvent, should_use_compact};
+use crate::components::{
+    render_day_cell_with_events, should_use_compact, DayCellConfig, DisplayEvent,
+};
 use crate::dialogs::ActiveDialog;
 use crate::locale::LocalePreferences;
 use crate::message::Message;
 use crate::models::{CalendarDay, CalendarState};
 use crate::selection::SelectionState;
 use crate::ui_constants::{
-    FONT_SIZE_SMALL, PADDING_MONTH_GRID, PADDING_SMALL,
-    SPACING_TINY, WEEK_NUMBER_WIDTH,
+    FONT_SIZE_SMALL, PADDING_MONTH_GRID, PADDING_SMALL, SPACING_TINY, WEEK_NUMBER_WIDTH,
 };
 
 use header::render_weekday_header;
@@ -69,7 +70,11 @@ pub fn render_month_view<'a>(
     let mut grid = column([]).spacing(SPACING_TINY).padding(PADDING_MONTH_GRID);
 
     // Responsive weekday header - uses short names when cells are narrow
-    let week_number_offset = if show_week_numbers { WEEK_NUMBER_WIDTH } else { 0.0 };
+    let week_number_offset = if show_week_numbers {
+        WEEK_NUMBER_WIDTH
+    } else {
+        0.0
+    };
     let header = responsive(move |size: Size| {
         // Calculate approximate cell width (7 days + spacing)
         let available_for_days = size.width - week_number_offset - (SPACING_TINY as f32 * 6.0);
@@ -92,7 +97,8 @@ pub fn render_month_view<'a>(
             .map(|e| compute_week_event_slots(week, e.events_by_date));
 
         // Extract the slots map for compatibility with existing code
-        let event_slots = week_slot_info.as_ref()
+        let event_slots = week_slot_info
+            .as_ref()
             .map(|info| info.slots.clone())
             .unwrap_or_default();
 
@@ -105,34 +111,33 @@ pub fn render_month_view<'a>(
         if show_week_numbers {
             let week_number = week_numbers.get(week_index).copied().unwrap_or(0);
             week_row = week_row.push(
-                container(
-                    widget::text(format!("{}", week_number))
-                        .size(FONT_SIZE_SMALL)
-                )
-                .width(Length::Fixed(WEEK_NUMBER_WIDTH))
-                .height(Length::Fill)
-                .padding(PADDING_SMALL)
-                .align_y(alignment::Vertical::Center)
+                container(widget::text(format!("{}", week_number)).size(FONT_SIZE_SMALL))
+                    .width(Length::Fixed(WEEK_NUMBER_WIDTH))
+                    .height(Length::Fill)
+                    .padding(PADDING_SMALL)
+                    .align_y(alignment::Vertical::Center),
             );
         }
 
         // Day cells
         for (day_col, calendar_day) in week.iter().enumerate() {
-            let CalendarDay { year, month, day, is_current_month } = *calendar_day;
+            let CalendarDay {
+                year,
+                month,
+                day,
+                is_current_month,
+            } = *calendar_day;
 
             // Check if today (need to compare full date)
             let today = chrono::Local::now();
-            let is_today = year == today.year()
-                && month == today.month()
-                && day == today.day();
+            let is_today = year == today.year() && month == today.month() && day == today.day();
 
             // Check if this day is selected (works for both current and adjacent month days)
             // Don't show cell selection if an event is selected - event selection takes priority
             let cell_date = NaiveDate::from_ymd_opt(year, month, day);
-            let has_event_selected = events.as_ref()
-                .and_then(|e| e.selected_event_uid)
-                .is_some();
-            let is_selected = !has_event_selected && selected_date.is_some() && cell_date == selected_date;
+            let has_event_selected = events.as_ref().and_then(|e| e.selected_event_uid).is_some();
+            let is_selected =
+                !has_event_selected && selected_date.is_some() && cell_date == selected_date;
 
             // Get weekday for weekend detection
             let weekday = chrono::NaiveDate::from_ymd_opt(year, month, day)
@@ -142,15 +147,16 @@ pub fn render_month_view<'a>(
 
             // Get events for this day using full date as key (works for adjacent months too)
             // Include all events - multi-day events show in each cell they span
-            let day_events: Vec<DisplayEvent> = if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
-                events
-                    .as_ref()
-                    .and_then(|e| e.events_by_date.get(&date))
-                    .cloned()
-                    .unwrap_or_default()
-            } else {
-                vec![]
-            };
+            let day_events: Vec<DisplayEvent> =
+                if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
+                    events
+                        .as_ref()
+                        .and_then(|e| e.events_by_date.get(&date))
+                        .cloned()
+                        .unwrap_or_default()
+                } else {
+                    vec![]
+                };
 
             // Quick event input is always rendered as a spanning overlay (even for single-day)
             // This provides consistent UX for all quick event creation
@@ -159,40 +165,51 @@ pub fn render_month_view<'a>(
             // Check if this day is in the current drag selection range
             // Also check if there's an active multi-day quick event that includes this date
             let (is_in_selection, selection_active) = if let Some(cell_date) = cell_date {
-                events.as_ref().map(|e| {
-                    // Show highlight if: actively dragging OR in quick event date range
-                    let in_drag_selection = e.selection.contains(cell_date);
-                    let in_quick_event_range = e.active_dialog.is_date_in_quick_event_range(cell_date);
-                    let is_active = e.selection.is_active || e.active_dialog.is_multi_day_quick_event();
-                    (in_drag_selection || in_quick_event_range, is_active)
-                }).unwrap_or((false, false))
+                events
+                    .as_ref()
+                    .map(|e| {
+                        // Show highlight if: actively dragging OR in quick event date range
+                        let in_drag_selection = e.selection.contains(cell_date);
+                        let in_quick_event_range =
+                            e.active_dialog.is_date_in_quick_event_range(cell_date);
+                        let is_active =
+                            e.selection.is_active || e.active_dialog.is_multi_day_quick_event();
+                        (in_drag_selection || in_quick_event_range, is_active)
+                    })
+                    .unwrap_or((false, false))
             } else {
                 (false, false)
             };
 
             // Get selected event UID from events if available
-            let selected_event_uid = events.as_ref()
+            let selected_event_uid = events
+                .as_ref()
                 .and_then(|e| e.selected_event_uid)
                 .map(|s| s.to_string());
 
             // Check if event drag is active
-            let event_drag_active = events.as_ref()
+            let event_drag_active = events
+                .as_ref()
                 .map(|e| e.event_drag_active)
                 .unwrap_or(false);
 
             // Get the UID of the event being dragged (for dimming its original position)
-            let dragging_event_uid = events.as_ref()
+            let dragging_event_uid = events
+                .as_ref()
                 .and_then(|e| e.dragging_event_uid)
                 .map(|s| s.to_string());
 
             // Check if this cell is the current drop target
-            let is_drag_target = cell_date.is_some() && events.as_ref()
-                .and_then(|e| e.drag_target_date)
-                .map(|target| cell_date == Some(target))
-                .unwrap_or(false);
+            let is_drag_target = cell_date.is_some()
+                && events
+                    .as_ref()
+                    .and_then(|e| e.drag_target_date)
+                    .map(|target| cell_date == Some(target))
+                    .unwrap_or(false);
 
             // Get occupied slots for this specific day (for Tetris-style rendering)
-            let day_occupied_slots = week_slot_info.as_ref()
+            let day_occupied_slots = week_slot_info
+                .as_ref()
                 .and_then(|info| info.day_occupied_slots.get(day_col).cloned())
                 .unwrap_or_default();
 
@@ -217,11 +234,7 @@ pub fn render_month_view<'a>(
                 is_drag_target,
             });
 
-            week_row = week_row.push(
-                container(cell)
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-            );
+            week_row = week_row.push(container(cell).width(Length::Fill).height(Length::Fill));
         }
         grid = grid.push(week_row);
     }
@@ -234,9 +247,7 @@ pub fn render_month_view<'a>(
         .unwrap_or(false);
 
     // Build the final view with overlays
-    let base = container(grid)
-        .width(Length::Fill)
-        .height(Length::Fill);
+    let base = container(grid).width(Length::Fill).height(Length::Fill);
 
     // Collect overlays to stack
     let mut layers: Vec<Element<'a, Message>> = vec![base.into()];
@@ -247,7 +258,11 @@ pub fn render_month_view<'a>(
         // Clone data needed for the responsive closure
         let weeks = calendar_state.weeks_full.clone();
         let events_by_date = e.events_by_date.clone();
-        let week_number_offset = if show_week_numbers { WEEK_NUMBER_WIDTH } else { 0.0 };
+        let week_number_offset = if show_week_numbers {
+            WEEK_NUMBER_WIDTH
+        } else {
+            0.0
+        };
         let selected_uid = e.selected_event_uid.map(|s| s.to_string());
         let event_drag_active = e.event_drag_active;
         let dragging_uid = e.dragging_event_uid.map(|s| s.to_string());
@@ -259,7 +274,8 @@ pub fn render_month_view<'a>(
 
             // Calculate approximate cell height (total height minus header, divided by weeks)
             let num_weeks = weeks.len().max(1) as f32;
-            let available_height = size.height - WEEKDAY_HEADER_HEIGHT - (SPACING_TINY as f32 * num_weeks);
+            let available_height =
+                size.height - WEEKDAY_HEADER_HEIGHT - (SPACING_TINY as f32 * num_weeks);
             let cell_height = available_height / num_weeks;
 
             // Determine if we should use compact mode
@@ -287,21 +303,24 @@ pub fn render_month_view<'a>(
     // Add quick event input overlay on top if active
     if has_quick_event_overlay {
         if let Some(quick_overlay) = events.as_ref().and_then(|e| {
-            e.active_dialog.quick_event_range().map(|(start, end, text)| {
-                let color = e.quick_event
-                    .as_ref()
-                    .map(|(_, _, c)| c.to_string())
-                    .unwrap_or_else(|| "#3B82F6".to_string());
+            e.active_dialog
+                .quick_event_range()
+                .map(|(start, end, text)| {
+                    let color = e
+                        .quick_event
+                        .as_ref()
+                        .map(|(_, _, c)| c.to_string())
+                        .unwrap_or_else(|| "#3B82F6".to_string());
 
-                render_spanning_overlay(
-                    &calendar_state.weeks_full,
-                    start,
-                    end,
-                    text.to_string(),
-                    color,
-                    show_week_numbers,
-                )
-            })
+                    render_spanning_overlay(
+                        &calendar_state.weeks_full,
+                        start,
+                        end,
+                        text.to_string(),
+                        color,
+                        show_week_numbers,
+                    )
+                })
         }) {
             layers.push(quick_overlay);
         }

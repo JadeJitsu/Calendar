@@ -29,12 +29,10 @@ pub fn render_import_progress_dialog(active_dialog: &ActiveDialog) -> Element<'_
     };
 
     // Progress text: "Importing event 5 of 100..."
-    let progress_text = text(format!("Importing event {} of {}...", current, total))
-        .size(16);
+    let progress_text = text(format!("Importing event {} of {}...", current, total)).size(16);
 
     // Current event being imported
-    let current_event_text = text(format!("→ {}", current_event))
-        .size(14);
+    let current_event_text = text(format!("→ {}", current_event)).size(14);
 
     // Scrollable log of imported events
     let mut log_column = column([]).spacing(4);
@@ -44,11 +42,7 @@ pub fn render_import_progress_dialog(active_dialog: &ActiveDialog) -> Element<'_
         log_column = log_column.push(text(entry).size(12));
     }
 
-    let log_scroll = scrollable(
-        container(log_column)
-            .padding(8)
-    )
-    .height(Length::Fixed(200.0));
+    let log_scroll = scrollable(container(log_column).padding(8)).height(Length::Fixed(200.0));
 
     // Progress indicator (using text for now, could be spinner widget)
     let spinner = text("⟳").size(32); // Unicode spinner character
@@ -64,19 +58,16 @@ pub fn render_import_progress_dialog(active_dialog: &ActiveDialog) -> Element<'_
         .push(log_scroll);
 
     // Cancel button
-    let cancel_button = button::destructive(fl!("button-cancel"))
-        .on_press(Message::CancelImportProgress);
+    let cancel_button =
+        button::destructive(fl!("button-cancel")).on_press(Message::CancelImportProgress);
 
     // Dialog container
     container(
-        column([])
-            .spacing(16)
-            .push(content)
-            .push(
-                container(cancel_button)
-                    .width(Length::Fill)
-                    .center_x(Length::Fill)
-            )
+        column([]).spacing(16).push(content).push(
+            container(cancel_button)
+                .width(Length::Fill)
+                .center_x(Length::Fill),
+        ),
     )
     .width(Length::Fixed(450.0))
     .padding(16)

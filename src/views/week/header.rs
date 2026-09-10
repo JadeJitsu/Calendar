@@ -3,16 +3,16 @@
 //! Contains day header row and all-day events section rendering.
 
 use chrono::{Datelike, Local, NaiveDate};
-use cosmic::iced::{alignment, Background, Border, Length};
 use cosmic::iced::widget::keyed::Column as KeyedColumn;
+use cosmic::iced::{alignment, Background, Border, Length};
 use cosmic::widget::{column, container, mouse_area, row};
 use cosmic::{widget, Element};
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
 
-use crate::components::{parse_color_safe, ChipOpacity, DisplayEvent};
 use crate::components::spacer::fixed_spacer;
+use crate::components::{parse_color_safe, ChipOpacity, DisplayEvent};
 use crate::locale::LocalePreferences;
 use crate::localized_names;
 use crate::message::Message;
@@ -20,11 +20,11 @@ use crate::models::WeekState;
 use crate::selection::is_drag_active;
 use crate::styles::{today_filled_style, weekend_background};
 use crate::ui_constants::{
-    PADDING_SMALL, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, day_cell_border,
-    TIME_LABEL_WIDTH, BORDER_WIDTH_THIN, SPACING_TINY, BORDER_RADIUS,
+    day_cell_border, BORDER_RADIUS, BORDER_WIDTH_THIN, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL,
+    PADDING_SMALL, SPACING_TINY, TIME_LABEL_WIDTH,
 };
 
-use super::utils::{DAY_HEADER_HEIGHT, ALL_DAY_EVENT_HEIGHT, ALL_DAY_SPACING};
+use super::utils::{ALL_DAY_EVENT_HEIGHT, ALL_DAY_SPACING, DAY_HEADER_HEIGHT};
 
 /// Hash a string to a u64 key for keyed columns
 fn hash_key(s: &str) -> u64 {
@@ -72,14 +72,20 @@ pub fn render_header_section<'a>(
                         ..Default::default()
                     },
                     ..Default::default()
-                })
+                }),
         );
     }
 
     header_col = header_col.push(day_headers);
 
     // All-day events section
-    let all_day_section = render_all_day_section(week_state, locale, all_day_events, all_day_section_height, selected_event_uid);
+    let all_day_section = render_all_day_section(
+        week_state,
+        locale,
+        all_day_events,
+        all_day_section_height,
+        selected_event_uid,
+    );
     header_col = header_col.push(all_day_section);
 
     header_col.into()
@@ -88,14 +94,14 @@ pub fn render_header_section<'a>(
 /// Render a single day header with day name and number
 fn render_day_header<'a>(day_name: &str, day_number: &str, is_today: bool) -> Element<'a, Message> {
     let day_number_element: Element<'a, Message> = if is_today {
-        container(
-            widget::text(day_number.to_string()).size(FONT_SIZE_MEDIUM)
-        )
-        .padding(PADDING_SMALL)
-        .style(|theme: &cosmic::Theme| today_filled_style(theme))
-        .into()
+        container(widget::text(day_number.to_string()).size(FONT_SIZE_MEDIUM))
+            .padding(PADDING_SMALL)
+            .style(|theme: &cosmic::Theme| today_filled_style(theme))
+            .into()
     } else {
-        widget::text(day_number.to_string()).size(FONT_SIZE_MEDIUM).into()
+        widget::text(day_number.to_string())
+            .size(FONT_SIZE_MEDIUM)
+            .into()
     };
 
     column([])
@@ -118,21 +124,19 @@ fn render_all_day_section<'a>(
 
     // Time column with "all-day" label
     all_day_row = all_day_row.push(
-        container(
-            widget::text("").size(FONT_SIZE_SMALL)
-        )
-        .width(Length::Fixed(TIME_LABEL_WIDTH))
-        .height(Length::Fixed(height))
-        .padding(PADDING_SMALL)
-        .align_y(alignment::Vertical::Top)
-        .style(|theme: &cosmic::Theme| container::Style {
-            border: Border {
-                width: BORDER_WIDTH_THIN,
-                color: day_cell_border(theme),
+        container(widget::text("").size(FONT_SIZE_SMALL))
+            .width(Length::Fixed(TIME_LABEL_WIDTH))
+            .height(Length::Fixed(height))
+            .padding(PADDING_SMALL)
+            .align_y(alignment::Vertical::Top)
+            .style(|theme: &cosmic::Theme| container::Style {
+                border: Border {
+                    width: BORDER_WIDTH_THIN,
+                    color: day_cell_border(theme),
+                    ..Default::default()
+                },
                 ..Default::default()
-            },
-            ..Default::default()
-        })
+            }),
     );
 
     // All-day events for each day
@@ -173,65 +177,75 @@ fn render_all_day_section<'a>(
 
 /// Render all-day events for a single day as a vertical stack with click and drag support
 /// Uses KeyedColumn to ensure proper widget reconciliation when events change
-fn render_all_day_events_for_day(date: NaiveDate, events: &[DisplayEvent], selected_event_uid: Option<&str>) -> Element<'static, Message> {
+fn render_all_day_events_for_day(
+    date: NaiveDate,
+    events: &[DisplayEvent],
+    selected_event_uid: Option<&str>,
+) -> Element<'static, Message> {
     // Check if this date is in the past (all-day events are past at end of day)
     let today = Local::now().date_naive();
     let is_past = date < today; // All-day events don't have time - check by day
 
     // Use KeyedColumn for proper diffing when events are added/removed
-    let keyed_children: Vec<(u64, Element<'static, Message>)> = events.iter().map(|event| {
-        let color = parse_color_safe(&event.color);
-        let calendar_id = event.calendar_id.clone();
-        let uid = event.uid.clone();
-        let key = hash_key(&uid);
-        let unique_id = event.unique_id();
-        let is_selected = selected_event_uid == Some(&unique_id);
+    let keyed_children: Vec<(u64, Element<'static, Message>)> = events
+        .iter()
+        .map(|event| {
+            let color = parse_color_safe(&event.color);
+            let calendar_id = event.calendar_id.clone();
+            let uid = event.uid.clone();
+            let key = hash_key(&uid);
+            let unique_id = event.unique_id();
+            let is_selected = selected_event_uid == Some(&unique_id);
 
-        // Selection highlight with past event dimming
-        let (bg_opacity, border_width) = ChipOpacity::timed_event_opacity(is_selected, is_past);
+            // Selection highlight with past event dimming
+            let (bg_opacity, border_width) = ChipOpacity::timed_event_opacity(is_selected, is_past);
 
-        let chip = container(
-            widget::text(event.summary.clone())
-                .size(10)
-        )
-        .padding([2, 4])
-        .width(Length::Fill)
-        .height(Length::Fixed(ALL_DAY_EVENT_HEIGHT))
-        .style(move |theme: &cosmic::Theme| container::Style {
-            background: Some(Background::Color(cosmic::iced::Color {
-                a: bg_opacity,
-                ..color
-            })),
-            text_color: Some(cosmic::iced::Color::WHITE),
-            border: Border {
-                radius: BORDER_RADIUS.into(),
-                width: border_width,
-                color: if is_selected {
-                    theme.cosmic().accent_color().into()
-                } else {
-                    cosmic::iced::Color::TRANSPARENT
-                },
-            },
-            ..Default::default()
-        });
+            let chip = container(widget::text(event.summary.clone()).size(10))
+                .padding([2, 4])
+                .width(Length::Fill)
+                .height(Length::Fixed(ALL_DAY_EVENT_HEIGHT))
+                .style(move |theme: &cosmic::Theme| container::Style {
+                    background: Some(Background::Color(cosmic::iced::Color {
+                        a: bg_opacity,
+                        ..color
+                    })),
+                    text_color: Some(cosmic::iced::Color::WHITE),
+                    border: Border {
+                        radius: BORDER_RADIUS.into(),
+                        width: border_width,
+                        color: if is_selected {
+                            theme.cosmic().accent_color().into()
+                        } else {
+                            cosmic::iced::Color::TRANSPARENT
+                        },
+                    },
+                    ..Default::default()
+                });
 
-        // Get color hex for drag preview
-        let color_hex = event.color.clone();
+            // Get color hex for drag preview
+            let color_hex = event.color.clone();
 
-        // Wrap with mouse area for click and drag handling. on_enter is
-        // attached only while a drag is active (see the all-day row above).
-        let mut area = mouse_area(chip)
-            .on_press(Message::DragEventStart(calendar_id.clone(), uid.clone(), date, event.summary.clone(), color_hex))
-            .on_release(Message::DragEventEnd)
-            .on_double_click(Message::OpenEditEventDialog(calendar_id, uid));
-        if is_drag_active() {
-            area = area.on_enter(Message::DragEventUpdate(date));
-        }
-        let clickable_chip: Element<'static, Message> = area.into();
+            // Wrap with mouse area for click and drag handling. on_enter is
+            // attached only while a drag is active (see the all-day row above).
+            let mut area = mouse_area(chip)
+                .on_press(Message::DragEventStart(
+                    calendar_id.clone(),
+                    uid.clone(),
+                    date,
+                    event.summary.clone(),
+                    color_hex,
+                ))
+                .on_release(Message::DragEventEnd)
+                .on_double_click(Message::OpenEditEventDialog(calendar_id, uid));
+            if is_drag_active() {
+                area = area.on_enter(Message::DragEventUpdate(date));
+            }
+            let clickable_chip: Element<'static, Message> = area.into();
 
-        // Use event UID hash as the key for proper reconciliation
-        (key, clickable_chip)
-    }).collect();
+            // Use event UID hash as the key for proper reconciliation
+            (key, clickable_chip)
+        })
+        .collect();
 
     KeyedColumn::with_children(keyed_children)
         .spacing(ALL_DAY_SPACING as f32)

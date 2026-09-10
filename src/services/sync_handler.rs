@@ -33,7 +33,10 @@ impl std::fmt::Display for SyncError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SyncError::CalendarNotFound(id) => write!(f, "Calendar not found: {}", id),
-            SyncError::SyncFailed { calendar_id, reason } => {
+            SyncError::SyncFailed {
+                calendar_id,
+                reason,
+            } => {
                 write!(f, "Sync failed for {}: {}", calendar_id, reason)
             }
             SyncError::MultipleFailed(failures) => {
@@ -100,7 +103,10 @@ impl SyncHandler {
                 SyncError::CalendarNotFound(calendar_id.to_string())
             })?;
 
-        debug!("SyncHandler: Found calendar '{}', starting sync", calendar.info().name);
+        debug!(
+            "SyncHandler: Found calendar '{}', starting sync",
+            calendar.info().name
+        );
         calendar.sync().map_err(|e| {
             error!("SyncHandler: Sync failed for '{}': {}", calendar_id, e);
             SyncError::SyncFailed {
@@ -109,7 +115,10 @@ impl SyncHandler {
             }
         })?;
 
-        info!("SyncHandler: Successfully synced calendar '{}'", calendar_id);
+        info!(
+            "SyncHandler: Successfully synced calendar '{}'",
+            calendar_id
+        );
         Ok(())
     }
 
@@ -122,7 +131,10 @@ impl SyncHandler {
 
         for calendar in manager.sources_mut().iter_mut() {
             if !calendar.is_enabled() {
-                debug!("SyncHandler: Skipping disabled calendar '{}'", calendar.info().name);
+                debug!(
+                    "SyncHandler: Skipping disabled calendar '{}'",
+                    calendar.info().name
+                );
                 continue;
             }
 
@@ -154,7 +166,10 @@ impl SyncHandler {
             }
         }
 
-        info!("SyncHandler: Sync complete - {} succeeded, {} failed", succeeded, failed);
+        info!(
+            "SyncHandler: Sync complete - {} succeeded, {} failed",
+            succeeded, failed
+        );
         SyncReport {
             total: succeeded + failed,
             succeeded,
@@ -169,7 +184,10 @@ impl SyncHandler {
         let report = Self::sync_all(manager);
 
         if report.all_succeeded() {
-            info!("SyncHandler: All {} calendars synced successfully", report.total);
+            info!(
+                "SyncHandler: All {} calendars synced successfully",
+                report.total
+            );
             Ok(())
         } else {
             let failures: Vec<(String, String)> = report

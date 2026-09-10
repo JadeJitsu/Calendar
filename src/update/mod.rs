@@ -20,8 +20,8 @@
 //! - [`schedule_deferred_scroll_restore`]: Schedule scroll position restoration
 //! - [`close_quick_event_with_scroll_restore`]: Close quick event and restore scroll
 
-mod calendar;
 mod caldav;
+mod calendar;
 mod event;
 mod import;
 mod navigation;
@@ -38,8 +38,8 @@ use crate::components::{quick_event_input_id, search_input_id};
 use crate::dialogs::{ActiveDialog, DialogManager};
 use crate::message::Message;
 use crate::services::{ExportHandler, SettingsHandler};
-use crate::views::{week_time_grid_id, CalendarView};
 use crate::ui_constants::HOUR_ROW_HEIGHT;
+use crate::views::{week_time_grid_id, CalendarView};
 use cosmic::widget::text_input;
 
 /// Helper to dismiss empty quick events on focus-loss actions (navigation, day selection)
@@ -63,8 +63,8 @@ fn dismiss_on_focus_loss(app: &mut CosmicCalendar) {
 /// `NotificationCheck`, chaining the chain. `Task::none()` when nothing is
 /// scheduled within the horizon.
 fn check_event_notifications(app: &mut CosmicCalendar) -> Task<Message> {
-    use chrono::Utc;
     use crate::services::fire_notifications;
+    use chrono::Utc;
 
     let now = Utc::now();
     let events = app.calendar_manager.get_all_events();
@@ -94,10 +94,9 @@ pub(crate) fn arm_notification_timer(app: &CosmicCalendar) -> Task<Message> {
                 .to_std()
                 .unwrap_or_else(|_| std::time::Duration::from_secs(30));
             debug!("Next event alert due in {:?}", delay);
-            Task::perform(
-                tokio::time::sleep(delay),
-                |_| cosmic::Action::App(Message::NotificationCheck),
-            )
+            Task::perform(tokio::time::sleep(delay), |_| {
+                cosmic::Action::App(Message::NotificationCheck)
+            })
         }
         None => Task::none(),
     }
@@ -125,7 +124,10 @@ fn scroll_week_to_current_time() -> Task<Message> {
     // Use scroll_to with AbsoluteOffset for vertical scrolling
     scrollable::scroll_to(
         week_time_grid_id(),
-        scrollable::AbsoluteOffset::<Option<f32>> { x: Some(0.0), y: Some(scroll_offset) },
+        scrollable::AbsoluteOffset::<Option<f32>> {
+            x: Some(0.0),
+            y: Some(scroll_offset),
+        },
     )
 }
 
@@ -139,7 +141,10 @@ fn scroll_week_to_hour(hour: u32) -> Task<Message> {
 
     scrollable::scroll_to(
         week_time_grid_id(),
-        scrollable::AbsoluteOffset::<Option<f32>> { x: Some(0.0), y: Some(scroll_offset) },
+        scrollable::AbsoluteOffset::<Option<f32>> {
+            x: Some(0.0),
+            y: Some(scroll_offset),
+        },
     )
 }
 
@@ -182,7 +187,10 @@ fn handle_export_calendar_to_file(
     calendar_id: String,
     path: std::path::PathBuf,
 ) -> Task<Message> {
-    debug!("handle_export_calendar_to_file: Exporting calendar '{}' to {:?}", calendar_id, path);
+    debug!(
+        "handle_export_calendar_to_file: Exporting calendar '{}' to {:?}",
+        calendar_id, path
+    );
 
     match ExportHandler::export_to_file(&app.calendar_manager, &calendar_id, &path) {
         Ok(()) => {
@@ -223,7 +231,10 @@ fn handle_process_url(app: &mut CosmicCalendar, url: String) -> Task<Message> {
                         },
                         |result| {
                             if let Some((url, calendar_data)) = result {
-                                cosmic::Action::App(Message::ProcessDownloadedCalendar(url, calendar_data))
+                                cosmic::Action::App(Message::ProcessDownloadedCalendar(
+                                    url,
+                                    calendar_data,
+                                ))
                             } else {
                                 cosmic::Action::App(Message::None)
                             }
@@ -246,7 +257,12 @@ fn handle_process_url(app: &mut CosmicCalendar, url: String) -> Task<Message> {
                     };
                     app.current_view = new_view;
                 }
-                UrlAction::CreateEvent { summary, start, end, location } => {
+                UrlAction::CreateEvent {
+                    summary,
+                    start,
+                    end,
+                    location,
+                } => {
                     info!("URL Action: CreateEvent - summary={:?}, start={:?}, end={:?}, location={:?}",
                           summary, start, end, location);
                     // TODO: Open event dialog with pre-filled data
@@ -280,7 +296,11 @@ fn handle_process_downloaded_calendar(
     // Parse the iCalendar data
     match ExportHandler::parse_ical_string_with_name(&calendar_data) {
         Ok((calendar_name, events)) => {
-            info!("Successfully parsed {} events from calendar '{}'", events.len(), calendar_name);
+            info!(
+                "Successfully parsed {} events from calendar '{}'",
+                events.len(),
+                calendar_name
+            );
 
             // Show subscription dialog
             app.active_dialog = ActiveDialog::SubscribeCalendar {
@@ -288,7 +308,7 @@ fn handle_process_downloaded_calendar(
                 calendar_name: calendar_name.clone(),
                 events: events.clone(),
                 selected_calendar_id: None,
-                create_new_calendar: true,  // Default to creating new calendar
+                create_new_calendar: true, // Default to creating new calendar
                 new_calendar_name: calendar_name.clone(),
             };
 
@@ -333,10 +353,7 @@ fn handle_select_subscription_calendar(
     Task::none()
 }
 
-fn handle_toggle_create_new_calendar(
-    app: &mut CosmicCalendar,
-    create_new: bool,
-) -> Task<Message> {
+fn handle_toggle_create_new_calendar(app: &mut CosmicCalendar, create_new: bool) -> Task<Message> {
     if let ActiveDialog::SubscribeCalendar {
         create_new_calendar,
         ..
@@ -352,8 +369,7 @@ fn handle_update_subscription_calendar_name(
     name: String,
 ) -> Task<Message> {
     if let ActiveDialog::SubscribeCalendar {
-        new_calendar_name,
-        ..
+        new_calendar_name, ..
     } = &mut app.active_dialog
     {
         *new_calendar_name = name;
@@ -390,7 +406,10 @@ fn handle_confirm_subscription(app: &mut CosmicCalendar) -> Task<Message> {
 
             match CalendarHandler::create(&mut app.calendar_manager, new_calendar_data) {
                 Ok(calendar_id) => {
-                    info!("Created new calendar '{}' with id={}", new_name, calendar_id);
+                    info!(
+                        "Created new calendar '{}' with id={}",
+                        new_name, calendar_id
+                    );
                     calendar_id
                 }
                 Err(e) => {
@@ -411,7 +430,11 @@ fn handle_confirm_subscription(app: &mut CosmicCalendar) -> Task<Message> {
 
         // Transition to import dialog with the target calendar selected
         let events_to_import = events.clone();
-        info!("Importing {} events into calendar {}", events_to_import.len(), target_calendar_id);
+        info!(
+            "Importing {} events into calendar {}",
+            events_to_import.len(),
+            target_calendar_id
+        );
 
         // Set up import dialog with target calendar pre-selected
         app.active_dialog = ActiveDialog::Import {
@@ -434,24 +457,24 @@ fn handle_cancel_subscription(app: &mut CosmicCalendar) -> Task<Message> {
 }
 
 // Re-export handlers for use in this module
+use caldav::{
+    handle_background_sync, handle_caldav_dialog_password_changed,
+    handle_caldav_dialog_url_changed, handle_caldav_dialog_user_changed, handle_caldav_discovered,
+    handle_caldav_discovery_failed, handle_caldav_event_created, handle_caldav_event_deleted,
+    handle_caldav_event_updated, handle_caldav_sync_failed, handle_caldav_sync_started,
+    handle_caldav_synced, handle_caldav_write_failed, handle_confirm_add_caldav,
+    handle_open_add_caldav_dialog, handle_sync_calendars,
+};
 use calendar::{
     handle_change_calendar_color, handle_confirm_calendar_dialog, handle_confirm_delete_calendar,
     handle_delete_selected_calendar, handle_export_calendar_dialog,
     handle_open_calendar_dialog_create, handle_open_calendar_dialog_edit,
     handle_request_delete_calendar, handle_toggle_calendar,
 };
-use caldav::{
-    handle_caldav_discovered, handle_caldav_discovery_failed, handle_caldav_event_created,
-    handle_caldav_event_deleted, handle_caldav_event_updated, handle_caldav_sync_failed,
-    handle_caldav_sync_started, handle_caldav_synced, handle_caldav_write_failed,
-    handle_caldav_dialog_password_changed, handle_caldav_dialog_url_changed,
-    handle_background_sync, handle_caldav_dialog_user_changed, handle_confirm_add_caldav,
-    handle_open_add_caldav_dialog, handle_sync_calendars,
-};
 use event::{
-    extract_master_uid, extract_occurrence_date, handle_cancel_event_dialog, handle_cancel_quick_event,
-    handle_commit_quick_event, handle_confirm_event_dialog, handle_delete_event,
-    handle_drag_event_cancel, handle_drag_event_end, handle_drag_event_start,
+    extract_master_uid, extract_occurrence_date, handle_cancel_event_dialog,
+    handle_cancel_quick_event, handle_commit_quick_event, handle_confirm_event_dialog,
+    handle_delete_event, handle_drag_event_cancel, handle_drag_event_end, handle_drag_event_start,
     handle_drag_event_update, handle_open_edit_event_dialog, handle_open_new_event_dialog,
     handle_quick_event_text_changed, handle_select_event, handle_start_quick_event,
     handle_start_quick_timed_event,
@@ -459,7 +482,7 @@ use event::{
 use navigation::{handle_next_period, handle_previous_period};
 use selection::{
     handle_selection_cancel, handle_selection_end, handle_selection_start, handle_selection_update,
-    handle_time_selection_start, handle_time_selection_update, handle_time_selection_end,
+    handle_time_selection_end, handle_time_selection_start, handle_time_selection_update,
 };
 
 /// Handle all application messages and update state
@@ -594,7 +617,10 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             // Open the event for editing and close the search bar.
             app.show_search = false;
             app.search_query.clear();
-            return Task::done(cosmic::Action::App(Message::OpenEditEventDialog(calendar_id, uid)));
+            return Task::done(cosmic::Action::App(Message::OpenEditEventDialog(
+                calendar_id,
+                uid,
+            )));
         }
         Message::CloseSearch => {
             app.show_search = false;
@@ -624,7 +650,10 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 if let Some(offset) = app.week_view_scroll_opt {
                     // Scroll up by one hour (decrease y offset, minimum 0)
                     let new_y = (offset.y - HOUR_ROW_HEIGHT).max(0.0);
-                    let new_offset = scrollable::AbsoluteOffset { x: offset.x, y: new_y };
+                    let new_offset = scrollable::AbsoluteOffset {
+                        x: offset.x,
+                        y: new_y,
+                    };
                     return scrollable::scroll_to(week_time_grid_id(), new_offset.into());
                 }
             }
@@ -636,7 +665,10 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                     // Scroll down by one hour (increase y offset, max 24 hours)
                     let max_scroll = HOUR_ROW_HEIGHT * 23.0; // Can scroll to show hour 23
                     let new_y = (offset.y + HOUR_ROW_HEIGHT).min(max_scroll);
-                    let new_offset = scrollable::AbsoluteOffset { x: offset.x, y: new_y };
+                    let new_offset = scrollable::AbsoluteOffset {
+                        x: offset.x,
+                        y: new_y,
+                    };
                     return scrollable::scroll_to(week_time_grid_id(), new_offset.into());
                 }
             }
@@ -661,7 +693,10 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             if app.active_dialog.color_picker_calendar_id() == Some(&id) {
                 DialogManager::close(&mut app.active_dialog);
             } else {
-                DialogManager::open(&mut app.active_dialog, ActiveDialog::ColorPicker { calendar_id: id });
+                DialogManager::open(
+                    &mut app.active_dialog,
+                    ActiveDialog::ColorPicker { calendar_id: id },
+                );
             }
         }
         Message::CloseColorPicker => {
@@ -831,8 +866,11 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 // Extract the occurrence date from the UID (if it's an occurrence)
                 let occurrence_date = extract_occurrence_date(&uid);
                 // Find the event to get its name and check if it's recurring
-                if let Ok((event, _calendar_id)) = crate::services::EventHandler::find_event(&app.calendar_manager, master_uid) {
-                    let is_recurring = !matches!(event.repeat, crate::caldav::RepeatFrequency::Never);
+                if let Ok((event, _calendar_id)) =
+                    crate::services::EventHandler::find_event(&app.calendar_manager, master_uid)
+                {
+                    let is_recurring =
+                        !matches!(event.repeat, crate::caldav::RepeatFrequency::Never);
                     DialogManager::open(
                         &mut app.active_dialog,
                         ActiveDialog::EventDelete {
@@ -843,7 +881,10 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                         },
                     );
                 } else {
-                    debug!("RequestDeleteSelectedEvent: Event not found: {} (master_uid={})", uid, master_uid);
+                    debug!(
+                        "RequestDeleteSelectedEvent: Event not found: {} (master_uid={})",
+                        uid, master_uid
+                    );
                 }
             } else {
                 debug!("RequestDeleteSelectedEvent: No event selected");
@@ -868,7 +909,9 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
         Message::DeleteSingleOccurrence => {
             // Delete only the selected occurrence of a recurring event by adding an exception date
-            if let Some((event_uid, _event_name, is_recurring, occurrence_date)) = app.active_dialog.event_delete_data() {
+            if let Some((event_uid, _event_name, is_recurring, occurrence_date)) =
+                app.active_dialog.event_delete_data()
+            {
                 if !is_recurring {
                     debug!("DeleteSingleOccurrence: Event is not recurring, ignoring");
                     DialogManager::close(&mut app.active_dialog);
@@ -895,9 +938,15 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                     &master_uid,
                     date,
                 ) {
-                    error!("DeleteSingleOccurrence: Failed to add exception date: {}", e);
+                    error!(
+                        "DeleteSingleOccurrence: Failed to add exception date: {}",
+                        e
+                    );
                 } else {
-                    info!("DeleteSingleOccurrence: Successfully added exception date {} to event {}", date, master_uid);
+                    info!(
+                        "DeleteSingleOccurrence: Successfully added exception date {} to event {}",
+                        date, master_uid
+                    );
                     // Refresh calendar cache to reflect the change
                     app.refresh_cached_events();
                 }
@@ -945,7 +994,8 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 dialog.editing_field = if editing { Some(field) } else { None };
             }
         }
-        Message::EventDialogTitleChanged(title) => {
+        Message::EventDialogTitleChanged(title) =>
+        {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.title = title;
@@ -986,7 +1036,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 dialog.start_date_input = date.to_string();
                 dialog.start_date_calendar.set_selected_visible(date);
                 dialog.start_date_picker_open = false; // Close picker after selection
-                // If end date is before start, adjust it
+                                                       // If end date is before start, adjust it
                 if dialog.end_date < start {
                     dialog.end_date = start;
                     dialog.end_date_input = date.to_string();
@@ -1036,13 +1086,17 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::EventDialogStartTimeHourChanged(hour) => {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
-                let current = dialog.start_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(9, 0, 0).unwrap());
+                let current = dialog
+                    .start_time
+                    .unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(9, 0, 0).unwrap());
                 if let Some(new_time) = chrono::NaiveTime::from_hms_opt(hour, current.minute(), 0) {
                     dialog.start_time = Some(new_time);
                     dialog.start_time_input = new_time.format("%H:%M").to_string();
                     // Auto-update end time to 1 hour after start time
                     let end_hour = (new_time.hour() + 1) % 24;
-                    if let Some(end_time) = chrono::NaiveTime::from_hms_opt(end_hour, new_time.minute(), 0) {
+                    if let Some(end_time) =
+                        chrono::NaiveTime::from_hms_opt(end_hour, new_time.minute(), 0)
+                    {
                         dialog.end_time = Some(end_time);
                         dialog.end_time_input = end_time.format("%H:%M").to_string();
                     }
@@ -1052,13 +1106,17 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::EventDialogStartTimeMinuteChanged(minute) => {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
-                let current = dialog.start_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(9, 0, 0).unwrap());
+                let current = dialog
+                    .start_time
+                    .unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(9, 0, 0).unwrap());
                 if let Some(new_time) = chrono::NaiveTime::from_hms_opt(current.hour(), minute, 0) {
                     dialog.start_time = Some(new_time);
                     dialog.start_time_input = new_time.format("%H:%M").to_string();
                     // Auto-update end time to 1 hour after start time
                     let end_hour = (new_time.hour() + 1) % 24;
-                    if let Some(end_time) = chrono::NaiveTime::from_hms_opt(end_hour, new_time.minute(), 0) {
+                    if let Some(end_time) =
+                        chrono::NaiveTime::from_hms_opt(end_hour, new_time.minute(), 0)
+                    {
                         dialog.end_time = Some(end_time);
                         dialog.end_time_input = end_time.format("%H:%M").to_string();
                     }
@@ -1091,13 +1149,15 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 dialog.start_date_picker_open = false; // Close the other picker
             }
         }
-        Message::EventDialogEndDateCalendarPrev => {
+        Message::EventDialogEndDateCalendarPrev =>
+        {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.end_date_calendar.show_prev_month();
             }
         }
-        Message::EventDialogEndDateCalendarNext => {
+        Message::EventDialogEndDateCalendarNext =>
+        {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.end_date_calendar.show_next_month();
@@ -1126,7 +1186,9 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::EventDialogEndTimeHourChanged(hour) => {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
-                let current = dialog.end_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(10, 0, 0).unwrap());
+                let current = dialog
+                    .end_time
+                    .unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(10, 0, 0).unwrap());
                 if let Some(new_time) = chrono::NaiveTime::from_hms_opt(hour, current.minute(), 0) {
                     dialog.end_time = Some(new_time);
                     dialog.end_time_input = new_time.format("%H:%M").to_string();
@@ -1136,7 +1198,9 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::EventDialogEndTimeMinuteChanged(minute) => {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
-                let current = dialog.end_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(10, 0, 0).unwrap());
+                let current = dialog
+                    .end_time
+                    .unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(10, 0, 0).unwrap());
                 if let Some(new_time) = chrono::NaiveTime::from_hms_opt(current.hour(), minute, 0) {
                     dialog.end_time = Some(new_time);
                     dialog.end_time_input = new_time.format("%H:%M").to_string();
@@ -1165,9 +1229,9 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 // A non-custom selection keeps its own RRULE text in the enum;
                 // the buffer is the source of truth only for Custom.
                 dialog.repeat = match repeat {
-                    RepeatFrequency::Custom(_) => RepeatFrequency::Custom(
-                        dialog.custom_rrule_input.clone(),
-                    ),
+                    RepeatFrequency::Custom(_) => {
+                        RepeatFrequency::Custom(dialog.custom_rrule_input.clone())
+                    }
                     other => other,
                 };
                 // Closing the repeat-until picker when the event stops repeating
@@ -1233,7 +1297,8 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 dialog.invitee_input = input;
             }
         }
-        Message::EventDialogAddInvitee => {
+        Message::EventDialogAddInvitee =>
+        {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 let email = dialog.invitee_input.trim().to_string();
@@ -1243,7 +1308,8 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 }
             }
         }
-        Message::EventDialogRemoveInvitee(index) => {
+        Message::EventDialogRemoveInvitee(index) =>
+        {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 if index < dialog.invitees.len() {
@@ -1251,7 +1317,8 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 }
             }
         }
-        Message::EventDialogAlertChanged(alert) => {
+        Message::EventDialogAlertChanged(alert) =>
+        {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.alert = alert;
@@ -1263,7 +1330,8 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 dialog.alert_second = alert;
             }
         }
-        Message::EventDialogAddAttachment(path) => {
+        Message::EventDialogAddAttachment(path) =>
+        {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 if !dialog.attachments.contains(&path) {
@@ -1279,13 +1347,15 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 }
             }
         }
-        Message::EventDialogUrlChanged(url) => {
+        Message::EventDialogUrlChanged(url) =>
+        {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.url = url;
             }
         }
-        Message::EventDialogNotesAction(action) => {
+        Message::EventDialogNotesAction(action) =>
+        {
             #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.notes_content.perform(action);
@@ -1382,12 +1452,18 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             };
         }
         Message::SettingsWeekNumbersToggled(show) => {
-            if let ActiveDialog::Settings { show_week_numbers, .. } = &mut app.active_dialog {
+            if let ActiveDialog::Settings {
+                show_week_numbers, ..
+            } = &mut app.active_dialog
+            {
                 *show_week_numbers = show;
             }
         }
         Message::SettingsSyncIntervalSelected(secs) => {
-            if let ActiveDialog::Settings { sync_interval_secs, .. } = &mut app.active_dialog {
+            if let ActiveDialog::Settings {
+                sync_interval_secs, ..
+            } = &mut app.active_dialog
+            {
                 *sync_interval_secs = secs;
             }
         }
@@ -1494,9 +1570,9 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             app.core.window.show_context = !app.core.window.show_context;
         }
         Message::Surface(action) => {
-            return cosmic::task::message(cosmic::Action::Cosmic(
-                cosmic::app::Action::Surface(action),
-            ));
+            return cosmic::task::message(cosmic::Action::Cosmic(cosmic::app::Action::Surface(
+                action,
+            )));
         }
 
         // === Import/Export Operations ===
@@ -1698,7 +1774,13 @@ mod background_sync_tests {
         // A 60 s interval: last sync 2 min ago is due; 30 s ago is not.
         let now = at(12, 0);
         assert!(background_sync_due(true, false, Some(at(11, 58)), 60, now));
-        assert!(!background_sync_due(true, false, Some(at_s(11, 59, 30)), 60, now));
+        assert!(!background_sync_due(
+            true,
+            false,
+            Some(at_s(11, 59, 30)),
+            60,
+            now
+        ));
     }
 }
 

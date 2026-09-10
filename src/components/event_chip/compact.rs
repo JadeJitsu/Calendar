@@ -10,7 +10,7 @@ use cosmic::{widget, Element};
 use crate::components::color_picker::parse_hex_color;
 use crate::message::Message;
 use crate::ui_constants::{
-    SPACING_TINY, COLOR_DEFAULT_GRAY, COMPACT_EVENT_HEIGHT, DATE_EVENT_SPACING,
+    COLOR_DEFAULT_GRAY, COMPACT_EVENT_HEIGHT, DATE_EVENT_SPACING, SPACING_TINY,
 };
 
 use super::types::DisplayEvent;
@@ -28,16 +28,14 @@ fn render_compact_timed_indicator(color: cosmic::iced::Color) -> Element<'static
     container(widget::text(""))
         .width(Length::Fixed(COMPACT_EVENT_HEIGHT))
         .height(Length::Fixed(COMPACT_EVENT_HEIGHT))
-        .style(move |_theme: &cosmic::Theme| {
-            container::Style {
-                background: Some(cosmic::iced::Background::Color(color)),
-                border: cosmic::iced::Border {
-                    color: cosmic::iced::Color::TRANSPARENT,
-                    width: 0.0,
-                    radius: (COMPACT_EVENT_HEIGHT / 2.0).into(),
-                },
-                ..Default::default()
-            }
+        .style(move |_theme: &cosmic::Theme| container::Style {
+            background: Some(cosmic::iced::Background::Color(color)),
+            border: cosmic::iced::Border {
+                color: cosmic::iced::Color::TRANSPARENT,
+                width: 0.0,
+                radius: (COMPACT_EVENT_HEIGHT / 2.0).into(),
+            },
+            ..Default::default()
         })
         .into()
 }

@@ -4,18 +4,18 @@ use cosmic::cosmic_theme::palette::WithAlpha;
 use cosmic::iced::Color;
 
 /// Neutral gray used as the default event/foreground color.
-pub const COLOR_DEFAULT_GRAY: Color = Color::from_rgb(107.0/255.0, 114.0/255.0, 128.0/255.0);
+pub const COLOR_DEFAULT_GRAY: Color = Color::from_rgb(107.0 / 255.0, 114.0 / 255.0, 128.0 / 255.0);
 
 /// Blue color for "today" indicator circle - consistent across all themes
-pub const COLOR_TODAY_BLUE: Color = Color::from_rgb(0.0, 122.0/255.0, 255.0/255.0); // #007AFF
+pub const COLOR_TODAY_BLUE: Color = Color::from_rgb(0.0, 122.0 / 255.0, 1.0); // #007AFF
 
 /// Red color for the current time indicator line in week/day views
-pub const COLOR_CURRENT_TIME: Color = Color::from_rgb(1.0, 59.0/255.0, 48.0/255.0); // #FF3B30
+pub const COLOR_CURRENT_TIME: Color = Color::from_rgb(1.0, 59.0 / 255.0, 48.0 / 255.0); // #FF3B30
 
 /// Light blue background for time slot selection in week/day views
 /// Semi-transparent so it overlays naturally on cells
 #[allow(dead_code)] // Reserved for future time slot selection feature
-pub const COLOR_SELECTION_BACKGROUND: Color = Color::from_rgba(0.0, 122.0/255.0, 255.0/255.0, 0.2); // #007AFF @ 20%
+pub const COLOR_SELECTION_BACKGROUND: Color = Color::from_rgba(0.0, 122.0 / 255.0, 1.0, 0.2); // #007AFF @ 20%
 
 /// Subtle border between day cells / hour rows, derived from the active
 /// theme so it stays visible in both light and dark mode. Uses the theme's
@@ -52,7 +52,6 @@ pub fn adjacent_month_text(theme: &cosmic::Theme) -> Color {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmic::cosmic_theme::palette::WithAlpha;
 
     fn dark() -> cosmic::Theme {
         cosmic::Theme::dark()
@@ -101,6 +100,9 @@ mod tests {
     fn adjacent_month_text_flips_between_themes() {
         let d = adjacent_month_text(&dark());
         let l = adjacent_month_text(&light());
-        assert_ne!(d, l, "adjacent-month text must differ between dark and light");
+        assert_ne!(
+            d, l,
+            "adjacent-month text must differ between dark and light"
+        );
     }
 }

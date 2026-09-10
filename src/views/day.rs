@@ -4,16 +4,21 @@ use cosmic::iced::Length;
 use cosmic::widget::{column, container, row, scrollable};
 use cosmic::Element;
 
-use crate::components::{render_time_grid, render_time_column_placeholder, DayColumn, render_day_header, DayHeaderConfig};
-use crate::styles::bordered_cell_style;
+use crate::components::{
+    render_day_header, render_time_column_placeholder, render_time_grid, DayColumn, DayHeaderConfig,
+};
 use crate::locale::LocalePreferences;
 use crate::message::Message;
 use crate::models::DayState;
-use crate::ui_constants::{PADDING_SMALL, ALL_DAY_HEADER_HEIGHT};
+use crate::styles::bordered_cell_style;
+use crate::ui_constants::{ALL_DAY_HEADER_HEIGHT, PADDING_SMALL};
 
 /// Render the single-day view: an all-day section above a one-column time
 /// grid for the selected day.
-pub fn render_day_view(day_state: &DayState, locale: &LocalePreferences) -> Element<'static, Message> {
+pub fn render_day_view(
+    day_state: &DayState,
+    locale: &LocalePreferences,
+) -> Element<'static, Message> {
     let all_day_section = render_all_day_section(day_state);
 
     // Single day column for day view (never weekend-styled in day view)
@@ -50,9 +55,8 @@ fn render_all_day_section(day_state: &DayState) -> Element<'static, Message> {
             .width(Length::Fill)
             .height(Length::Fixed(ALL_DAY_HEADER_HEIGHT))
             .padding(PADDING_SMALL)
-            .style(|theme: &cosmic::Theme| bordered_cell_style(theme))
+            .style(|theme: &cosmic::Theme| bordered_cell_style(theme)),
     );
 
     header_row.into()
 }
-

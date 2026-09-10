@@ -32,7 +32,10 @@ pub fn handle_import_file(app: &mut CosmicCalendar, path: PathBuf) -> Task<Messa
     // Detect iCalendar dialect for better compatibility
     if let Ok(content) = std::fs::read_to_string(&path) {
         if let Some(dialect) = ExportHandler::detect_dialect(&content) {
-            info!("handle_import_file: Detected iCalendar dialect: {}", dialect);
+            info!(
+                "handle_import_file: Detected iCalendar dialect: {}",
+                dialect
+            );
         }
     }
 
@@ -61,13 +64,23 @@ pub fn handle_import_file(app: &mut CosmicCalendar, path: PathBuf) -> Task<Messa
                     let calendar_id = calendar.info().id.clone();
 
                     // Add event to the default calendar
-                    match EventHandler::add_event(&mut app.calendar_manager, &calendar_id, event.clone()) {
+                    match EventHandler::add_event(
+                        &mut app.calendar_manager,
+                        &calendar_id,
+                        event.clone(),
+                    ) {
                         Ok(_) => {
-                            info!("handle_import_file: Event added to calendar '{}'", calendar_id);
+                            info!(
+                                "handle_import_file: Event added to calendar '{}'",
+                                calendar_id
+                            );
                             // Refresh the calendar view
                             app.refresh_cached_events();
                             // Open the event dialog for editing/review
-                            return Task::done(cosmic::Action::App(Message::OpenEditEventDialog(calendar_id, event.uid)));
+                            return Task::done(cosmic::Action::App(Message::OpenEditEventDialog(
+                                calendar_id,
+                                event.uid,
+                            )));
                         }
                         Err(e) => {
                             error!("handle_import_file: Failed to add event: {}", e);
@@ -129,7 +142,10 @@ pub fn handle_show_import_dialog(
 }
 
 /// Handle select import calendar message
-pub fn handle_select_import_calendar(app: &mut CosmicCalendar, calendar_id: String) -> Task<Message> {
+pub fn handle_select_import_calendar(
+    app: &mut CosmicCalendar,
+    calendar_id: String,
+) -> Task<Message> {
     debug!(
         "handle_select_import_calendar: Selected calendar '{}'",
         calendar_id
@@ -221,13 +237,20 @@ pub fn handle_confirm_import(app: &mut CosmicCalendar) -> Task<Message> {
             .unwrap_or(false);
 
         if exists {
-            debug!("handle_confirm_import: Skipping duplicate event uid={} in target calendar", event.uid);
+            debug!(
+                "handle_confirm_import: Skipping duplicate event uid={} in target calendar",
+                event.uid
+            );
             skipped_count += 1;
             continue;
         }
 
         // Add event to the target calendar
-        match EventHandler::add_event(&mut app.calendar_manager, &target_calendar_id, event.clone()) {
+        match EventHandler::add_event(
+            &mut app.calendar_manager,
+            &target_calendar_id,
+            event.clone(),
+        ) {
             Ok(_) => {
                 imported_count += 1;
                 imported_uids.push(event.uid.clone());
@@ -249,11 +272,7 @@ pub fn handle_confirm_import(app: &mut CosmicCalendar) -> Task<Message> {
                 error!("handle_confirm_import: Failed to import event: {}", e);
 
                 // Log error in progress dialog if open
-                if let ActiveDialog::ImportProgress {
-                    import_log,
-                    ..
-                } = &mut app.active_dialog
-                {
+                if let ActiveDialog::ImportProgress { import_log, .. } = &mut app.active_dialog {
                     import_log.push(format!("✗ Failed: {}", event.summary));
                 }
             }
@@ -269,7 +288,9 @@ pub fn handle_confirm_import(app: &mut CosmicCalendar) -> Task<Message> {
     app.refresh_cached_events();
 
     // Get calendar name for display
-    let calendar_name = app.calendar_manager.sources()
+    let calendar_name = app
+        .calendar_manager
+        .sources()
         .iter()
         .find(|cal| cal.info().id == target_calendar_id)
         .map(|cal| cal.info().name.clone())
@@ -328,10 +349,16 @@ pub fn handle_cancel_import_progress(app: &mut CosmicCalendar) -> Task<Message> 
     for uid in &imported_uids {
         match EventHandler::delete_event(&mut app.calendar_manager, uid) {
             Ok(_) => {
-                debug!("handle_cancel_import_progress: Rolled back event uid={}", uid);
+                debug!(
+                    "handle_cancel_import_progress: Rolled back event uid={}",
+                    uid
+                );
             }
             Err(e) => {
-                error!("handle_cancel_import_progress: Failed to rollback event uid={}: {}", uid, e);
+                error!(
+                    "handle_cancel_import_progress: Failed to rollback event uid={}: {}",
+                    uid, e
+                );
             }
         }
     }
@@ -381,7 +408,10 @@ pub fn handle_revert_import(app: &mut CosmicCalendar) -> Task<Message> {
                 debug!("handle_revert_import: Reverted event uid={}", uid);
             }
             Err(e) => {
-                error!("handle_revert_import: Failed to revert event uid={}: {}", uid, e);
+                error!(
+                    "handle_revert_import: Failed to revert event uid={}: {}",
+                    uid, e
+                );
             }
         }
     }

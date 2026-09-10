@@ -10,17 +10,17 @@ use crate::fl;
 use crate::locale::LocalePreferences;
 use crate::menu_action::MenuAction;
 use crate::message::Message;
-use crate::models::{CalendarState, WeekState, DayState, YearState};
-use crate::selection::{SelectionState, EventDragState};
+use crate::models::{CalendarState, DayState, WeekState, YearState};
+use crate::selection::{EventDragState, SelectionState};
 use crate::settings::AppSettings;
 use crate::views::{self, CalendarView};
 use chrono::{Datelike, NaiveDate};
 use cosmic::app::Core;
 use cosmic::iced::keyboard;
-use cosmic::widget::icon;
 use cosmic::widget::calendar::CalendarModel;
-use cosmic::widget::{about, menu, text_editor};
+use cosmic::widget::icon;
 use cosmic::widget::menu::Action as _; // Import trait for .message() method
+use cosmic::widget::{about, menu, text_editor};
 use cosmic::{Application, Element};
 use log::info;
 use std::collections::HashMap;
@@ -163,9 +163,11 @@ pub struct CosmicCalendar {
     /// The currently selected calendar for new events (calendar id)
     pub selected_calendar_id: Option<String>,
     /// Cached events for current month view, grouped by date (supports adjacent months)
-    pub cached_month_events: std::collections::HashMap<chrono::NaiveDate, Vec<crate::components::DisplayEvent>>,
+    pub cached_month_events:
+        std::collections::HashMap<chrono::NaiveDate, Vec<crate::components::DisplayEvent>>,
     /// Cached events for current week view, grouped by date
-    pub cached_week_events: std::collections::HashMap<chrono::NaiveDate, Vec<crate::components::DisplayEvent>>,
+    pub cached_week_events:
+        std::collections::HashMap<chrono::NaiveDate, Vec<crate::components::DisplayEvent>>,
     /// Color of the selected calendar (cached for quick event input)
     pub selected_calendar_color: String,
     /// CalDAV sync status: (calendar_id, is_syncing). `None` when idle.
@@ -191,7 +193,9 @@ pub struct CosmicCalendar {
 
     // Legacy field - kept because text_editor::Content doesn't implement Clone
     /// Event dialog state (for Create/Edit) - None when dialog is closed
-    #[deprecated(note = "Will be migrated to active_dialog when text_editor::Content supports Clone")]
+    #[deprecated(
+        note = "Will be migrated to active_dialog when text_editor::Content supports Clone"
+    )]
     pub event_dialog: Option<EventDialogState>,
 }
 
@@ -226,9 +230,17 @@ impl CosmicCalendar {
             .version(env!("CARGO_PKG_VERSION"))
             .author("JadeJitsu")
             .license("GPL-3.0-only")
-                        .license_url("https://spdx.org/licenses/GPL-3.0-only")
-            .links([(fl!("about-repository"), "https://github.com/JadeJitsu/Calendar"),
-                (fl!("about-support"), "https://github.com/JadeJitsu/Calendar/issues")]);
+            .license_url("https://spdx.org/licenses/GPL-3.0-only")
+            .links([
+                (
+                    fl!("about-repository"),
+                    "https://github.com/JadeJitsu/Calendar",
+                ),
+                (
+                    fl!("about-support"),
+                    "https://github.com/JadeJitsu/Calendar/issues",
+                ),
+            ]);
 
         // Detect system locale preferences
         let locale = LocalePreferences::detect_from_system();
@@ -322,18 +334,25 @@ impl CosmicCalendar {
     pub fn refresh_cached_events(&mut self) {
         // Refresh month events
         let cache_state = self.cache.current_state();
-        self.cached_month_events = self.calendar_manager
+        self.cached_month_events = self
+            .calendar_manager
             .get_display_events_for_month(cache_state.year, cache_state.month);
 
         // Refresh week events
-        self.cached_week_events = self.calendar_manager
+        self.cached_week_events = self
+            .calendar_manager
             .get_display_events_for_week(&self.week_state.days);
     }
 
     /// Update the selected calendar color cache
     pub fn update_selected_calendar_color(&mut self) {
         if let Some(ref cal_id) = self.selected_calendar_id {
-            if let Some(calendar) = self.calendar_manager.sources().iter().find(|c| &c.info().id == cal_id) {
+            if let Some(calendar) = self
+                .calendar_manager
+                .sources()
+                .iter()
+                .find(|c| &c.info().id == cal_id)
+            {
                 self.selected_calendar_color = calendar.info().color.clone();
             }
         }
@@ -397,7 +416,8 @@ impl CosmicCalendar {
     /// Render the main content area (toolbar + calendar view)
     pub fn render_main_content(&self) -> Element<'_, Message> {
         // Build month events with quick event state if editing (from DialogManager)
-        let quick_event_data: Option<(chrono::NaiveDate, &str, &str)> = self.active_dialog
+        let quick_event_data: Option<(chrono::NaiveDate, &str, &str)> = self
+            .active_dialog
             .quick_event_data()
             .map(|(date, text)| (date, text, self.selected_calendar_color.as_str()));
 
@@ -439,8 +459,7 @@ impl CosmicCalendar {
 
         // Results are computed in `update` (stored on `self.search_results`)
         // so this render stays a pure read.
-        let search_bar =
-            components::render_search_bar(&self.search_query, &self.search_results);
+        let search_bar = components::render_search_bar(&self.search_query, &self.search_results);
 
         cosmic::widget::column([])
             .spacing(0)
@@ -475,7 +494,9 @@ impl CosmicCalendar {
 
         crate::services::search_events(
             query,
-            owned.iter().map(|(id, color, e)| (id.as_str(), color.as_str(), e)),
+            owned
+                .iter()
+                .map(|(id, color, e)| (id.as_str(), color.as_str(), e)),
         )
     }
 }
@@ -502,7 +523,10 @@ impl Application for CosmicCalendar {
 
     fn init(core: Core, flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
         let app = Self::initialize_app(core);
-        info!("CosmicCalendar: Application initialized with view {:?}", app.current_view);
+        info!(
+            "CosmicCalendar: Application initialized with view {:?}",
+            app.current_view
+        );
 
         // Create the system tray icon (always visible). Idempotent and
         // non-fatal — a tray failure should not block the app from starting.
@@ -517,22 +541,36 @@ impl Application for CosmicCalendar {
 
         // Handle file arguments if provided
         if !flags.files_to_open.is_empty() {
-            info!("CosmicCalendar: {} file(s) to open on startup", flags.files_to_open.len());
+            info!(
+                "CosmicCalendar: {} file(s) to open on startup",
+                flags.files_to_open.len()
+            );
             // Trigger import for the first file
             // (Only one dialog can be open at a time)
             if let Some(file_path) = flags.files_to_open.first() {
                 info!("CosmicCalendar: Triggering import for {:?}", file_path);
-                return (app, cosmic::app::Task::done(cosmic::Action::App(Message::ImportFile(file_path.clone()))));
+                return (
+                    app,
+                    cosmic::app::Task::done(cosmic::Action::App(Message::ImportFile(
+                        file_path.clone(),
+                    ))),
+                );
             }
         }
 
         // Handle URL arguments if provided
         if !flags.urls_to_open.is_empty() {
-            info!("CosmicCalendar: {} URL(s) to open on startup", flags.urls_to_open.len());
+            info!(
+                "CosmicCalendar: {} URL(s) to open on startup",
+                flags.urls_to_open.len()
+            );
             // Process the first URL
             if let Some(url) = flags.urls_to_open.first() {
                 info!("CosmicCalendar: Processing URL: {}", url);
-                return (app, cosmic::app::Task::done(cosmic::Action::App(Message::ProcessUrl(url.clone()))));
+                return (
+                    app,
+                    cosmic::app::Task::done(cosmic::Action::App(Message::ProcessUrl(url.clone()))),
+                );
             }
         }
 
@@ -557,7 +595,12 @@ impl Application for CosmicCalendar {
     }
 
     fn header_start(&self) -> Vec<Element<'_, Self::Message>> {
-        components::render_header_start(&self.core, &self.key_binds, self.show_sidebar, self.settings.show_week_numbers)
+        components::render_header_start(
+            &self.core,
+            &self.key_binds,
+            self.show_sidebar,
+            self.settings.show_week_numbers,
+        )
     }
 
     fn header_end(&self) -> Vec<Element<'_, Self::Message>> {
@@ -593,7 +636,9 @@ impl Application for CosmicCalendar {
         crate::update::handle_message(self, message)
     }
 
-    fn context_drawer(&self) -> Option<cosmic::app::context_drawer::ContextDrawer<'_, Self::Message>> {
+    fn context_drawer(
+        &self,
+    ) -> Option<cosmic::app::context_drawer::ContextDrawer<'_, Self::Message>> {
         if !self.core.window.show_context {
             return None;
         }
@@ -637,7 +682,6 @@ impl Application for CosmicCalendar {
 
         Subscription::batch([event_sub, timer_sub, tray_sub, activation_sub])
     }
-
 }
 
 /// Map a raw iced window event to an app [`Message`], or `None` if the event
@@ -656,11 +700,7 @@ fn map_event(
 ) -> Option<Message> {
     match event {
         // Handle keyboard shortcuts
-        cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed {
-            key,
-            modifiers,
-            ..
-        }) => {
+        cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed { key, modifiers, .. }) => {
             // Handle Escape key to close dialogs (no modifiers)
             if key == keyboard::Key::Named(keyboard::key::Named::Escape) {
                 return Some(Message::CloseDialog);
@@ -724,9 +764,7 @@ fn map_event(
         // this covers releases that land off the chip.)
         cosmic::iced::Event::Mouse(cosmic::iced::mouse::Event::ButtonReleased(
             cosmic::iced::mouse::Button::Left,
-        )) if drag_active => {
-            Some(Message::DragEventEnd)
-        }
+        )) if drag_active => Some(Message::DragEventEnd),
         _ => None,
     }
 }
@@ -784,9 +822,7 @@ mod tests {
 
     #[test]
     fn resized_maps_to_window_resized() {
-        let event = cosmic::iced::Event::Window(window::Event::Resized(Size::new(
-            100.0, 200.0,
-        )));
+        let event = cosmic::iced::Event::Window(window::Event::Resized(Size::new(100.0, 200.0)));
         assert!(matches!(
             map_event(event, Id::RESERVED, false),
             Some(Message::WindowResized)

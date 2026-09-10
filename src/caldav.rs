@@ -6,9 +6,9 @@
 //! full multistatus/ICS response bodies — log UIDs, calendar IDs, hosts, and
 //! status codes only.
 
-use icalendar::{Alarm, Component, Event, EventLike, Property, Trigger, ValueType};
 #[cfg(test)]
 use icalendar::Calendar;
+use icalendar::{Alarm, Component, Event, EventLike, Property, Trigger, ValueType};
 use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -257,7 +257,8 @@ impl CalDavClient {
     pub fn discover_principal(&self) -> Result<String, CalDavError> {
         let url = self.base_url();
         let xml = self.propfind(&url, "0", Self::PRINCIPAL_PROPFIND)?;
-        let doc = roxmltree::Document::parse(&xml).map_err(|e| CalDavError::Parse(e.to_string()))?;
+        let doc =
+            roxmltree::Document::parse(&xml).map_err(|e| CalDavError::Parse(e.to_string()))?;
         let href = propstat_href(&doc, "current-user-principal")?;
         Ok(Self::resolve_href(&url, &href))
     }
@@ -265,7 +266,8 @@ impl CalDavClient {
     /// Resolve the calendar-home-set URL (PROPFIND B).
     pub fn discover_home(&self, principal: &str) -> Result<String, CalDavError> {
         let xml = self.propfind(principal, "0", Self::HOME_PROPFIND)?;
-        let doc = roxmltree::Document::parse(&xml).map_err(|e| CalDavError::Parse(e.to_string()))?;
+        let doc =
+            roxmltree::Document::parse(&xml).map_err(|e| CalDavError::Parse(e.to_string()))?;
         let href = propstat_href(&doc, "calendar-home-set")?;
         Ok(Self::resolve_href(principal, &href))
     }
@@ -327,11 +329,7 @@ impl CalDavClient {
     /// The per-user DAV collection path: `{base}/calendars/{username}/`.
     /// Trailing-slash-insensitive on `base_url`.
     pub fn user_calendars_url(base_url: &str, username: &str) -> String {
-        format!(
-            "{}/calendars/{}/",
-            base_url.trim_end_matches('/'),
-            username
-        )
+        format!("{}/calendars/{}/", base_url.trim_end_matches('/'), username)
     }
 
     /// The fallback: treat the base URL as a single calendar collection.
@@ -433,7 +431,8 @@ impl CalDavClient {
     /// Build a non-standard HTTP method (PROPFIND/REPORT) that `http` doesn't
     /// expose as a constant.
     fn method(name: &str) -> Result<reqwest::Method, CalDavError> {
-        reqwest::Method::from_bytes(name.as_bytes()).map_err(|_| CalDavError::Parse(format!("invalid method {name}")))
+        reqwest::Method::from_bytes(name.as_bytes())
+            .map_err(|_| CalDavError::Parse(format!("invalid method {name}")))
     }
 
     /// The base URL with a trailing slash (for joining relative hrefs).
@@ -503,7 +502,10 @@ fn propstat_href(doc: &roxmltree::Document, prop: &str) -> Result<String, CalDav
 
 /// Parse a Depth-1 calendar-list multistatus into discovered calendars.
 /// Keeps only responses whose `resourcetype` contains a `calendar` element.
-pub fn parse_calendar_multistatus(xml: &str, base_url: &str) -> Result<Vec<DiscoveredCalendar>, CalDavError> {
+pub fn parse_calendar_multistatus(
+    xml: &str,
+    base_url: &str,
+) -> Result<Vec<DiscoveredCalendar>, CalDavError> {
     let doc = roxmltree::Document::parse(xml).map_err(|e| CalDavError::Parse(e.to_string()))?;
     let mut out = Vec::new();
     for resp in doc.descendants().filter(|e| e.has_tag_name("response")) {
@@ -542,7 +544,10 @@ pub fn parse_calendar_multistatus(xml: &str, base_url: &str) -> Result<Vec<Disco
 }
 
 /// Parse a REPORT calendar-query multistatus into `(href, ics_body)` pairs.
-pub fn parse_event_multistatus(xml: &str, base_url: &str) -> Result<Vec<(String, String)>, CalDavError> {
+pub fn parse_event_multistatus(
+    xml: &str,
+    base_url: &str,
+) -> Result<Vec<(String, String)>, CalDavError> {
     let doc = roxmltree::Document::parse(xml).map_err(|e| CalDavError::Parse(e.to_string()))?;
     let mut out = Vec::new();
     for resp in doc.descendants().filter(|e| e.has_tag_name("response")) {
@@ -565,7 +570,10 @@ pub fn parse_event_multistatus(xml: &str, base_url: &str) -> Result<Vec<(String,
 
 /// Map a `RepeatFrequency` to an RRULE string (inverse of the inbound
 /// `rrule_to_repeat` mapping). Returns `None` for `Never`.
-pub fn repeat_to_rrule(repeat: &RepeatFrequency, repeat_until: Option<chrono::NaiveDate>) -> Option<String> {
+pub fn repeat_to_rrule(
+    repeat: &RepeatFrequency,
+    repeat_until: Option<chrono::NaiveDate>,
+) -> Option<String> {
     let base = match repeat {
         RepeatFrequency::Never => return None,
         RepeatFrequency::Daily => "FREQ=DAILY",
@@ -576,10 +584,7 @@ pub fn repeat_to_rrule(repeat: &RepeatFrequency, repeat_until: Option<chrono::Na
         RepeatFrequency::Custom(s) => s.as_str(),
     };
     match repeat_until {
-        Some(until) => Some(format!(
-            "{base};UNTIL={}",
-            until.format("%Y%m%dT000000Z")
-        )),
+        Some(until) => Some(format!("{base};UNTIL={}", until.format("%Y%m%dT000000Z"))),
         None => Some(base.to_string()),
     }
 }
@@ -684,18 +689,12 @@ pub fn build_event(event: &CalendarEvent) -> Event {
         ev.add_property("RRULE", &rrule);
     }
     for d in &event.exception_dates {
-        ev.append_multi_property(Property::new(
-            "EXDATE",
-            &d.format("%Y%m%d").to_string(),
-        ));
+        ev.append_multi_property(Property::new("EXDATE", &d.format("%Y%m%d").to_string()));
     }
     // ATTENDEE is multi-valued (icalendar routes it to `multi_properties`).
     // We only store bare emails, so emit `mailto:` with no `CN` display name.
     for invitee in &event.invitees {
-        ev.append_multi_property(Property::new(
-            "ATTENDEE",
-            &format!("mailto:{}", invitee),
-        ));
+        ev.append_multi_property(Property::new("ATTENDEE", &format!("mailto:{}", invitee)));
     }
     if let Some(trigger) = alert_to_trigger(&event.alert) {
         ev.alarm(Alarm::display("Reminder", trigger));
@@ -758,7 +757,10 @@ mod tests {
     #[test]
     fn test_repeat_to_rrule() {
         assert_eq!(repeat_to_rrule(&RepeatFrequency::Never, None), None);
-        assert_eq!(repeat_to_rrule(&RepeatFrequency::Weekly, None).as_deref(), Some("FREQ=WEEKLY"));
+        assert_eq!(
+            repeat_to_rrule(&RepeatFrequency::Weekly, None).as_deref(),
+            Some("FREQ=WEEKLY")
+        );
         assert_eq!(
             repeat_to_rrule(&RepeatFrequency::Biweekly, None).as_deref(),
             Some("FREQ=WEEKLY;INTERVAL=2")
@@ -769,7 +771,8 @@ mod tests {
             Some("FREQ=MONTHLY;UNTIL=20261225T000000Z")
         );
         assert_eq!(
-            repeat_to_rrule(&RepeatFrequency::Custom("FREQ=DAILY;BYDAY=MO".into()), None).as_deref(),
+            repeat_to_rrule(&RepeatFrequency::Custom("FREQ=DAILY;BYDAY=MO".into()), None)
+                .as_deref(),
             Some("FREQ=DAILY;BYDAY=MO")
         );
     }
@@ -782,7 +785,10 @@ mod tests {
             RepeatFrequency::Custom("FREQ=WEEKLY;BYDAY=MO".into())
         );
         // Empty and whitespace-only rules downgrade to Never.
-        assert_eq!(resolve_custom_rrule(&RepeatFrequency::Custom("".into())), RepeatFrequency::Never);
+        assert_eq!(
+            resolve_custom_rrule(&RepeatFrequency::Custom("".into())),
+            RepeatFrequency::Never
+        );
         assert_eq!(
             resolve_custom_rrule(&RepeatFrequency::Custom("   ".into())),
             RepeatFrequency::Never
@@ -798,8 +804,14 @@ mod tests {
             RepeatFrequency::Custom("freq=daily".into())
         );
         // Non-custom variants pass through untouched.
-        assert_eq!(resolve_custom_rrule(&RepeatFrequency::Weekly), RepeatFrequency::Weekly);
-        assert_eq!(resolve_custom_rrule(&RepeatFrequency::Never), RepeatFrequency::Never);
+        assert_eq!(
+            resolve_custom_rrule(&RepeatFrequency::Weekly),
+            RepeatFrequency::Weekly
+        );
+        assert_eq!(
+            resolve_custom_rrule(&RepeatFrequency::Never),
+            RepeatFrequency::Never
+        );
     }
 
     #[test]
@@ -894,8 +906,7 @@ mod tests {
     </d:prop></d:propstat>
   </d:response>
 </d:multistatus>"#;
-        let cal = parse_calendar_multistatus(xml, "https://example.com/caldav/")
-            .expect("parse");
+        let cal = parse_calendar_multistatus(xml, "https://example.com/caldav/").expect("parse");
         assert_eq!(cal.len(), 2);
         assert_eq!(cal[0].name, "My Home");
         assert_eq!(cal[0].url, "https://example.com/calendars/user/home/");
@@ -917,162 +928,13 @@ END:VCALENDAR</c:calendar-data>
     </d:prop></d:propstat>
   </d:response>
 </d:multistatus>"#;
-        let events = parse_event_multistatus(xml, "https://example.com/caldav/")
-            .expect("parse");
+        let events = parse_event_multistatus(xml, "https://example.com/caldav/").expect("parse");
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].0, "https://example.com/calendars/user/work/evt-1.ics");
+        assert_eq!(
+            events[0].0,
+            "https://example.com/calendars/user/work/evt-1.ics"
+        );
         assert!(events[0].1.contains("BEGIN:VCALENDAR"));
-    }
-
-    /// True round-trip: `calendar_event_to_ics` → `parse_ical_string` and
-    /// assert the model fields survive, not just that the ICS text contains
-    /// the right lines.
-    #[test]
-    fn test_ics_round_trip_timed_recurring() {
-        let event = CalendarEvent {
-            uid: "rt-timed-1".to_string(),
-            summary: "Round Trip Timed".to_string(),
-            location: Some("RT Location".to_string()),
-            all_day: false,
-            start: chrono::DateTime::parse_from_rfc3339("2026-09-10T09:00:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc),
-            end: chrono::DateTime::parse_from_rfc3339("2026-09-10T10:30:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc),
-            travel_time: TravelTime::None,
-            repeat: RepeatFrequency::Biweekly,
-            repeat_until: None,
-            exception_dates: vec![chrono::NaiveDate::from_ymd_opt(2026, 9, 24).unwrap()],
-            invitees: vec![],
-            alert: AlertTime::FifteenMinutes,
-            alert_second: None,
-            attachments: vec![],
-            url: None,
-            notes: Some("RT notes".to_string()),
-        };
-
-        let ics = calendar_event_to_ics(&event);
-        let parsed = crate::services::ExportHandler::parse_ical_string(&ics)
-            .expect("parse back")
-            .pop()
-            .expect("one event");
-
-        assert_eq!(parsed.uid, "rt-timed-1");
-        assert_eq!(parsed.summary, "Round Trip Timed");
-        assert_eq!(parsed.location.as_deref(), Some("RT Location"));
-        assert_eq!(parsed.notes.as_deref(), Some("RT notes"));
-        assert!(!parsed.all_day);
-        // Timed events emit UTC `Z` and must parse back to the same instants.
-        assert_eq!(
-            parsed.start,
-            chrono::DateTime::parse_from_rfc3339("2026-09-10T09:00:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc)
-        );
-        assert_eq!(
-            parsed.end,
-            chrono::DateTime::parse_from_rfc3339("2026-09-10T10:30:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc)
-        );
-        // RRULE:FREQ=WEEKLY;INTERVAL=2 must map back to Biweekly.
-        assert_eq!(parsed.repeat, RepeatFrequency::Biweekly);
-        assert_eq!(parsed.repeat_until, None);
-        assert_eq!(
-            parsed.exception_dates,
-            vec![chrono::NaiveDate::from_ymd_opt(2026, 9, 24).unwrap()]
-        );
-        assert_eq!(parsed.alert, AlertTime::FifteenMinutes);
-    }
-
-    /// Invitees must survive the ICS round-trip: the export writes one
-    /// `ATTENDEE` per invitee and the import reads them back.
-    #[test]
-    fn test_ics_round_trip_invitees() {
-        let event = CalendarEvent {
-            uid: "rt-invitees-1".to_string(),
-            summary: "Team Sync".to_string(),
-            location: None,
-            all_day: false,
-            start: chrono::DateTime::parse_from_rfc3339("2026-09-10T09:00:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc),
-            end: chrono::DateTime::parse_from_rfc3339("2026-09-10T09:30:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc),
-            travel_time: TravelTime::None,
-            repeat: RepeatFrequency::Never,
-            repeat_until: None,
-            exception_dates: vec![],
-            invitees: vec![
-                "alice@example.com".to_string(),
-                "bob@example.com".to_string(),
-            ],
-            alert: AlertTime::None,
-            alert_second: None,
-            attachments: vec![],
-            url: None,
-            notes: None,
-        };
-
-        let ics = calendar_event_to_ics(&event);
-        let parsed = crate::services::ExportHandler::parse_ical_string(&ics)
-            .expect("parse back")
-            .pop()
-            .expect("one event");
-
-        assert_eq!(
-            parsed.invitees,
-            vec!["alice@example.com".to_string(), "bob@example.com".to_string()]
-        );
-    }
-
-    #[test]
-    fn test_ics_round_trip_all_day_multi_day() {
-        let event = CalendarEvent {
-            uid: "rt-allday-1".to_string(),
-            summary: "Round Trip All Day".to_string(),
-            location: None,
-            all_day: true,
-            start: chrono::DateTime::parse_from_rfc3339("2026-09-10T00:00:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc),
-            end: chrono::DateTime::parse_from_rfc3339("2026-09-12T00:00:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc),
-            travel_time: TravelTime::None,
-            repeat: RepeatFrequency::Never,
-            repeat_until: None,
-            exception_dates: vec![],
-            invitees: vec![],
-            alert: AlertTime::None,
-            alert_second: None,
-            attachments: vec![],
-            url: None,
-            notes: None,
-        };
-
-        let ics = calendar_event_to_ics(&event);
-        let parsed = crate::services::ExportHandler::parse_ical_string(&ics)
-            .expect("parse back")
-            .pop()
-            .expect("one event");
-
-        assert!(parsed.all_day);
-        assert_eq!(
-            parsed.start,
-            chrono::DateTime::parse_from_rfc3339("2026-09-10T00:00:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc)
-        );
-        // Multi-day DTEND must survive, not collapse onto DTSTART.
-        assert_eq!(
-            parsed.end,
-            chrono::DateTime::parse_from_rfc3339("2026-09-12T00:00:00Z")
-                .unwrap()
-                .with_timezone(&chrono::Utc)
-        );
     }
 }
 

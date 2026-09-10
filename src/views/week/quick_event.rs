@@ -8,10 +8,10 @@ use cosmic::widget::text_input;
 use cosmic::widget::{column, container};
 use cosmic::Element;
 
-use crate::components::{parse_color_safe, quick_event_input_id};
 use crate::components::spacer::vertical_spacer;
+use crate::components::{parse_color_safe, quick_event_input_id};
 use crate::message::Message;
-use crate::ui_constants::{HOUR_ROW_HEIGHT, BORDER_RADIUS};
+use crate::ui_constants::{BORDER_RADIUS, HOUR_ROW_HEIGHT};
 
 /// Render the quick event input overlay layer for timed event creation
 /// Positions the input at the correct time slot and spans the selected duration
@@ -53,10 +53,7 @@ pub fn render_quick_event_input_layer(
         .height(Length::Fixed(height))
         .padding([2, 4])
         .style(move |_theme: &cosmic::Theme| container::Style {
-            background: Some(Background::Color(cosmic::iced::Color {
-                a: 0.3,
-                ..color
-            })),
+            background: Some(Background::Color(cosmic::iced::Color { a: 0.3, ..color })),
             border: Border {
                 color,
                 width: 2.0,

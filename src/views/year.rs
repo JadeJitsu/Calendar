@@ -1,7 +1,7 @@
 //! The year view: a responsive grid of 12 mini month boxes.
 
 use cosmic::iced::{alignment, Border, Length, Size};
-use cosmic::widget::{column, container, row, scrollable, responsive};
+use cosmic::widget::{column, container, responsive, row, scrollable};
 use cosmic::{widget, Element};
 
 use crate::locale::LocalePreferences;
@@ -9,8 +9,8 @@ use crate::localized_names;
 use crate::message::Message;
 use crate::models::YearState;
 use crate::ui_constants::{
-    BORDER_RADIUS, FONT_SIZE_SMALL, PADDING_SMALL, PADDING_MEDIUM, PADDING_TINY,
-    SPACING_MEDIUM, SPACING_SMALL, SPACING_XXS, day_cell_border, BORDER_WIDTH_THIN
+    day_cell_border, BORDER_RADIUS, BORDER_WIDTH_THIN, FONT_SIZE_SMALL, PADDING_MEDIUM,
+    PADDING_SMALL, PADDING_TINY, SPACING_MEDIUM, SPACING_SMALL, SPACING_XXS,
 };
 
 // Minimum size for month boxes - ensures all content is readable
@@ -18,7 +18,10 @@ const MIN_MONTH_BOX_SIZE: f32 = 220.0;
 
 /// Render the year overview: a responsive grid of 12 mini month boxes,
 /// each showing a compact month grid for the selected year.
-pub fn render_year_view(year_state: &YearState, _locale: &LocalePreferences) -> Element<'static, Message> {
+pub fn render_year_view(
+    year_state: &YearState,
+    _locale: &LocalePreferences,
+) -> Element<'static, Message> {
     // Clone data needed for the closure
     let months = year_state.months.clone();
     let today = year_state.today;
@@ -74,9 +77,7 @@ fn render_year_grid(
 ) -> Element<'static, Message> {
     let actual_box_size = box_size.unwrap_or(MIN_MONTH_BOX_SIZE);
 
-    let mut year_layout = column([])
-        .spacing(SPACING_MEDIUM)
-        .padding(PADDING_MEDIUM);
+    let mut year_layout = column([]).spacing(SPACING_MEDIUM).padding(PADDING_MEDIUM);
 
     // Create rows based on the number of columns
     let mut month_index = 0;
@@ -112,7 +113,7 @@ fn render_year_grid(
         scrollable(
             container(year_layout)
                 .width(Length::Fill)
-                .center_x(Length::Fill)
+                .center_x(Length::Fill),
         )
         .width(Length::Fill)
         .height(Length::Fill)
@@ -140,7 +141,7 @@ fn render_mini_month(
         container(widget::text::title4(month_name))
             .width(Length::Fill)
             .center_x(Length::Fill)
-            .padding([0, 0, PADDING_SMALL, 0])
+            .padding([0, 0, PADDING_SMALL, 0]),
     );
 
     // Weekday headers (abbreviated, single letter for space)
@@ -151,7 +152,7 @@ fn render_mini_month(
         header_row = header_row.push(
             container(widget::text(first_char).size(FONT_SIZE_SMALL))
                 .width(Length::Fill)
-                .center_x(Length::Fill)
+                .center_x(Length::Fill),
         );
     }
     mini_calendar = mini_calendar.push(header_row);
@@ -169,18 +170,16 @@ fn render_mini_month(
                         .padding(PADDING_TINY)
                         .center_x(Length::Fill)
                         .align_y(alignment::Vertical::Center)
-                        .style(|theme: &cosmic::Theme| {
-                            container::Style {
-                                text_color: Some(theme.cosmic().accent_color().into()),
-                                background: Some(cosmic::iced::Background::Color(
-                                    theme.cosmic().accent_color().into()
-                                )),
-                                border: Border {
-                                    radius: BORDER_RADIUS.into(),
-                                    ..Default::default()
-                                },
+                        .style(|theme: &cosmic::Theme| container::Style {
+                            text_color: Some(theme.cosmic().accent_color().into()),
+                            background: Some(cosmic::iced::Background::Color(
+                                theme.cosmic().accent_color().into(),
+                            )),
+                            border: Border {
+                                radius: BORDER_RADIUS.into(),
                                 ..Default::default()
-                            }
+                            },
+                            ..Default::default()
                         })
                 } else {
                     container(widget::text(format!("{}", day)).size(FONT_SIZE_SMALL))
@@ -195,7 +194,7 @@ fn render_mini_month(
                 week_row = week_row.push(
                     container(widget::text(""))
                         .width(Length::Fill)
-                        .padding(PADDING_TINY)
+                        .padding(PADDING_TINY),
                 );
             }
         }
@@ -205,15 +204,13 @@ fn render_mini_month(
     container(mini_calendar)
         .width(Length::Fixed(box_size))
         .height(Length::Fixed(box_size))
-        .style(|theme: &cosmic::Theme| {
-            container::Style {
-                border: Border {
-                    width: BORDER_WIDTH_THIN,
-                    color: day_cell_border(theme),
-                    radius: 8.0.into(),
-                },
-                ..Default::default()
-            }
+        .style(|theme: &cosmic::Theme| container::Style {
+            border: Border {
+                width: BORDER_WIDTH_THIN,
+                color: day_cell_border(theme),
+                radius: 8.0.into(),
+            },
+            ..Default::default()
         })
         .into()
 }

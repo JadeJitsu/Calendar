@@ -3,8 +3,8 @@
 //! Inline text input for creating new events quickly.
 
 use cosmic::iced::Length;
-use cosmic::widget::text_input;
 use cosmic::widget::container;
+use cosmic::widget::text_input;
 use cosmic::widget::Id;
 use cosmic::Element;
 
@@ -19,10 +19,7 @@ pub fn quick_event_input_id() -> Id {
 
 /// Render the quick event input field for inline editing
 /// Takes ownership of the data to avoid lifetime issues
-pub fn render_quick_event_input(
-    text: String,
-    calendar_color: String,
-) -> Element<'static, Message> {
+pub fn render_quick_event_input(text: String, calendar_color: String) -> Element<'static, Message> {
     let color = parse_hex_color(&calendar_color).unwrap_or(COLOR_DEFAULT_GRAY);
 
     let input = text_input("New event...", text)
@@ -34,16 +31,14 @@ pub fn render_quick_event_input(
 
     container(input)
         .width(Length::Fill)
-        .style(move |_theme: &cosmic::Theme| {
-            container::Style {
-                background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.2))),
-                border: cosmic::iced::Border {
-                    color,
-                    width: 1.0,
-                    radius: BORDER_RADIUS.into(),
-                },
-                ..Default::default()
-            }
+        .style(move |_theme: &cosmic::Theme| container::Style {
+            background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.2))),
+            border: cosmic::iced::Border {
+                color,
+                width: 1.0,
+                radius: BORDER_RADIUS.into(),
+            },
+            ..Default::default()
         })
         .into()
 }
@@ -75,16 +70,14 @@ pub fn render_spanning_quick_event_input(
     container(input)
         .width(Length::Fill)
         .padding([4, 6])
-        .style(move |_theme: &cosmic::Theme| {
-            container::Style {
-                background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.3))),
-                border: cosmic::iced::Border {
-                    color,
-                    width: 2.0,
-                    radius: BORDER_RADIUS.into(),
-                },
-                ..Default::default()
-            }
+        .style(move |_theme: &cosmic::Theme| container::Style {
+            background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.3))),
+            border: cosmic::iced::Border {
+                color,
+                width: 2.0,
+                radius: BORDER_RADIUS.into(),
+            },
+            ..Default::default()
         })
         .into()
 }

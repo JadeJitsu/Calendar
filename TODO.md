@@ -1,124 +1,55 @@
 # Calendar - Development TODO
 
+## Recently Completed ✅ (2026-09-10 — v0.2.0)
+
+- [x] **Week-view input flicker fixed** — hour-grid/chip `on_enter` handlers now attach only during an active drag; idle cursor movement no longer dispatches messages (measured ~260/sweep → 0). `src/views/week/{time_grid,header,events}.rs`
+- [x] **Tray/dock restore flicker fixed** — root view paints an opaque background instead of relying on the compositor's blur layer, so recreating the window on restore no longer flashes in tiled workspaces. `src/app.rs` (`view()`)
+- [x] **Dock/systray single-instance** — a second launch (dock click, systray, file/URL) forwards to the running instance via a self-contained D-Bus activation service instead of spawning a second process + tray icon. `src/services/single_instance.rs`
+- [x] **Build gates green** — `cargo build`, `cargo test` (168/168), `cargo clippy --all-targets`, `cargo build --all-targets` all pass; repo rustfmt'd. Moved 3 ICS round-trip tests to `services/export_handler.rs`; fixed `clippy::eq_op`.
+- [x] **Versioning + CHANGELOG** — `Cargo.toml` is source of truth, `CHANGELOG.md`, documented convention in README/CLAUDE.md. First release: **v0.2.0**.
+
 ## Recently Completed ✅ (2026-09-09)
 
-- [x] **Event notifications/alerts** — precise one-shot desktop notifications (fires at the exact due instant); `src/services/notification_scheduler.rs`
-- [x] **Background CalDAV sync** — TimeTick-driven, configurable interval (Settings); `src/update/caldav.rs`
+- [x] **Event notifications/alerts** — precise one-shot desktop notifications; `src/services/notification_scheduler.rs`
+- [x] **Background CalDAV sync** — TimeTick-driven, configurable interval; `src/update/caldav.rs`
 - [x] **Settings dialog** — week numbers + background sync interval; `src/components/settings_dialog.rs`
-- [x] **Event invites (attendees)** — `ATTENDEE` ICS round-trip on the live CalDAV write path; `src/services/export_handler.rs`
-- [x] **Event search** — live cross-calendar search (summary/location/notes/invitees); `src/services/search.rs` + `src/components/search.rs`
-- [x] **CalDAV write path full serializer** — live `event_to_ical` now delegates to shared `caldav::build_event`, so recurrence/reminders/all-day/attendees survive a PUT
-- [x] **System tray icon + close-to-tray** — always-visible StatusNotifierItem (Show/Quit) on a dedicated GTK thread (libappindicator needs a running GTK loop); `close_to_tray` setting hides the window to the tray on close instead of exiting; `src/services/tray.rs`
-- [x] **Dock icon (native build)** — fixed the app-id mismatch: the non-Flatpak build advertised `…Calendar.Devel`, which broke both the window icon lookup and the dock's window→launcher match; `APP_ID` is now always `dev.jadejitsu.apps.Calendar`
-- [x] **Fix tray "Show" not restoring a closed-to-tray window** — `TrayShowOrRestore` used to un-minimize the window, but Wayland's xdg-shell has no "unminimize" request (winit no-ops `set_minimized(false)`); close-to-tray now fully closes the window and Show reopens a fresh one; `src/update/mod.rs`
+- [x] **Event invites (attendees)** — `ATTENDEE` ICS round-trip on the live write path; `src/services/export_handler.rs`
+- [x] **Event search** — live cross-calendar search; `src/services/search.rs` + `src/components/search.rs`
+- [x] **CalDAV write path full serializer** — live `event_to_ical` delegates to shared `caldav::build_event`
+- [x] **System tray icon + close-to-tray** — StatusNotifierItem on a dedicated GTK thread; `src/services/tray.rs`
+- [x] **Dock icon (native build)** — `APP_ID` always `dev.jadejitsu.apps.Calendar` (was `…Devel`)
+- [x] **Tray "Show" restore** — close + reopen (Wayland can't un-minimize); `src/update/mod.rs`
+- [x] **App-id rebrand** `dev.xarbit` → `dev.jadejitsu` (b8193f5)
 
-## Current Sprint: Event Management
+## Completed — Event Management & Views ✅
 
-### Completed ✅
+- [x] **Month view** — day cells, quick-event input, "+N more" overflow, calendar selection
+- [x] **Week view** — time grid, timed event chips, all-day row, time indicator, drag-to-select time range
+- [x] **Day view** — all-day section + time grid; `src/views/day.rs`
+- [x] **Year view** — `src/views/year.rs`
+- [x] **Event create/edit dialog** — full details (title, location, times, all-day, calendar, recurrence, invitees, reminders); `src/components/event_dialog.rs`
+- [x] **Recurring events** — RRULE in/out, exception dates, master-UID occurrence handling
+- [x] **All-day + multi-day events** — DTEND survives round-trip
+- [x] **Drag to move events** — month + week, with floating preview; `src/selection/drag.rs`
+- [x] **Delete event** — confirm dialog
+- [x] **Event storage** — SQLite (SQLCipher-ready) at `~/.local/share/sol-calendar/sol.db`; calendar metadata at `~/.config/sol-calendar/calendars.json`
+- [x] **CalDAV sync** — RFC 4791 discovery (incl. `calendar-home-set` 404 fallback for Nextcloud 34), push local changes, per-calendar sync/error indicators
+- [x] **Import .ics** — file import with calendar selection + progress; `src/update/import.rs`
+- [x] **Export .ics** — per-calendar and all; `src/services/export_handler.rs`
+- [x] **Subscribe (webcal)** — URL subscription with create-new-calendar option
 
-- [x] **Calendar Selection UI** - Click on calendar name in sidebar to select as active calendar for new events
-  - Added `selected_calendar_id` to app state
-  - Calendar list shows selection with accent color (Suggested button style)
-  - `SelectCalendar(String)` message implemented
+## Pending 📋
 
-- [x] **Event Messages** - Core message types for event operations
-  - `StartQuickEvent(NaiveDate)` - Start creating quick event on date
-  - `QuickEventTextChanged(String)` - Update quick event text
-  - `CommitQuickEvent` - Save the quick event
-  - `CancelQuickEvent` - Cancel quick event editing
-  - `DeleteEvent(String)` - Delete event by UID
+### CalDAV write safety
+- [ ] **`If-Match` on write** — writes are last-writer-wins; add ETag-based optimistic concurrency so a server-side change since last sync isn't silently clobbered.
 
-- [x] **Quick Event Input Component** - Inline text field for fast event creation
-  - `render_quick_event_input()` - Styled input with calendar color
-  - Supports Enter to commit, Escape to cancel (message-based)
-
-- [x] **Event Chip Component** - Display event in day cell
-  - `render_event_chip()` - Compact event display with calendar color
-  - `render_events_column()` - Stack of events with "+N more" overflow
-
-- [x] **Day Cell with Events** - Enhanced day cell for month view
-  - `DayCellConfig` struct with events and quick_event fields
-  - `render_day_cell_with_events()` - Full day cell with event support
-  - Double-click to start quick event creation
-
-- [x] **Event Storage Backend** - Persist events to SQLite database
-  - `handle_commit_quick_event()` creates CalendarEvent with UUID
-  - Events stored via LocalCalendar → Database → SQLite
-  - Path: `~/.local/share/sol-calendar/sol.db`
-
-- [x] **Month View Events Structure** - Data passing for events
-  - `MonthViewEvents` struct with events_by_day HashMap
-  - Quick event state tracking (date, text, color)
-
-### In Progress 🔄
-
-- [ ] **Testing Event Creation** - Verify events are created and persisted correctly
-  - Double-click on day to show quick event input
-  - Type event name and press Enter to save
-  - Check events persist across app restarts
-
-### Completed ✅ (Phase 1)
-
-- [x] **Wire Up Event Display** - Show events in month view
-  - Added `get_display_events_for_month()` to CalendarManager
-  - Caching events in app state (`cached_month_events`)
-  - Events refresh on navigation and after add/delete
-  - Lifetime issues resolved by owning data in app state
-
-- [x] **Basic Event Display**
-  - Display events in month view day cells
-  - Show quick event input when double-clicking a day
-  - Color events based on their calendar's color
-
-### Pending 📋
-
-#### Phase 2: Event Interaction
-- [ ] Click on event chip to select/edit
-- [ ] Delete event (context menu or keyboard)
-- [ ] Edit event title inline
-- [ ] Move event between days (drag & drop)
-
-#### Phase 3: Full Event Dialog
-- [ ] Event creation dialog with full details
-  - Title, description, location
-  - Start/end date and time
-  - All-day toggle
-  - Calendar selection dropdown
-- [ ] Event editing dialog
-- [ ] Recurring events support
-
-#### Phase 4: Week/Day View Events
-- [ ] Display events in week view time grid
-- [ ] Display events in day view time grid
-- [ ] Time-based event positioning
-- [ ] Multi-day event spanning
-
-#### Phase 5: CalDAV Integration
-- [x] CalDAV sync implementation
-  - [x] Parse iCalendar data from server
-  - [x] Push local changes to server
-  - [x] Nextcloud Calendar support (incl. `calendar-home-set` 404 fallback)
+### New calendar backends
 - [ ] Google Calendar support
 - [ ] iCloud Calendar support
 
-#### Phase 6: Import/Export
-- [ ] Import iCal file (.ics)
-- [ ] Export calendar to iCal
-- [ ] Bulk import/export
-
-### Technical Debt 🔧
-
-- [ ] Clean up unused imports (cargo fix suggestions)
-- [ ] Remove dead code warnings
-- [ ] Better error handling (replace eprintln with proper logging)
-- [ ] Add unit tests for event operations
-- [x] ~~Consider caching events in app state for better lifetime management~~ (done)
-- [x] **Migrated event storage to SQLite with SQLCipher**
-  - Calendar metadata (name, color, enabled) stored in config file: `~/.config/sol-calendar/calendars.json`
-  - Events stored in SQLite database: `~/.local/share/sol-calendar/sol.db`
-  - Better separation of concerns (config vs data)
-  - Encryption support via SQLCipher for event data (ready to use)
-  - Efficient indexed queries for date ranges
+### Technical debt
+- [ ] Replace remaining `eprintln!` with proper logging
+- [ ] Consider CI (build gates are now green — `cargo clippy --all-targets` + `cargo test` are safe to gate on)
 
 ---
 
@@ -126,7 +57,7 @@
 
 ### Event Flow
 ```
-User Action → Message → update.rs → CalendarManager → CalendarSource → Database (SQLite)
+User Action → Message → update/ → CalendarManager → CalendarSource → Database (SQLite)
 ```
 
 ### Storage Architecture
@@ -135,21 +66,22 @@ Calendar Metadata (config)     Events (database)
 ~/.config/sol-calendar/    →   ~/.local/share/sol-calendar/
 ├── calendars.json             └── sol.db (SQLite + SQLCipher)
     ├── id, name, color
-    ├── enabled, type
+    └── enabled, type
 ```
 
 ### Key Files
-- `src/message.rs` - Event-related messages
-- `src/update.rs` - Message handlers including `handle_commit_quick_event()`
-- `src/components/event_chip.rs` - Event display components
-- `src/components/day_cell.rs` - Day cell with event support
-- `src/views/month.rs` - Month view with `MonthViewEvents`
-- `src/calendars/` - Calendar backend (LocalCalendar, CalDAV)
-- `src/calendars/config.rs` - Calendar metadata (JSON config)
-- `src/database/` - SQLite database for events (with SQLCipher encryption support)
+- `src/message.rs` - All messages (grouped by feature domain)
+- `src/update/` - Message handlers by domain (navigation, calendar, event, selection, import, caldav)
+- `src/components/` - Reusable widgets (event_chip, day_cell, event_dialog, search, settings_dialog)
+- `src/views/` - month/ / week/ / day.rs / year.rs / main_view.rs
+- `src/caldav.rs` - CalDAV client + ICS serializer (`calendar_event_to_ics`)
+- `src/services/export_handler.rs` - ICS import/export + `parse_ical_string`
+- `src/services/single_instance.rs` - D-Bus single-instance activation
+- `src/services/tray.rs` - StatusNotifierItem (dedicated GTK thread)
+- `src/selection/` - Drag selection + event drag state
+- `src/calendars/` - Calendar backends (Local, CalDAV) + config
+- `src/database/` - SQLite storage
 
 ### Data Structures
-- `CalendarEvent` - Core event data (uid, summary, start, end, etc.)
+- `CalendarEvent` - Core event data (uid, summary, start, end, recurrence, invitees, alerts, …)
 - `DisplayEvent` - Event with calendar color for rendering
-- `DayCellConfig` - Configuration for rendering day cells
-- `MonthViewEvents` - Events grouped by day for month view

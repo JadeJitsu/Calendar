@@ -5,7 +5,7 @@ use cosmic::widget::{button, row};
 use cosmic::{widget, Element};
 
 use crate::message::Message;
-use crate::ui_constants::{ICON_NEXT, ICON_PREVIOUS, SPACING_MEDIUM, PADDING_TINY, PADDING_SMALL};
+use crate::ui_constants::{ICON_NEXT, ICON_PREVIOUS, PADDING_SMALL, PADDING_TINY, SPACING_MEDIUM};
 
 /// Render the calendar toolbar with navigation controls
 /// primary_text is displayed bold, secondary_text is displayed in normal weight
@@ -20,19 +20,19 @@ pub fn render_toolbar(primary_text: &str, secondary_text: &str) -> Element<'stat
         .push(
             button::icon(widget::icon::from_name(ICON_PREVIOUS))
                 .on_press(Message::PreviousPeriod)
-                .padding(PADDING_TINY)
+                .padding(PADDING_TINY),
         )
         .push(
             button::icon(widget::icon::from_name(ICON_NEXT))
                 .on_press(Message::NextPeriod)
-                .padding(PADDING_TINY)
+                .padding(PADDING_TINY),
         )
         .push(
             row([])
                 .spacing(SPACING_MEDIUM)
                 .align_y(cosmic::iced::Alignment::Center)
                 .push(widget::text::title4(primary))
-                .push(widget::text::body(secondary))
+                .push(widget::text::body(secondary)),
         )
         .into()
 }

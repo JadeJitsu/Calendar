@@ -78,7 +78,10 @@ impl DragTarget {
     /// Create a date+time target (for week/day views)
     #[allow(dead_code)] // Reserved for week/day view event dragging
     pub fn with_time(date: NaiveDate, time: NaiveTime) -> Self {
-        Self { date, time: Some(time) }
+        Self {
+            date,
+            time: Some(time),
+        }
     }
 }
 
@@ -113,24 +116,60 @@ impl EventDragState {
     }
 
     /// Start dragging an event (date-only, for month view)
-    pub fn start(&mut self, calendar_id: String, event_uid: String, original_date: NaiveDate, summary: String, color: String) {
+    pub fn start(
+        &mut self,
+        calendar_id: String,
+        event_uid: String,
+        original_date: NaiveDate,
+        summary: String,
+        color: String,
+    ) {
         self.start_internal(calendar_id, event_uid, original_date, None, summary, color);
     }
 
     /// Start dragging an event with time (for week/day views)
     #[allow(dead_code)] // Reserved for week/day view event dragging
-    pub fn start_with_time(&mut self, calendar_id: String, event_uid: String, original_date: NaiveDate, original_time: NaiveTime, summary: String, color: String) {
-        self.start_internal(calendar_id, event_uid, original_date, Some(original_time), summary, color);
+    pub fn start_with_time(
+        &mut self,
+        calendar_id: String,
+        event_uid: String,
+        original_date: NaiveDate,
+        original_time: NaiveTime,
+        summary: String,
+        color: String,
+    ) {
+        self.start_internal(
+            calendar_id,
+            event_uid,
+            original_date,
+            Some(original_time),
+            summary,
+            color,
+        );
     }
 
     /// Internal start implementation
-    fn start_internal(&mut self, calendar_id: String, event_uid: String, original_date: NaiveDate, original_time: Option<NaiveTime>, summary: String, color: String) {
-        debug!("EventDragState: Starting drag for calendar={} event={} from {} {:?}", calendar_id, event_uid, original_date, original_time);
+    fn start_internal(
+        &mut self,
+        calendar_id: String,
+        event_uid: String,
+        original_date: NaiveDate,
+        original_time: Option<NaiveTime>,
+        summary: String,
+        color: String,
+    ) {
+        debug!(
+            "EventDragState: Starting drag for calendar={} event={} from {} {:?}",
+            calendar_id, event_uid, original_date, original_time
+        );
         self.calendar_id = Some(calendar_id);
         self.event_uid = Some(event_uid);
         self.original_date = Some(original_date);
         self.original_time = original_time;
-        self.target = Some(DragTarget { date: original_date, time: original_time });
+        self.target = Some(DragTarget {
+            date: original_date,
+            time: original_time,
+        });
         self.is_active = true;
         self.preview.set_event_info(summary, color);
         set_drag_active(true);
@@ -155,7 +194,10 @@ impl EventDragState {
     #[allow(dead_code)] // Reserved for week/day view event dragging
     pub fn update_with_time(&mut self, target_date: NaiveDate, target_time: NaiveTime) {
         if self.is_active {
-            debug!("EventDragState: Updating target to {} {:?}", target_date, target_time);
+            debug!(
+                "EventDragState: Updating target to {} {:?}",
+                target_date, target_time
+            );
             self.target = Some(DragTarget::with_time(target_date, target_time));
         }
     }
@@ -168,9 +210,17 @@ impl EventDragState {
             return None;
         }
 
-        let result = match (&self.calendar_id, &self.event_uid, self.original_date, self.target) {
+        let result = match (
+            &self.calendar_id,
+            &self.event_uid,
+            self.original_date,
+            self.target,
+        ) {
             (Some(cal_id), Some(uid), Some(original), Some(target)) if original != target.date => {
-                debug!("EventDragState: Ending drag - move calendar={} event={} from {} to {}", cal_id, uid, original, target.date);
+                debug!(
+                    "EventDragState: Ending drag - move calendar={} event={} from {} to {}",
+                    cal_id, uid, original, target.date
+                );
                 Some((cal_id.clone(), uid.clone(), original, target.date))
             }
             _ => {
@@ -186,7 +236,15 @@ impl EventDragState {
     /// End the drag operation with full time information
     /// Returns (event_uid, original_date, original_time, new_date, new_time) if a move should occur
     #[allow(dead_code)] // Reserved for week/day view event dragging with time
-    pub fn end_with_time(&mut self) -> Option<(String, NaiveDate, Option<NaiveTime>, NaiveDate, Option<NaiveTime>)> {
+    pub fn end_with_time(
+        &mut self,
+    ) -> Option<(
+        String,
+        NaiveDate,
+        Option<NaiveTime>,
+        NaiveDate,
+        Option<NaiveTime>,
+    )> {
         if !self.is_active {
             return None;
         }
@@ -195,9 +253,17 @@ impl EventDragState {
             (Some(uid), Some(original_date), Some(target)) => {
                 let has_change = original_date != target.date || self.original_time != target.time;
                 if has_change {
-                    debug!("EventDragState: Ending drag - move {} from {} {:?} to {} {:?}",
-                           uid, original_date, self.original_time, target.date, target.time);
-                    Some((uid.clone(), original_date, self.original_time, target.date, target.time))
+                    debug!(
+                        "EventDragState: Ending drag - move {} from {} {:?} to {} {:?}",
+                        uid, original_date, self.original_time, target.date, target.time
+                    );
+                    Some((
+                        uid.clone(),
+                        original_date,
+                        self.original_time,
+                        target.date,
+                        target.time,
+                    ))
                 } else {
                     debug!("EventDragState: Ending drag - no move (same location)");
                     None
@@ -288,19 +354,40 @@ mod tests {
         assert!(!is_drag_active());
 
         let mut state = EventDragState::new();
-        state.start("cal-1".into(), "uid-1".into(), NaiveDate::from_ymd_opt(2026, 9, 10).unwrap(), "Event".into(), "#ff0000".into());
+        state.start(
+            "cal-1".into(),
+            "uid-1".into(),
+            NaiveDate::from_ymd_opt(2026, 9, 10).unwrap(),
+            "Event".into(),
+            "#ff0000".into(),
+        );
         assert!(state.is_active);
-        assert!(is_drag_active(), "start() must set the global drag-active flag");
+        assert!(
+            is_drag_active(),
+            "start() must set the global drag-active flag"
+        );
 
         let moved = state.end();
         assert!(moved.is_none(), "no target change -> no move");
         assert!(!state.is_active);
-        assert!(!is_drag_active(), "end() must clear the global drag-active flag");
+        assert!(
+            !is_drag_active(),
+            "end() must clear the global drag-active flag"
+        );
 
         // Cancel path also clears the flag
-        state.start("cal-1".into(), "uid-2".into(), NaiveDate::from_ymd_opt(2026, 9, 10).unwrap(), "Event".into(), "#ff0000".into());
+        state.start(
+            "cal-1".into(),
+            "uid-2".into(),
+            NaiveDate::from_ymd_opt(2026, 9, 10).unwrap(),
+            "Event".into(),
+            "#ff0000".into(),
+        );
         assert!(is_drag_active());
         state.cancel();
-        assert!(!is_drag_active(), "cancel() must clear the global drag-active flag");
+        assert!(
+            !is_drag_active(),
+            "cancel() must clear the global drag-active flag"
+        );
     }
 }

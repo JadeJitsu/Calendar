@@ -71,13 +71,11 @@ pub fn init() {
         level = DEFAULT_LOG_LEVEL
     );
 
-    env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or(&default_filter)
-    )
-    .format_timestamp_millis()
-    .format_module_path(true)
-    .format_target(false)
-    .init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(&default_filter))
+        .format_timestamp_millis()
+        .format_module_path(true)
+        .format_target(false)
+        .init();
 
     info!("{} logging initialized", APP_NAME);
 }
@@ -91,15 +89,16 @@ pub fn init() {
 /// * `default_level` - The default log level (e.g., "debug", "warn")
 #[allow(dead_code)] // Reserved for future log level configuration
 pub fn init_with_level(default_level: &str) {
-    env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or(default_level)
-    )
-    .format_timestamp_millis()
-    .format_module_path(true)
-    .format_target(false)
-    .init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(default_level))
+        .format_timestamp_millis()
+        .format_module_path(true)
+        .format_target(false)
+        .init();
 
-    info!("{} logging initialized with level {}", APP_NAME, default_level);
+    info!(
+        "{} logging initialized with level {}",
+        APP_NAME, default_level
+    );
 }
 
 /// Check if debug logging is enabled.

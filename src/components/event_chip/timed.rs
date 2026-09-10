@@ -3,13 +3,13 @@
 //! Renders timed events with colored dot + time + name.
 
 use chrono::NaiveTime;
-use cosmic::iced::Length;
 use cosmic::iced::widget::text::Wrapping;
+use cosmic::iced::Length;
 use cosmic::widget::{container, row};
 use cosmic::{widget, Element};
 
 use crate::message::Message;
-use crate::ui_constants::{SPACING_XXS, BORDER_RADIUS, BORDER_WIDTH_HIGHLIGHT};
+use crate::ui_constants::{BORDER_RADIUS, BORDER_WIDTH_HIGHLIGHT, SPACING_XXS};
 
 use super::types::{ChipOpacity, ChipSelectionState};
 
@@ -37,7 +37,11 @@ pub fn render_timed_event_chip(
 
     // Apply past dimming factor to dot
     let base_dot_opacity = ChipOpacity::dot_opacity(is_being_dragged);
-    let dot_opacity = if is_past { base_dot_opacity * 0.5 } else { base_dot_opacity };
+    let dot_opacity = if is_past {
+        base_dot_opacity * 0.5
+    } else {
+        base_dot_opacity
+    };
 
     // Colored dot
     let dot = container(widget::text(""))
@@ -45,7 +49,9 @@ pub fn render_timed_event_chip(
         .height(Length::Fixed(TIMED_EVENT_DOT_SIZE))
         .style(move |_theme: &cosmic::Theme| {
             container::Style {
-                background: Some(cosmic::iced::Background::Color(color.scale_alpha(dot_opacity))),
+                background: Some(cosmic::iced::Background::Color(
+                    color.scale_alpha(dot_opacity),
+                )),
                 border: cosmic::iced::Border {
                     color: cosmic::iced::Color::TRANSPARENT,
                     width: 0.0,
@@ -62,9 +68,7 @@ pub fn render_timed_event_chip(
         summary
     };
 
-    let text = widget::text(display_text)
-        .size(11)
-        .wrapping(Wrapping::None); // Prevent text from wrapping to next line
+    let text = widget::text(display_text).size(11).wrapping(Wrapping::None); // Prevent text from wrapping to next line
 
     // Text opacity for past events
     let text_alpha = if is_past { 0.5 } else { 1.0 };
@@ -75,7 +79,7 @@ pub fn render_timed_event_chip(
             .spacing(SPACING_XXS)
             .align_y(cosmic::iced::Alignment::Center)
             .push(dot)
-            .push(text)
+            .push(text),
     )
     .width(Length::Fill)
     .clip(true) // Clip text that doesn't fit
@@ -89,7 +93,11 @@ pub fn render_timed_event_chip(
         } else if is_selected {
             // Selected style with optional past dimming
             let bg_alpha = if is_past { 0.08 } else { 0.15 };
-            let border_color = if is_past { color.scale_alpha(0.5) } else { color };
+            let border_color = if is_past {
+                color.scale_alpha(0.5)
+            } else {
+                color
+            };
             container::Style {
                 background: Some(cosmic::iced::Background::Color(color.scale_alpha(bg_alpha))),
                 border: cosmic::iced::Border {

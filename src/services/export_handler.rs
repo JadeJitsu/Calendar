@@ -54,7 +54,10 @@ impl ExportHandler {
     /// Export a single event to iCalendar format
     #[allow(dead_code)] // Part of export API
     pub fn event_to_ical(event: &CalendarEvent) -> Calendar {
-        debug!("ExportHandler: Converting event '{}' (uid={}) to iCal", event.summary, event.uid);
+        debug!(
+            "ExportHandler: Converting event '{}' (uid={}) to iCal",
+            event.summary, event.uid
+        );
 
         // Delegate to the shared VEVENT builder so the live CalDAV PUT path
         // serializes the full event (recurrence, exceptions, reminder,
@@ -71,7 +74,10 @@ impl ExportHandler {
         manager: &CalendarManager,
         calendar_id: &str,
     ) -> ExportResult<Calendar> {
-        info!("ExportHandler: Exporting calendar '{}' to iCal format", calendar_id);
+        info!(
+            "ExportHandler: Exporting calendar '{}' to iCal format",
+            calendar_id
+        );
 
         let calendar = manager
             .sources()
@@ -82,12 +88,10 @@ impl ExportHandler {
                 ExportError::CalendarNotFound(calendar_id.to_string())
             })?;
 
-        let events = calendar
-            .fetch_events()
-            .map_err(|e| {
-                error!("ExportHandler: Failed to fetch events: {}", e);
-                ExportError::IoError(e.to_string())
-            })?;
+        let events = calendar.fetch_events().map_err(|e| {
+            error!("ExportHandler: Failed to fetch events: {}", e);
+            ExportError::IoError(e.to_string())
+        })?;
 
         debug!("ExportHandler: Found {} events to export", events.len());
 
@@ -115,7 +119,10 @@ impl ExportHandler {
             ical.push(ical_event);
         }
 
-        info!("ExportHandler: Successfully exported calendar '{}'", calendar_id);
+        info!(
+            "ExportHandler: Successfully exported calendar '{}'",
+            calendar_id
+        );
         Ok(ical)
     }
 
@@ -126,7 +133,11 @@ impl ExportHandler {
         calendar_id: &str,
         path: P,
     ) -> ExportResult<()> {
-        info!("ExportHandler: Exporting calendar '{}' to file {:?}", calendar_id, path.as_ref());
+        info!(
+            "ExportHandler: Exporting calendar '{}' to file {:?}",
+            calendar_id,
+            path.as_ref()
+        );
 
         let ical = Self::calendar_to_ical(manager, calendar_id)?;
         let ical_string = ical.to_string();
@@ -136,7 +147,10 @@ impl ExportHandler {
             ExportError::IoError(e.to_string())
         })?;
 
-        info!("ExportHandler: Successfully exported to {:?}", path.as_ref());
+        info!(
+            "ExportHandler: Successfully exported to {:?}",
+            path.as_ref()
+        );
         Ok(())
     }
 
@@ -146,19 +160,29 @@ impl ExportHandler {
         manager: &CalendarManager,
         path: P,
     ) -> ExportResult<()> {
-        info!("ExportHandler: Exporting all calendars to file {:?}", path.as_ref());
+        info!(
+            "ExportHandler: Exporting all calendars to file {:?}",
+            path.as_ref()
+        );
 
         let mut combined = Calendar::new();
         let mut total_events = 0;
 
         for calendar in manager.sources() {
             if !calendar.is_enabled() {
-                debug!("ExportHandler: Skipping disabled calendar '{}'", calendar.info().name);
+                debug!(
+                    "ExportHandler: Skipping disabled calendar '{}'",
+                    calendar.info().name
+                );
                 continue;
             }
 
             if let Ok(events) = calendar.fetch_events() {
-                debug!("ExportHandler: Adding {} events from '{}'", events.len(), calendar.info().name);
+                debug!(
+                    "ExportHandler: Adding {} events from '{}'",
+                    events.len(),
+                    calendar.info().name
+                );
                 for event in events {
                     let mut ical_event = Event::new();
                     ical_event.summary(&event.summary);
@@ -186,7 +210,11 @@ impl ExportHandler {
             ExportError::IoError(e.to_string())
         })?;
 
-        info!("ExportHandler: Exported {} events to {:?}", total_events, path.as_ref());
+        info!(
+            "ExportHandler: Exported {} events to {:?}",
+            total_events,
+            path.as_ref()
+        );
         Ok(())
     }
 
@@ -211,7 +239,10 @@ impl ExportHandler {
     /// Parse an iCalendar string and return a list of events
     #[allow(dead_code)] // Part of import API
     pub fn parse_ical_string(ical_str: &str) -> ExportResult<Vec<CalendarEvent>> {
-        debug!("ExportHandler: Parsing iCal string ({} bytes)", ical_str.len());
+        debug!(
+            "ExportHandler: Parsing iCal string ({} bytes)",
+            ical_str.len()
+        );
 
         let calendar = ical_str.parse::<Calendar>().map_err(|e| {
             error!("ExportHandler: Failed to parse iCalendar: {}", e);
@@ -238,8 +269,13 @@ impl ExportHandler {
     /// Parse iCalendar string and extract calendar name and events
     /// Returns (calendar_name, events) tuple
     #[allow(dead_code)] // Part of import API
-    pub fn parse_ical_string_with_name(ical_str: &str) -> ExportResult<(String, Vec<CalendarEvent>)> {
-        debug!("ExportHandler: Parsing iCal string with name ({} bytes)", ical_str.len());
+    pub fn parse_ical_string_with_name(
+        ical_str: &str,
+    ) -> ExportResult<(String, Vec<CalendarEvent>)> {
+        debug!(
+            "ExportHandler: Parsing iCal string with name ({} bytes)",
+            ical_str.len()
+        );
 
         let calendar = ical_str.parse::<Calendar>().map_err(|e| {
             error!("ExportHandler: Failed to parse iCalendar: {}", e);
@@ -268,7 +304,11 @@ impl ExportHandler {
             }
         }
 
-        info!("ExportHandler: Successfully parsed calendar '{}' with {} events", calendar_name, events.len());
+        info!(
+            "ExportHandler: Successfully parsed calendar '{}' with {} events",
+            calendar_name,
+            events.len()
+        );
         Ok((calendar_name, events))
     }
 
@@ -298,17 +338,11 @@ impl ExportHandler {
                         .earliest()
                         .map(|z| z.with_timezone(&Utc))
                         .or_else(|| {
-                            warn!(
-                                "ExportHandler: unknown TZID '{}' — treating as UTC",
-                                tzid
-                            );
+                            warn!("ExportHandler: unknown TZID '{}' — treating as UTC", tzid);
                             Some(DateTime::from_naive_utc_and_offset(*date_time, Utc))
                         }),
                     None => {
-                        warn!(
-                            "ExportHandler: unknown TZID '{}' — treating as UTC",
-                            tzid
-                        );
+                        warn!("ExportHandler: unknown TZID '{}' — treating as UTC", tzid);
                         Some(DateTime::from_naive_utc_and_offset(*date_time, Utc))
                     }
                 }
@@ -374,7 +408,9 @@ impl ExportHandler {
                     .unwrap_or(cur.len()),
             );
             let (unit_char, rest) = match unit.chars().next() {
-                Some(c) if c == 'Y' || c == 'M' || c == 'W' || c == 'D' => (c, unit.get(1..).unwrap_or("")),
+                Some(c) if c == 'Y' || c == 'M' || c == 'W' || c == 'D' => {
+                    (c, unit.get(1..).unwrap_or(""))
+                }
                 _ => return None,
             };
             let n: i64 = num.parse().ok()?;
@@ -510,9 +546,11 @@ impl ExportHandler {
         // Extract end time (default to start + 1 hour)
         let end = if let Some(end_prop) = ical_event.get_end() {
             match end_prop {
-                DatePerhapsTime::DateTime(cal_dt) => Self::cal_dt_to_utc(&cal_dt).ok_or_else(
-                    || ExportError::ParseError(format!("Event uid={} has unparseable end", uid)),
-                )?,
+                DatePerhapsTime::DateTime(cal_dt) => {
+                    Self::cal_dt_to_utc(&cal_dt).ok_or_else(|| {
+                        ExportError::ParseError(format!("Event uid={} has unparseable end", uid))
+                    })?
+                }
                 DatePerhapsTime::Date(date) => {
                     let dt = date
                         .and_hms_opt(0, 0, 0)
@@ -625,7 +663,11 @@ impl ExportHandler {
         calendar_id: &str,
         path: P,
     ) -> ExportResult<usize> {
-        info!("ExportHandler: Importing events from {:?} into calendar '{}'", path.as_ref(), calendar_id);
+        info!(
+            "ExportHandler: Importing events from {:?} into calendar '{}'",
+            path.as_ref(),
+            calendar_id
+        );
 
         // Parse the file
         let events = Self::parse_ical_file(&path)?;
@@ -664,8 +706,11 @@ impl ExportHandler {
             imported_count += 1;
         }
 
-        info!("ExportHandler: Successfully imported {} events (skipped {} duplicates)",
-              imported_count, total_events - imported_count);
+        info!(
+            "ExportHandler: Successfully imported {} events (skipped {} duplicates)",
+            imported_count,
+            total_events - imported_count
+        );
         Ok(imported_count)
     }
 
@@ -683,21 +728,21 @@ impl ExportHandler {
         // Check minimum length
         if ical_str.len() < 50 {
             return Err(ExportError::ValidationError(
-                "File too short to be valid iCalendar".to_string()
+                "File too short to be valid iCalendar".to_string(),
             ));
         }
 
         // Check for required VCALENDAR wrapper
         if !ical_str.contains("BEGIN:VCALENDAR") || !ical_str.contains("END:VCALENDAR") {
             return Err(ExportError::ValidationError(
-                "Missing required VCALENDAR wrapper (RFC 5545 §3.4)".to_string()
+                "Missing required VCALENDAR wrapper (RFC 5545 §3.4)".to_string(),
             ));
         }
 
         // Check for VERSION property (required by RFC 5545 §3.7.4)
         if !ical_str.contains("VERSION:") {
             return Err(ExportError::ValidationError(
-                "Missing required VERSION property (RFC 5545 §3.7.4)".to_string()
+                "Missing required VERSION property (RFC 5545 §3.7.4)".to_string(),
             ));
         }
 
@@ -708,7 +753,10 @@ impl ExportHandler {
 
         // Try to parse to verify structure
         let calendar = ical_str.parse::<Calendar>().map_err(|e| {
-            error!("ExportHandler: iCalendar structure validation failed: {}", e);
+            error!(
+                "ExportHandler: iCalendar structure validation failed: {}",
+                e
+            );
             ExportError::ValidationError(format!("Invalid iCalendar structure: {}", e))
         })?;
 
@@ -725,7 +773,10 @@ impl ExportHandler {
             warn!("ExportHandler: No VEVENT components found in calendar");
         }
 
-        info!("ExportHandler: Validation successful - {} events", event_count);
+        info!(
+            "ExportHandler: Validation successful - {} events",
+            event_count
+        );
         Ok(())
     }
 
@@ -733,7 +784,9 @@ impl ExportHandler {
     fn validate_event_component(event: &Event) -> ExportResult<()> {
         // UID is required by RFC 5545 §3.8.4.7
         let uid = event.get_uid().ok_or_else(|| {
-            ExportError::ValidationError("Event missing required UID property (RFC 5545 §3.8.4.7)".to_string())
+            ExportError::ValidationError(
+                "Event missing required UID property (RFC 5545 §3.8.4.7)".to_string(),
+            )
         })?;
 
         // DTSTAMP is required by RFC 5545 §3.8.7.2
@@ -744,7 +797,8 @@ impl ExportHandler {
         // DTSTART is required for most events (RFC 5545 §3.8.2.4)
         let start = event.get_start().ok_or_else(|| {
             ExportError::ValidationError(format!(
-                "Event uid={} missing required DTSTART property (RFC 5545 §3.8.2.4)", uid
+                "Event uid={} missing required DTSTART property (RFC 5545 §3.8.2.4)",
+                uid
             ))
         })?;
 
@@ -755,21 +809,28 @@ impl ExportHandler {
                 (DatePerhapsTime::DateTime(start_dt), DatePerhapsTime::DateTime(end_dt)) => {
                     // For timed events, ensure end > start
                     match (start_dt, end_dt) {
-                        (icalendar::CalendarDateTime::Utc(s), icalendar::CalendarDateTime::Utc(e)) => s < e,
-                        (icalendar::CalendarDateTime::Floating(s), icalendar::CalendarDateTime::Floating(e)) => s < e,
+                        (
+                            icalendar::CalendarDateTime::Utc(s),
+                            icalendar::CalendarDateTime::Utc(e),
+                        ) => s < e,
+                        (
+                            icalendar::CalendarDateTime::Floating(s),
+                            icalendar::CalendarDateTime::Floating(e),
+                        ) => s < e,
                         _ => true, // Different timezone types, hard to compare - allow
                     }
-                },
+                }
                 (DatePerhapsTime::Date(start_date), DatePerhapsTime::Date(end_date)) => {
                     // For all-day events, end should be after or equal to start
                     start_date <= end_date
-                },
+                }
                 _ => true, // Mixed date/datetime - allow
             };
 
             if !start_is_before_end {
                 return Err(ExportError::ValidationError(format!(
-                    "Event uid={} has DTEND before DTSTART", uid
+                    "Event uid={} has DTEND before DTSTART",
+                    uid
                 )));
             }
         }
@@ -791,7 +852,10 @@ impl ExportHandler {
                     return Some("google");
                 } else if prodid.contains("Microsoft") || prodid.contains("Outlook") {
                     return Some("outlook");
-                } else if prodid.contains("Apple") || prodid.contains("iCal") || prodid.contains("macOS") {
+                } else if prodid.contains("Apple")
+                    || prodid.contains("iCal")
+                    || prodid.contains("macOS")
+                {
                     return Some("apple");
                 } else if prodid.contains("Mozilla") || prodid.contains("Thunderbird") {
                     return Some("thunderbird");
@@ -808,6 +872,7 @@ impl ExportHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::caldav::calendar_event_to_ics;
     use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
     use chrono::{TimeZone, Utc};
 
@@ -878,7 +943,10 @@ mod tests {
         let parsed = ExportHandler::parse_ical_string(&ical_string).expect("parse");
         assert_eq!(
             parsed[0].invitees,
-            vec!["alice@example.com".to_string(), "bob@example.com".to_string()]
+            vec![
+                "alice@example.com".to_string(),
+                "bob@example.com".to_string()
+            ]
         );
     }
 
@@ -929,8 +997,14 @@ mod tests {
 
     #[test]
     fn test_rrule_to_repeat() {
-        assert_eq!(ExportHandler::rrule_to_repeat("FREQ=DAILY"), RepeatFrequency::Daily);
-        assert_eq!(ExportHandler::rrule_to_repeat("FREQ=WEEKLY"), RepeatFrequency::Weekly);
+        assert_eq!(
+            ExportHandler::rrule_to_repeat("FREQ=DAILY"),
+            RepeatFrequency::Daily
+        );
+        assert_eq!(
+            ExportHandler::rrule_to_repeat("FREQ=WEEKLY"),
+            RepeatFrequency::Weekly
+        );
         assert_eq!(
             ExportHandler::rrule_to_repeat("FREQ=WEEKLY;INTERVAL=2"),
             RepeatFrequency::Biweekly
@@ -939,7 +1013,10 @@ mod tests {
             ExportHandler::rrule_to_repeat("FREQ=MONTHLY"),
             RepeatFrequency::Monthly
         );
-        assert_eq!(ExportHandler::rrule_to_repeat("FREQ=YEARLY"), RepeatFrequency::Yearly);
+        assert_eq!(
+            ExportHandler::rrule_to_repeat("FREQ=YEARLY"),
+            RepeatFrequency::Yearly
+        );
         // Known limitation: mapping is by FREQ+INTERVAL only — BYDAY is
         // ignored, so a multi-day weekly rule degrades to plain Weekly.
         assert_eq!(
@@ -1057,6 +1134,159 @@ mod tests {
                 "bob@example.com".to_string(),
                 "carol@example.com".to_string()
             ]
+        );
+    }
+    /// True round-trip: `calendar_event_to_ics` → `parse_ical_string` and
+    /// assert the model fields survive, not just that the ICS text contains
+    /// the right lines.
+    #[test]
+    fn test_ics_round_trip_timed_recurring() {
+        let event = CalendarEvent {
+            uid: "rt-timed-1".to_string(),
+            summary: "Round Trip Timed".to_string(),
+            location: Some("RT Location".to_string()),
+            all_day: false,
+            start: chrono::DateTime::parse_from_rfc3339("2026-09-10T09:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            end: chrono::DateTime::parse_from_rfc3339("2026-09-10T10:30:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            travel_time: TravelTime::None,
+            repeat: RepeatFrequency::Biweekly,
+            repeat_until: None,
+            exception_dates: vec![chrono::NaiveDate::from_ymd_opt(2026, 9, 24).unwrap()],
+            invitees: vec![],
+            alert: AlertTime::FifteenMinutes,
+            alert_second: None,
+            attachments: vec![],
+            url: None,
+            notes: Some("RT notes".to_string()),
+        };
+
+        let ics = calendar_event_to_ics(&event);
+        let parsed = crate::services::ExportHandler::parse_ical_string(&ics)
+            .expect("parse back")
+            .pop()
+            .expect("one event");
+
+        assert_eq!(parsed.uid, "rt-timed-1");
+        assert_eq!(parsed.summary, "Round Trip Timed");
+        assert_eq!(parsed.location.as_deref(), Some("RT Location"));
+        assert_eq!(parsed.notes.as_deref(), Some("RT notes"));
+        assert!(!parsed.all_day);
+        // Timed events emit UTC `Z` and must parse back to the same instants.
+        assert_eq!(
+            parsed.start,
+            chrono::DateTime::parse_from_rfc3339("2026-09-10T09:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc)
+        );
+        assert_eq!(
+            parsed.end,
+            chrono::DateTime::parse_from_rfc3339("2026-09-10T10:30:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc)
+        );
+        // RRULE:FREQ=WEEKLY;INTERVAL=2 must map back to Biweekly.
+        assert_eq!(parsed.repeat, RepeatFrequency::Biweekly);
+        assert_eq!(parsed.repeat_until, None);
+        assert_eq!(
+            parsed.exception_dates,
+            vec![chrono::NaiveDate::from_ymd_opt(2026, 9, 24).unwrap()]
+        );
+        assert_eq!(parsed.alert, AlertTime::FifteenMinutes);
+    }
+
+    /// Invitees must survive the ICS round-trip: the export writes one
+    /// `ATTENDEE` per invitee and the import reads them back.
+    #[test]
+    fn test_ics_round_trip_invitees() {
+        let event = CalendarEvent {
+            uid: "rt-invitees-1".to_string(),
+            summary: "Team Sync".to_string(),
+            location: None,
+            all_day: false,
+            start: chrono::DateTime::parse_from_rfc3339("2026-09-10T09:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            end: chrono::DateTime::parse_from_rfc3339("2026-09-10T09:30:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            travel_time: TravelTime::None,
+            repeat: RepeatFrequency::Never,
+            repeat_until: None,
+            exception_dates: vec![],
+            invitees: vec![
+                "alice@example.com".to_string(),
+                "bob@example.com".to_string(),
+            ],
+            alert: AlertTime::None,
+            alert_second: None,
+            attachments: vec![],
+            url: None,
+            notes: None,
+        };
+
+        let ics = calendar_event_to_ics(&event);
+        let parsed = crate::services::ExportHandler::parse_ical_string(&ics)
+            .expect("parse back")
+            .pop()
+            .expect("one event");
+
+        assert_eq!(
+            parsed.invitees,
+            vec![
+                "alice@example.com".to_string(),
+                "bob@example.com".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn test_ics_round_trip_all_day_multi_day() {
+        let event = CalendarEvent {
+            uid: "rt-allday-1".to_string(),
+            summary: "Round Trip All Day".to_string(),
+            location: None,
+            all_day: true,
+            start: chrono::DateTime::parse_from_rfc3339("2026-09-10T00:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            end: chrono::DateTime::parse_from_rfc3339("2026-09-12T00:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc),
+            travel_time: TravelTime::None,
+            repeat: RepeatFrequency::Never,
+            repeat_until: None,
+            exception_dates: vec![],
+            invitees: vec![],
+            alert: AlertTime::None,
+            alert_second: None,
+            attachments: vec![],
+            url: None,
+            notes: None,
+        };
+
+        let ics = calendar_event_to_ics(&event);
+        let parsed = crate::services::ExportHandler::parse_ical_string(&ics)
+            .expect("parse back")
+            .pop()
+            .expect("one event");
+
+        assert!(parsed.all_day);
+        assert_eq!(
+            parsed.start,
+            chrono::DateTime::parse_from_rfc3339("2026-09-10T00:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc)
+        );
+        // Multi-day DTEND must survive, not collapse onto DTSTART.
+        assert_eq!(
+            parsed.end,
+            chrono::DateTime::parse_from_rfc3339("2026-09-12T00:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc)
         );
     }
 }

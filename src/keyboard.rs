@@ -19,7 +19,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // New Event: Ctrl+Shift+N
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Character("n".into()),
         },
         MenuAction::NewEvent,
@@ -28,7 +31,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Today: Ctrl+Shift+T
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Character("t".into()),
         },
         MenuAction::Today,
@@ -37,7 +43,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Day View: Ctrl+Shift+D
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Character("d".into()),
         },
         MenuAction::ViewDay,
@@ -46,7 +55,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Week View: Ctrl+Shift+W
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Character("w".into()),
         },
         MenuAction::ViewWeek,
@@ -55,7 +67,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Month View: Ctrl+Shift+M
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Character("m".into()),
         },
         MenuAction::ViewMonth,
@@ -64,7 +79,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Year View: Ctrl+Shift+Y
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Character("y".into()),
         },
         MenuAction::ViewYear,
@@ -73,7 +91,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Navigate Previous Period: Ctrl+Shift+Left (prev month/week/day depending on view)
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Named(Named::ArrowLeft),
         },
         MenuAction::NavigatePrevious,
@@ -82,7 +103,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Navigate Next Period: Ctrl+Shift+Right (next month/week/day depending on view)
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Named(Named::ArrowRight),
         },
         MenuAction::NavigateNext,
@@ -91,7 +115,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Scroll Timeline Up: Ctrl+Shift+Up (scroll up 1 hour in Day/Week view)
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Named(Named::ArrowUp),
         },
         MenuAction::ScrollTimelineUp,
@@ -100,7 +127,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Scroll Timeline Down: Ctrl+Shift+Down (scroll down 1 hour in Day/Week view)
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Named(Named::ArrowDown),
         },
         MenuAction::ScrollTimelineDown,
@@ -118,7 +148,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Cycle View Next: Ctrl+Shift+] (Year → Month → Week → Day)
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Character("]".into()),
         },
         MenuAction::CycleViewNext,
@@ -127,7 +160,10 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     // Cycle View Previous: Ctrl+Shift+[ (Day → Week → Month → Year)
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            modifiers: vec![
+                menu::key_bind::Modifier::Ctrl,
+                menu::key_bind::Modifier::Shift,
+            ],
             key: Key::Character("[".into()),
         },
         MenuAction::CycleViewPrevious,

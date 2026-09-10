@@ -1,16 +1,18 @@
 //! The header menu bar: start/end button groups (new event, today,
 //! search, etc.) wired to `MenuAction`s.
 
+use cosmic::app::Core;
 use cosmic::widget::{button, menu};
 use cosmic::{widget, Element};
-use cosmic::app::Core;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
 use crate::fl;
 use crate::menu_action::MenuAction;
 use crate::message::Message;
-use crate::ui_constants::{ICON_ADD, ICON_SEARCH, ICON_TODAY, MENU_ITEM_HEIGHT, MENU_ITEM_WIDTH, MENU_SPACING};
+use crate::ui_constants::{
+    ICON_ADD, ICON_SEARCH, ICON_TODAY, MENU_ITEM_HEIGHT, MENU_ITEM_WIDTH, MENU_SPACING,
+};
 
 /// Static menu ID for responsive menu bar - must persist across renders for collapse state tracking
 static MENU_ID: LazyLock<widget::Id> = LazyLock::new(|| widget::Id::new("sol-calendar-menu"));
@@ -38,31 +40,59 @@ pub fn render_header_start<'a>(
                 MENU_ID.clone(),
                 Message::Surface,
                 vec![
-                    (fl!("menu-file"), vec![
-                        menu::Item::Button(fl!("menu-new-event"), None, MenuAction::NewEvent),
-                        menu::Item::Button(fl!("menu-new-calendar"), None, MenuAction::NewCalendar),
-                        menu::Item::Button(fl!("menu-add-caldav"), None, MenuAction::AddCalDav),
-                        menu::Item::Divider,
-                        menu::Item::Button(fl!("menu-sync"), None, MenuAction::SyncCalendars),
-                        menu::Item::Divider,
-                        menu::Item::Button(fl!("menu-import-ical"), None, MenuAction::ImportICal),
-                        menu::Item::Button(fl!("menu-export-ical"), None, MenuAction::ExportICal),
-                    ]),
-                    (fl!("menu-edit"), vec![
-                        menu::Item::Button(fl!("menu-settings"), None, MenuAction::Settings),
-                    ]),
-                    (fl!("menu-view"), vec![
-                        menu::Item::Button(fl!("menu-today"), None, MenuAction::Today),
-                        menu::Item::Divider,
-                        menu::Item::Button(fl!("menu-day-view"), None, MenuAction::ViewDay),
-                        menu::Item::Button(fl!("menu-week-view"), None, MenuAction::ViewWeek),
-                        menu::Item::Button(fl!("menu-month-view"), None, MenuAction::ViewMonth),
-                        menu::Item::Button(fl!("menu-year-view"), None, MenuAction::ViewYear),
-                        menu::Item::Divider,
-                        menu::Item::CheckBox(fl!("menu-show-week-numbers"), None, show_week_numbers, MenuAction::ToggleWeekNumbers),
-                        menu::Item::Divider,
-                        menu::Item::Button(fl!("menu-about"), None, MenuAction::About),
-                    ]),
+                    (
+                        fl!("menu-file"),
+                        vec![
+                            menu::Item::Button(fl!("menu-new-event"), None, MenuAction::NewEvent),
+                            menu::Item::Button(
+                                fl!("menu-new-calendar"),
+                                None,
+                                MenuAction::NewCalendar,
+                            ),
+                            menu::Item::Button(fl!("menu-add-caldav"), None, MenuAction::AddCalDav),
+                            menu::Item::Divider,
+                            menu::Item::Button(fl!("menu-sync"), None, MenuAction::SyncCalendars),
+                            menu::Item::Divider,
+                            menu::Item::Button(
+                                fl!("menu-import-ical"),
+                                None,
+                                MenuAction::ImportICal,
+                            ),
+                            menu::Item::Button(
+                                fl!("menu-export-ical"),
+                                None,
+                                MenuAction::ExportICal,
+                            ),
+                        ],
+                    ),
+                    (
+                        fl!("menu-edit"),
+                        vec![menu::Item::Button(
+                            fl!("menu-settings"),
+                            None,
+                            MenuAction::Settings,
+                        )],
+                    ),
+                    (
+                        fl!("menu-view"),
+                        vec![
+                            menu::Item::Button(fl!("menu-today"), None, MenuAction::Today),
+                            menu::Item::Divider,
+                            menu::Item::Button(fl!("menu-day-view"), None, MenuAction::ViewDay),
+                            menu::Item::Button(fl!("menu-week-view"), None, MenuAction::ViewWeek),
+                            menu::Item::Button(fl!("menu-month-view"), None, MenuAction::ViewMonth),
+                            menu::Item::Button(fl!("menu-year-view"), None, MenuAction::ViewYear),
+                            menu::Item::Divider,
+                            menu::Item::CheckBox(
+                                fl!("menu-show-week-numbers"),
+                                None,
+                                show_week_numbers,
+                                MenuAction::ToggleWeekNumbers,
+                            ),
+                            menu::Item::Divider,
+                            menu::Item::Button(fl!("menu-about"), None, MenuAction::About),
+                        ],
+                    ),
                 ],
             ),
     ]

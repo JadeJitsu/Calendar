@@ -146,9 +146,15 @@ impl EventDialogUiState {
             invitee_input: String::new(),
             editing_field: None,
             start_date_picker_open: false,
-            start_date_calendar: CalendarModel::new(crate::dates::to_jiff(data.start_date), crate::dates::to_jiff(data.start_date)),
+            start_date_calendar: CalendarModel::new(
+                crate::dates::to_jiff(data.start_date),
+                crate::dates::to_jiff(data.start_date),
+            ),
             end_date_picker_open: false,
-            end_date_calendar: CalendarModel::new(crate::dates::to_jiff(data.end_date), crate::dates::to_jiff(data.end_date)),
+            end_date_calendar: CalendarModel::new(
+                crate::dates::to_jiff(data.end_date),
+                crate::dates::to_jiff(data.end_date),
+            ),
             start_time_picker_open: false,
             end_time_picker_open: false,
             notes_content: text_editor::Content::with_text(&data.notes),

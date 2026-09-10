@@ -24,29 +24,24 @@
 //! if app.active_dialog.is_open() { ... }
 //! ```
 
-mod manager;
-mod event_dialog;
 mod calendar_dialog;
+mod event_dialog;
 mod import_dialog;
 mod import_progress_dialog;
 mod import_result_dialog;
+mod manager;
 mod subscribe_dialog;
 
-pub use manager::{
-    ActiveDialog,
-    DialogAction,
-    DialogManager,
-    QuickEventResult,
-};
 pub use import_dialog::render_import_dialog;
 pub use import_progress_dialog::render_import_progress_dialog;
 pub use import_result_dialog::render_import_result_dialog;
+pub use manager::{ActiveDialog, DialogAction, DialogManager, QuickEventResult};
 pub use subscribe_dialog::view_subscribe_dialog;
 
 // Keep old exports for backwards compatibility during migration
 // Note: EventDialogData is managed through legacy fields because text_editor::Content
 // doesn't implement Clone
 #[allow(unused_imports)]
-pub use event_dialog::EventDialogUiState;
-#[allow(unused_imports)]
 pub use calendar_dialog::{CalendarDialogData, CalendarDialogMode};
+#[allow(unused_imports)]
+pub use event_dialog::EventDialogUiState;

@@ -12,8 +12,8 @@ use crate::message::Message;
 use crate::selection::SelectionState;
 use crate::styles::weekend_background;
 use crate::ui_constants::{
-    PADDING_SMALL, FONT_SIZE_SMALL, day_cell_border,
-    HOUR_ROW_HEIGHT, TIME_LABEL_WIDTH, BORDER_WIDTH_THIN, COLOR_CURRENT_TIME,
+    day_cell_border, BORDER_WIDTH_THIN, COLOR_CURRENT_TIME, FONT_SIZE_SMALL, HOUR_ROW_HEIGHT,
+    PADDING_SMALL, TIME_LABEL_WIDTH,
 };
 
 /// Render the time labels column (left side)
@@ -29,27 +29,24 @@ pub fn render_time_labels_column<'a>(
         let time_label = locale.format_hour(hour);
 
         col = col.push(
-            container(
-                widget::text(time_label)
-                    .size(FONT_SIZE_SMALL)
-            )
-            .width(Length::Fixed(TIME_LABEL_WIDTH))
-            .height(Length::Fixed(HOUR_ROW_HEIGHT))
-            .padding(PADDING_SMALL)
-            .align_y(alignment::Vertical::Top)
-            .style(move |theme: &cosmic::Theme| container::Style {
-                text_color: if is_current_hour {
-                    Some(COLOR_CURRENT_TIME)
-                } else {
-                    None
-                },
-                border: Border {
-                    width: BORDER_WIDTH_THIN,
-                    color: day_cell_border(theme),
+            container(widget::text(time_label).size(FONT_SIZE_SMALL))
+                .width(Length::Fixed(TIME_LABEL_WIDTH))
+                .height(Length::Fixed(HOUR_ROW_HEIGHT))
+                .padding(PADDING_SMALL)
+                .align_y(alignment::Vertical::Top)
+                .style(move |theme: &cosmic::Theme| container::Style {
+                    text_color: if is_current_hour {
+                        Some(COLOR_CURRENT_TIME)
+                    } else {
+                        None
+                    },
+                    border: Border {
+                        width: BORDER_WIDTH_THIN,
+                        color: day_cell_border(theme),
+                        ..Default::default()
+                    },
                     ..Default::default()
-                },
-                ..Default::default()
-            })
+                }),
         );
     }
 
@@ -72,7 +69,9 @@ pub fn render_hour_grid_background(
 
     for hour in 0..24u32 {
         // Check if this hour cell is within the current selection
-        let is_selected = selection.map(|s| s.is_active && s.contains_time(date, hour)).unwrap_or(false);
+        let is_selected = selection
+            .map(|s| s.is_active && s.contains_time(date, hour))
+            .unwrap_or(false);
         let cell = render_clickable_hour_cell(date, hour, is_weekend, is_selected, time_sel_active);
         hour_cells = hour_cells.push(cell);
     }
@@ -90,9 +89,8 @@ fn render_clickable_hour_cell(
 ) -> Element<'static, Message> {
     // Create the time for this hour cell
     let start_time = NaiveTime::from_hms_opt(hour, 0, 0).unwrap();
-    let _end_time = NaiveTime::from_hms_opt(hour, 59, 59).unwrap_or_else(|| {
-        NaiveTime::from_hms_opt(23, 59, 59).unwrap()
-    });
+    let _end_time = NaiveTime::from_hms_opt(hour, 59, 59)
+        .unwrap_or_else(|| NaiveTime::from_hms_opt(23, 59, 59).unwrap());
 
     let cell = container(widget::text(""))
         .width(Length::Fill)
@@ -101,9 +99,9 @@ fn render_clickable_hour_cell(
             let background = if is_selected {
                 // Use theme accent color for selection (consistent with month view)
                 let accent = theme.cosmic().accent_color();
-                Some(cosmic::iced::Background::Color(cosmic::iced::Color::from_rgba(
-                    accent.red, accent.green, accent.blue, 0.2
-                )))
+                Some(cosmic::iced::Background::Color(
+                    cosmic::iced::Color::from_rgba(accent.red, accent.green, accent.blue, 0.2),
+                ))
             } else {
                 weekend_background(theme, is_weekend)
             };

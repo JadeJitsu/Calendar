@@ -1,12 +1,15 @@
 //! Event dialog component for creating and editing events
 //! Uses COSMIC settings-style grouped sections with editable_input
 
-use jiff::civil::Weekday;
 use cosmic::iced::widget::stack;
 use cosmic::iced::Length;
-use cosmic::widget::{button, calendar, column, container, mouse_area, popover, row, scrollable, settings, text, text_editor, toggler};
 use cosmic::widget::editable_input;
+use cosmic::widget::{
+    button, calendar, column, container, mouse_area, popover, row, scrollable, settings, text,
+    text_editor, toggler,
+};
 use cosmic::{widget, Element};
+use jiff::civil::Weekday;
 
 use crate::app::{EventDialogField, EventDialogState};
 use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
@@ -76,9 +79,7 @@ pub fn render_event_dialog<'a>(
     };
 
     // Helper to check if a field is being edited
-    let is_editing = |field: EventDialogField| -> bool {
-        state.editing_field == Some(field)
-    };
+    let is_editing = |field: EventDialogField| -> bool { state.editing_field == Some(field) };
 
     // === Title Input using editable_input ===
     let title_input = editable_input(
@@ -101,18 +102,11 @@ pub fn render_event_dialog<'a>(
     .width(Length::Fill);
 
     let basic_section = settings::section()
-        .add(
-            settings::item::builder(fl!("event-title"))
-                .control(title_input),
-        )
-        .add(
-            settings::item::builder(fl!("event-location"))
-                .control(location_input),
-        );
+        .add(settings::item::builder(fl!("event-title")).control(title_input))
+        .add(settings::item::builder(fl!("event-location")).control(location_input));
 
     // === Date & Time Section ===
-    let all_day_toggler = toggler(state.all_day)
-        .on_toggle(Message::EventDialogAllDayToggled);
+    let all_day_toggler = toggler(state.all_day).on_toggle(Message::EventDialogAllDayToggled);
 
     // Start date display as text
     let start_date_text = text(&state.start_date_input).width(Length::Fixed(100.0));
@@ -123,7 +117,7 @@ pub fn render_event_dialog<'a>(
             .spacing(8)
             .align_y(cosmic::iced::Alignment::Center)
             .push(start_date_text)
-            .push(widget::icon::from_name("x-office-calendar-symbolic").size(16))
+            .push(widget::icon::from_name("x-office-calendar-symbolic").size(16)),
     )
     .on_press(Message::EventDialogToggleStartDatePicker)
     .padding([4, 8])
@@ -131,15 +125,13 @@ pub fn render_event_dialog<'a>(
 
     // Start date calendar popover
     let start_date_with_picker: Element<'_, Message> = if state.start_date_picker_open {
-        let calendar_popup = container(
-            calendar(
-                &state.start_date_calendar,
-                Message::EventDialogStartDateChanged,
-                || Message::EventDialogStartDateCalendarPrev,
-                || Message::EventDialogStartDateCalendarNext,
-                Weekday::Monday,
-            )
-        )
+        let calendar_popup = container(calendar(
+            &state.start_date_calendar,
+            Message::EventDialogStartDateChanged,
+            || Message::EventDialogStartDateCalendarPrev,
+            || Message::EventDialogStartDateCalendarNext,
+            Weekday::Monday,
+        ))
         .style(popup_container_style);
         popover(start_date_picker_btn)
             .popup(calendar_popup)
@@ -156,7 +148,7 @@ pub fn render_event_dialog<'a>(
             .spacing(8)
             .align_y(cosmic::iced::Alignment::Center)
             .push(start_time_text)
-            .push(widget::icon::from_name("preferences-system-time-symbolic").size(16))
+            .push(widget::icon::from_name("preferences-system-time-symbolic").size(16)),
     )
     .on_press(Message::EventDialogToggleStartTimePicker)
     .padding([4, 8])
@@ -189,7 +181,7 @@ pub fn render_event_dialog<'a>(
             .spacing(8)
             .align_y(cosmic::iced::Alignment::Center)
             .push(end_date_text)
-            .push(widget::icon::from_name("x-office-calendar-symbolic").size(16))
+            .push(widget::icon::from_name("x-office-calendar-symbolic").size(16)),
     )
     .on_press(Message::EventDialogToggleEndDatePicker)
     .padding([4, 8])
@@ -197,15 +189,13 @@ pub fn render_event_dialog<'a>(
 
     // End date calendar popover
     let end_date_with_picker: Element<'_, Message> = if state.end_date_picker_open {
-        let calendar_popup = container(
-            calendar(
-                &state.end_date_calendar,
-                Message::EventDialogEndDateChanged,
-                || Message::EventDialogEndDateCalendarPrev,
-                || Message::EventDialogEndDateCalendarNext,
-                Weekday::Monday,
-            )
-        )
+        let calendar_popup = container(calendar(
+            &state.end_date_calendar,
+            Message::EventDialogEndDateChanged,
+            || Message::EventDialogEndDateCalendarPrev,
+            || Message::EventDialogEndDateCalendarNext,
+            Weekday::Monday,
+        ))
         .style(popup_container_style);
         popover(end_date_picker_btn)
             .popup(calendar_popup)
@@ -222,7 +212,7 @@ pub fn render_event_dialog<'a>(
             .spacing(8)
             .align_y(cosmic::iced::Alignment::Center)
             .push(end_time_text)
-            .push(widget::icon::from_name("preferences-system-time-symbolic").size(16))
+            .push(widget::icon::from_name("preferences-system-time-symbolic").size(16)),
     )
     .on_press(Message::EventDialogToggleEndTimePicker)
     .padding([4, 8])
@@ -266,18 +256,9 @@ pub fn render_event_dialog<'a>(
 
     let datetime_section = settings::section()
         .title(fl!("event-datetime-section"))
-        .add(
-            settings::item::builder(fl!("event-all-day"))
-                .control(all_day_toggler),
-        )
-        .add(
-            settings::item::builder(fl!("event-starts"))
-                .control(starts_row),
-        )
-        .add(
-            settings::item::builder(fl!("event-ends"))
-                .control(ends_row),
-        );
+        .add(settings::item::builder(fl!("event-all-day")).control(all_day_toggler))
+        .add(settings::item::builder(fl!("event-starts")).control(starts_row))
+        .add(settings::item::builder(fl!("event-ends")).control(ends_row));
 
     // === Travel Time Section ===
     let travel_time_options = [
@@ -347,10 +328,14 @@ pub fn render_event_dialog<'a>(
     }
 
     // Custom RRULE text input, shown only when Custom is selected
-    let repeat_control: Element<'_, Message> = if matches!(state.repeat, RepeatFrequency::Custom(_)) {
-        let rrule_input = widget::text_input(fl!("repeat-custom-rrule-placeholder"), &state.custom_rrule_input)
-            .on_input(|s| Message::EventDialogCustomRruleChanged(s))
-            .width(Length::Fill);
+    let repeat_control: Element<'_, Message> = if matches!(state.repeat, RepeatFrequency::Custom(_))
+    {
+        let rrule_input = widget::text_input(
+            fl!("repeat-custom-rrule-placeholder"),
+            &state.custom_rrule_input,
+        )
+        .on_input(|s| Message::EventDialogCustomRruleChanged(s))
+        .width(Length::Fill);
         column([])
             .spacing(4)
             .push(repeat_buttons)
@@ -376,15 +361,13 @@ pub fn render_event_dialog<'a>(
             .class(cosmic::theme::Button::Standard);
 
             let until_with_picker: Element<'_, Message> = if state.repeat_until_picker_open {
-                let until_popup = container(
-                    calendar(
-                        &state.repeat_until_calendar,
-                        Message::EventDialogRepeatUntilChanged,
-                        || Message::EventDialogRepeatUntilCalendarPrev,
-                        || Message::EventDialogRepeatUntilCalendarNext,
-                        Weekday::Monday,
-                    )
-                )
+                let until_popup = container(calendar(
+                    &state.repeat_until_calendar,
+                    Message::EventDialogRepeatUntilChanged,
+                    || Message::EventDialogRepeatUntilCalendarPrev,
+                    || Message::EventDialogRepeatUntilCalendarNext,
+                    Weekday::Monday,
+                ))
                 .style(popup_container_style);
                 popover(until_btn)
                     .popup(until_popup)
@@ -408,25 +391,15 @@ pub fn render_event_dialog<'a>(
 
     let schedule_section = settings::section()
         .title(fl!("event-schedule-section"))
-        .add(
-            settings::item::builder(fl!("event-travel-time"))
-                .control(travel_buttons),
-        )
-        .add(
-            settings::item::builder(fl!("event-repeat"))
-                .control(repeat_control),
-        )
+        .add(settings::item::builder(fl!("event-travel-time")).control(travel_buttons))
+        .add(settings::item::builder(fl!("event-repeat")).control(repeat_control))
         .add(
             settings::item::builder(fl!("event-repeat-until"))
-                .control(
-                    repeat_until_row
-                        .unwrap_or_else(|| widget::text("").into()),
-                ),
+                .control(repeat_until_row.unwrap_or_else(|| widget::text("").into())),
         );
 
     // === Calendar Section ===
-    let mut calendar_section = settings::section()
-        .title(fl!("event-calendar"));
+    let mut calendar_section = settings::section().title(fl!("event-calendar"));
 
     for calendar in calendars.iter() {
         let info = calendar.info();
@@ -439,19 +412,16 @@ pub fn render_event_dialog<'a>(
             row([])
                 .spacing(8)
                 .align_y(cosmic::iced::Alignment::Center)
-                .push(
-                    container(widget::text(""))
-                        .width(12.0)
-                        .height(12.0)
-                        .style(move |_theme: &cosmic::Theme| container::Style {
-                            background: Some(cosmic::iced::Background::Color(cal_color)),
-                            border: cosmic::iced::Border {
-                                radius: 3.0.into(),
-                                ..Default::default()
-                            },
+                .push(container(widget::text("")).width(12.0).height(12.0).style(
+                    move |_theme: &cosmic::Theme| container::Style {
+                        background: Some(cosmic::iced::Background::Color(cal_color)),
+                        border: cosmic::iced::Border {
+                            radius: 3.0.into(),
                             ..Default::default()
-                        }),
-                )
+                        },
+                        ..Default::default()
+                    },
+                ))
                 .push(text(&info.name)),
         )
         .on_press(Message::EventDialogCalendarChanged(calendar_id))
@@ -513,7 +483,7 @@ pub fn render_event_dialog<'a>(
     let invitee_input = editable_input(
         fl!("event-invitee-placeholder"),
         &state.invitee_input,
-        true, // Always editable for input
+        true,                               // Always editable for input
         |_| Message::EventDialogAddInvitee, // Toggle acts as submit
     )
     .on_input(|s| Message::EventDialogInviteeInputChanged(s))
@@ -547,14 +517,8 @@ pub fn render_event_dialog<'a>(
 
     let additional_section = settings::section()
         .title(fl!("event-additional-section"))
-        .add(
-            settings::item::builder(fl!("event-url"))
-                .control(url_input),
-        )
-        .add(
-            settings::item::builder(fl!("event-notes"))
-                .control(notes_editor),
-        );
+        .add(settings::item::builder(fl!("event-url")).control(url_input))
+        .add(settings::item::builder(fl!("event-notes")).control(notes_editor));
 
     // === Dialog Buttons ===
     let cancel_btn = button::text(fl!("button-cancel")).on_press(Message::CancelEventDialog);

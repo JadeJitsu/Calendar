@@ -182,7 +182,11 @@ mod tests {
         let c = event("c", "Apple tart");
         let res = search_events(
             "apple",
-            [("cal", "#fff", &a), ("cal", "#fff", &b), ("cal", "#fff", &c)],
+            [
+                ("cal", "#fff", &a),
+                ("cal", "#fff", &b),
+                ("cal", "#fff", &c),
+            ],
         );
         assert_eq!(
             res.iter().map(|r| r.uid.as_str()).collect::<Vec<_>>(),

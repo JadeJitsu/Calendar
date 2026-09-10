@@ -84,12 +84,12 @@ impl CalendarInfo {
 
     fn default_color_for_type(calendar_type: CalendarType) -> String {
         match calendar_type {
-            CalendarType::Local => "#3B82F6".to_string(),      // blue
-            CalendarType::CalDav => "#8B5CF6".to_string(),     // purple
-            CalendarType::Google => "#EA4335".to_string(),     // google red
-            CalendarType::Outlook => "#0078D4".to_string(),    // outlook blue
-            CalendarType::ICloud => "#007AFF".to_string(),     //
-            CalendarType::Other => "#6B7280".to_string(),      // gray
+            CalendarType::Local => "#3B82F6".to_string(),   // blue
+            CalendarType::CalDav => "#8B5CF6".to_string(),  // purple
+            CalendarType::Google => "#EA4335".to_string(),  // google red
+            CalendarType::Outlook => "#0078D4".to_string(), // outlook blue
+            CalendarType::ICloud => "#007AFF".to_string(),  //
+            CalendarType::Other => "#6B7280".to_string(),   // gray
         }
     }
 }
@@ -166,7 +166,13 @@ mod tests {
     /// synced.
     #[test]
     fn test_caldav_config_string_round_trips_with_debug_form() {
-        assert_eq!(CalendarType::CalDav.as_config(), format!("{:?}", CalendarType::CalDav));
-        assert_eq!(CalendarType::Local.as_config(), format!("{:?}", CalendarType::Local));
+        assert_eq!(
+            CalendarType::CalDav.as_config(),
+            format!("{:?}", CalendarType::CalDav)
+        );
+        assert_eq!(
+            CalendarType::Local.as_config(),
+            format!("{:?}", CalendarType::Local)
+        );
     }
 }

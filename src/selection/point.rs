@@ -20,7 +20,10 @@ impl SelectionPoint {
     /// Create a date+time selection point (for week/day views)
     #[allow(dead_code)] // Reserved for week/day view time selection
     pub fn with_time(date: NaiveDate, time: NaiveTime) -> Self {
-        Self { date, time: Some(time) }
+        Self {
+            date,
+            time: Some(time),
+        }
     }
 
     /// Get the date component

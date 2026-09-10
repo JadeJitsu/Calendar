@@ -39,8 +39,8 @@ use quick_event::render_quick_event_input_layer;
 use time_grid::{render_hour_grid_background, render_time_labels_column};
 use time_indicator::render_time_indicator_layer;
 use utils::{
-    calculate_event_columns, calculate_max_all_day_slots, separate_events,
-    ALL_DAY_EVENT_HEIGHT, ALL_DAY_MIN_HEIGHT, ALL_DAY_SPACING,
+    calculate_event_columns, calculate_max_all_day_slots, separate_events, ALL_DAY_EVENT_HEIGHT,
+    ALL_DAY_MIN_HEIGHT, ALL_DAY_SPACING,
 };
 
 /// Returns the scrollable ID for the week view time grid
@@ -87,23 +87,35 @@ pub fn render_week_view<'a>(
 
     // Calculate how many rows we need for all-day events
     let max_all_day_slots = calculate_max_all_day_slots(&all_day_events);
-    let all_day_section_height = ALL_DAY_MIN_HEIGHT + (max_all_day_slots as f32 * (ALL_DAY_EVENT_HEIGHT + ALL_DAY_SPACING));
+    let all_day_section_height =
+        ALL_DAY_MIN_HEIGHT + (max_all_day_slots as f32 * (ALL_DAY_EVENT_HEIGHT + ALL_DAY_SPACING));
 
     // Day headers with all-day events section
-    let header_section = render_header_section(week_state, locale, &all_day_events, all_day_section_height, selected_event_uid);
+    let header_section = render_header_section(
+        week_state,
+        locale,
+        &all_day_events,
+        all_day_section_height,
+        selected_event_uid,
+    );
 
     // Time grid with timed events
-    let time_grid = render_time_grid_with_events(locale, week_state, &timed_events, selected_event_uid, selection, active_dialog, calendar_color);
+    let time_grid = render_time_grid_with_events(
+        locale,
+        week_state,
+        &timed_events,
+        selected_event_uid,
+        selection,
+        active_dialog,
+        calendar_color,
+    );
 
-    let content = column([])
-        .spacing(0)
-        .push(header_section)
-        .push(
-            scrollable(time_grid)
-                .id(week_time_grid_id())
-                .on_scroll(Message::WeekViewScroll)
-                .height(Length::Fill)
-        );
+    let content = column([]).spacing(0).push(header_section).push(
+        scrollable(time_grid)
+            .id(week_time_grid_id())
+            .on_scroll(Message::WeekViewScroll)
+            .height(Length::Fill),
+    );
 
     container(content)
         .width(Length::Fill)
@@ -132,7 +144,14 @@ fn render_time_grid_with_events<'a>(
 
     // Check if there's an active timed quick event to display
     let quick_event_data = active_dialog.and_then(|dialog| {
-        if let ActiveDialog::QuickEvent { start_date, start_time: Some(start_time), end_time: Some(end_time), text, .. } = dialog {
+        if let ActiveDialog::QuickEvent {
+            start_date,
+            start_time: Some(start_time),
+            end_time: Some(end_time),
+            text,
+            ..
+        } = dialog
+        {
             Some((*start_date, *start_time, *end_time, text.as_str()))
         } else {
             None
@@ -199,7 +218,11 @@ fn render_day_column_with_events(
     // Build the time indicator layer (rendered on top of events)
     let time_indicator_layer = if today_in_week {
         let minute_offset = (current_minute as f32 / 60.0) * HOUR_ROW_HEIGHT;
-        Some(render_time_indicator_layer(current_hour, minute_offset, is_today))
+        Some(render_time_indicator_layer(
+            current_hour,
+            minute_offset,
+            is_today,
+        ))
     } else {
         None
     };
@@ -216,45 +239,33 @@ fn render_day_column_with_events(
                 .width(Length::Fill)
                 .into()
         } else {
-            container(hour_grid)
-                .width(Length::Fill)
-                .into()
+            container(hour_grid).width(Length::Fill).into()
         };
     }
 
     // Calculate column assignments for overlapping events
     let positioned_events = calculate_event_columns(events);
-    let max_columns = positioned_events.iter().map(|p| p.total_columns).max().unwrap_or(1).max(1);
+    let max_columns = positioned_events
+        .iter()
+        .map(|p| p.total_columns)
+        .max()
+        .unwrap_or(1)
+        .max(1);
 
     // Build the events overlay layer
-    let events_layer = render_events_overlay_layer(date, &positioned_events, max_columns, selected_event_uid);
+    let events_layer =
+        render_events_overlay_layer(date, &positioned_events, max_columns, selected_event_uid);
 
     // Stack order: grid (bottom) -> events -> time indicator -> quick event (top)
     // Time indicator must be above events so it's always visible
     let stacked: Element<'static, Message> = match (time_indicator_layer, quick_event_layer) {
-        (Some(time_layer), Some(qe_layer)) => stack![
-            hour_grid,
-            events_layer,
-            time_layer,
-            qe_layer
-        ].into(),
-        (Some(time_layer), None) => stack![
-            hour_grid,
-            events_layer,
-            time_layer
-        ].into(),
-        (None, Some(qe_layer)) => stack![
-            hour_grid,
-            events_layer,
-            qe_layer
-        ].into(),
-        (None, None) => stack![
-            hour_grid,
-            events_layer
-        ].into(),
+        (Some(time_layer), Some(qe_layer)) => {
+            stack![hour_grid, events_layer, time_layer, qe_layer].into()
+        }
+        (Some(time_layer), None) => stack![hour_grid, events_layer, time_layer].into(),
+        (None, Some(qe_layer)) => stack![hour_grid, events_layer, qe_layer].into(),
+        (None, None) => stack![hour_grid, events_layer].into(),
     };
 
-    container(stacked)
-        .width(Length::Fill)
-        .into()
+    container(stacked).width(Length::Fill).into()
 }

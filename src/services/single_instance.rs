@@ -203,7 +203,9 @@ fn serve(app_id: &str) {
     {
         Ok(rt) => rt,
         Err(e) => {
-            log::warn!("single-instance: failed to build runtime ({e}); dock re-activation disabled");
+            log::warn!(
+                "single-instance: failed to build runtime ({e}); dock re-activation disabled"
+            );
             return;
         }
     };

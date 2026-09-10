@@ -6,9 +6,9 @@ mod cache;
 mod caldav;
 mod calendars;
 mod color_constants;
-mod dates;
 mod components;
 mod database;
+mod dates;
 #[cfg(debug_assertions)]
 mod demo_data;
 #[cfg(debug_assertions)]
@@ -41,8 +41,6 @@ use cosmic::app::{Application, Settings};
 #[cfg(debug_assertions)]
 use database::Database;
 use log::info;
-#[cfg(debug_assertions)]
-use std::env;
 use std::path::PathBuf;
 
 /// Calendar - A calendar application for the COSMIC Desktop
@@ -190,7 +188,11 @@ pub fn main() -> cosmic::iced::Result {
     } else {
         // Forward both URLs and file paths to the running instance.
         let mut targets = urls_to_open.clone();
-        targets.extend(files_to_open.iter().map(|p| p.to_string_lossy().into_owned()));
+        targets.extend(
+            files_to_open
+                .iter()
+                .map(|p| p.to_string_lossy().into_owned()),
+        );
         if crate::services::activate_existing(CosmicCalendar::APP_ID, &targets) {
             return Ok(());
         }

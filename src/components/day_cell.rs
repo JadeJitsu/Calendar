@@ -7,16 +7,16 @@ use cosmic::widget::{column, container, mouse_area, responsive};
 use cosmic::{widget, Element};
 
 use crate::components::{
-    render_compact_events, render_unified_events_with_selection, render_quick_event_input, DisplayEvent,
-    calculate_display_mode, EventDisplayMode,
+    calculate_display_mode, render_compact_events, render_quick_event_input,
+    render_unified_events_with_selection, DisplayEvent, EventDisplayMode,
 };
 use crate::message::Message;
 use crate::styles::{
-    today_circle_style, selected_day_style, day_cell_style, adjacent_month_day_style,
-    adjacent_month_selected_style, selection_highlight_style, adjacent_month_selection_style,
-    drag_target_style,
+    adjacent_month_day_style, adjacent_month_selected_style, adjacent_month_selection_style,
+    day_cell_style, drag_target_style, selected_day_style, selection_highlight_style,
+    today_circle_style,
 };
-use crate::ui_constants::{PADDING_DAY_CELL, SPACING_SMALL, DAY_HEADER_HEIGHT};
+use crate::ui_constants::{DAY_HEADER_HEIGHT, PADDING_DAY_CELL, SPACING_SMALL};
 
 /// Size of the circle behind today's day number
 const TODAY_CIRCLE_SIZE: f32 = 32.0;
@@ -99,17 +99,16 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
         let display_mode = calculate_display_mode(size);
 
         // Day number - with circle background if today (only for current month)
-        let day_number: Element<'static, Message> = if config.is_today && !config.is_adjacent_month {
+        let day_number: Element<'static, Message> = if config.is_today && !config.is_adjacent_month
+        {
             // Today: blue circle behind the day number
-            container(
-                widget::text(config.day.to_string())
-            )
-            .width(Length::Fixed(TODAY_CIRCLE_SIZE))
-            .height(Length::Fixed(TODAY_CIRCLE_SIZE))
-            .center_x(Length::Fixed(TODAY_CIRCLE_SIZE))
-            .center_y(Length::Fixed(TODAY_CIRCLE_SIZE))
-            .style(|theme: &cosmic::Theme| today_circle_style(theme, TODAY_CIRCLE_SIZE))
-            .into()
+            container(widget::text(config.day.to_string()))
+                .width(Length::Fixed(TODAY_CIRCLE_SIZE))
+                .height(Length::Fixed(TODAY_CIRCLE_SIZE))
+                .center_x(Length::Fixed(TODAY_CIRCLE_SIZE))
+                .center_y(Length::Fixed(TODAY_CIRCLE_SIZE))
+                .style(|theme: &cosmic::Theme| today_circle_style(theme, TODAY_CIRCLE_SIZE))
+                .into()
         } else {
             // Regular day number
             widget::text(config.day.to_string()).into()
@@ -132,13 +131,17 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
         // Events section - adapts based on display mode
         // Check if we have events OR if there are slots reserved for date events spanning through this day
         let has_slot_reservations = config.week_max_slot.is_some();
-        let has_events = !config.events.is_empty() || config.quick_event.is_some() || has_slot_reservations;
+        let has_events =
+            !config.events.is_empty() || config.quick_event.is_some() || has_slot_reservations;
 
         if has_events {
             // Show quick event input if editing on this day (only in full mode)
-            if let (Some((ref text, ref color)), EventDisplayMode::Full { .. }) = (&config.quick_event, display_mode) {
-                let quick_event_container = container(render_quick_event_input(text.clone(), color.clone()))
-                    .width(Length::Fill);
+            if let (Some((ref text, ref color)), EventDisplayMode::Full { .. }) =
+                (&config.quick_event, display_mode)
+            {
+                let quick_event_container =
+                    container(render_quick_event_input(text.clone(), color.clone()))
+                        .width(Length::Fill);
                 content = content.push(quick_event_container);
             }
 
@@ -168,10 +171,14 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                     if show_overflow && compact_events.overflow_count > 0 {
                         content = content.push(
                             container(
-                                widget::text(format!("+{}", compact_events.overflow_count))
-                                    .size(8)
+                                widget::text(format!("+{}", compact_events.overflow_count)).size(8),
                             )
-                            .padding([0, PADDING_DAY_CELL[1], 0, PADDING_DAY_CELL[3]])
+                            .padding([
+                                0,
+                                PADDING_DAY_CELL[1],
+                                0,
+                                PADDING_DAY_CELL[3],
+                            ]),
                         );
                     }
                 } else {
@@ -190,9 +197,8 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                     // Single container for all events (placeholders + timed)
                     // Edge-to-edge width, clip overflow
                     if let Some(events_element) = unified.events {
-                        let events_container = container(events_element)
-                            .width(Length::Fill)
-                            .clip(true);
+                        let events_container =
+                            container(events_element).width(Length::Fill).clip(true);
                         content = content.push(events_container);
                     }
 
@@ -200,10 +206,14 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                     if show_overflow && unified.overflow_count > 0 {
                         content = content.push(
                             container(
-                                widget::text(format!("+{} more", unified.overflow_count))
-                                    .size(10)
+                                widget::text(format!("+{} more", unified.overflow_count)).size(10),
                             )
-                            .padding([0, PADDING_DAY_CELL[1], 0, PADDING_DAY_CELL[3]])
+                            .padding([
+                                0,
+                                PADDING_DAY_CELL[1],
+                                0,
+                                PADDING_DAY_CELL[3],
+                            ]),
                         );
                     }
                 }
@@ -243,7 +253,8 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                 config.is_in_selection,
                 config.is_drag_target,
                 config.is_weekend,
-            ).into()
+            )
+            .into()
         };
 
         styled

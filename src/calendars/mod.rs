@@ -1,20 +1,20 @@
 //! Calendar sources: the `CalendarSource` trait plus the local (SQLite)
 //! and CalDAV implementations, and on-disk configuration.
 
-mod calendar_source;
 mod caldav_calendar;
+mod calendar_source;
 mod config;
 mod local_calendar;
 
-pub use calendar_source::{CalendarSource, CalendarType};
 pub use caldav_calendar::CalDavCalendar;
+pub use calendar_source::{CalendarSource, CalendarType};
 pub use config::{CalendarConfig, CalendarManagerConfig};
 pub use local_calendar::LocalCalendar;
 
 use crate::caldav::{CalendarEvent, RepeatFrequency};
 use crate::components::DisplayEvent;
 use crate::database::Database;
-use chrono::{Datelike, Timelike, NaiveDate, Duration, Months};
+use chrono::{Datelike, Duration, Months, NaiveDate, Timelike};
 use log::{debug, info};
 use std::collections::HashMap;
 use std::error::Error;
@@ -73,10 +73,16 @@ impl CalendarManager {
             // Save the defaults
             manager.save_config().ok();
         } else {
-            info!("CalendarManager: Loading {} calendars from config", config.calendars.len());
+            info!(
+                "CalendarManager: Loading {} calendars from config",
+                config.calendars.len()
+            );
             // Load calendars from config
             for cal_config in &config.calendars {
-                debug!("CalendarManager: Loading calendar '{}' ({})", cal_config.name, cal_config.id);
+                debug!(
+                    "CalendarManager: Loading calendar '{}' ({})",
+                    cal_config.name, cal_config.id
+                );
                 // Case-insensitive: configs written before the
                 // `as_config()` fix may hold the lowercase `"caldav"`
                 // form, current ones hold `"CalDav"`.
@@ -104,11 +110,8 @@ impl CalendarManager {
                     }
                     continue;
                 }
-                let mut calendar = LocalCalendar::new(
-                    cal_config.id.clone(),
-                    cal_config.name.clone(),
-                    db.clone(),
-                );
+                let mut calendar =
+                    LocalCalendar::new(cal_config.id.clone(), cal_config.name.clone(), db.clone());
                 // Apply saved settings
                 calendar.info_mut().color = cal_config.color.clone();
                 calendar.info_mut().enabled = cal_config.enabled;
@@ -116,7 +119,10 @@ impl CalendarManager {
             }
         }
 
-        info!("CalendarManager: Initialized with {} calendars", manager.sources.len());
+        info!(
+            "CalendarManager: Initialized with {} calendars",
+            manager.sources.len()
+        );
         manager
     }
 
@@ -126,9 +132,7 @@ impl CalendarManager {
     /// file). Any failure — missing config fields, keyring miss, client
     /// construction error — is returned to the caller, which logs and skips
     /// the calendar rather than failing startup.
-    fn load_caldav_source(
-        cal_config: &CalendarConfig,
-    ) -> Result<CalDavCalendar, Box<dyn Error>> {
+    fn load_caldav_source(cal_config: &CalendarConfig) -> Result<CalDavCalendar, Box<dyn Error>> {
         use crate::services::CalDavCredentials;
 
         let server_url = cal_config
@@ -308,8 +312,8 @@ impl CalendarManager {
                         RepeatFrequency::Monthly => 1,
                         _ => 12,
                     };
-                    let start_months =
-                        i64::from(event_start_date.year()) * 12 + i64::from(event_start_date.month());
+                    let start_months = i64::from(event_start_date.year()) * 12
+                        + i64::from(event_start_date.month());
                     let range_months =
                         i64::from(range_start.year()) * 12 + i64::from(range_start.month());
                     let k = ((range_months - start_months).max(0) / step_months) * step_months;
@@ -332,7 +336,10 @@ impl CalendarManager {
         let max_iterations = 1000;
         let mut iteration_count = 0;
 
-        while current_date <= recurrence_end && current_date <= range_end && iteration_count < max_iterations {
+        while current_date <= recurrence_end
+            && current_date <= range_end
+            && iteration_count < max_iterations
+        {
             iteration_count += 1;
 
             // Only add if within the visible range AND not an exception date
@@ -357,20 +364,22 @@ impl CalendarManager {
                 RepeatFrequency::Biweekly => current_date + Duration::weeks(2),
                 RepeatFrequency::Monthly => {
                     // Add one month, handling month boundaries
-                    current_date.checked_add_months(Months::new(1))
+                    current_date
+                        .checked_add_months(Months::new(1))
                         .unwrap_or(current_date + Duration::days(30))
-                },
+                }
                 RepeatFrequency::Yearly => {
                     // Add one year
-                    current_date.checked_add_months(Months::new(12))
+                    current_date
+                        .checked_add_months(Months::new(12))
                         .unwrap_or(current_date + Duration::days(365))
-                },
+                }
                 RepeatFrequency::Custom(rrule) => {
                     match Self::next_custom_occurrence(current_date, event_start_date, rrule) {
                         Some(next) => next,
                         None => break,
                     }
-                },
+                }
                 RepeatFrequency::Never => break,
             };
         }
@@ -445,15 +454,15 @@ impl CalendarManager {
                         // week-starting Monday and the start date's Monday.
                         // (A plain day-difference from DTSTART is wrong when
                         // DTSTART is not a Monday.)
-                        let start_monday = start_date - Duration::days(
-                            start_date.weekday().num_days_from_monday() as i64,
-                        );
+                        let start_monday = start_date
+                            - Duration::days(start_date.weekday().num_days_from_monday() as i64);
                         // Advance day by day to the next listed weekday in an
                         // in-cycle week. Bounded: one full cycle plus a week.
                         let mut d = current_date;
                         for _ in 0..7 * interval + 7 {
                             d = d + Duration::days(1);
-                            let d_monday = d - Duration::days(d.weekday().num_days_from_monday() as i64);
+                            let d_monday =
+                                d - Duration::days(d.weekday().num_days_from_monday() as i64);
                             let week_idx = (d_monday - start_monday).num_days() / 7;
                             if week_idx % interval == 0 && weekdays.contains(&d.weekday()) {
                                 return Some(d);
@@ -523,7 +532,8 @@ impl CalendarManager {
                                     .map(|d| d.num_days_in_month() as i64)
                                     .unwrap_or(31);
                                 if dy <= dim {
-                                    if let Some(c) = NaiveDate::from_ymd_opt(y, m as u32, dy as u32) {
+                                    if let Some(c) = NaiveDate::from_ymd_opt(y, m as u32, dy as u32)
+                                    {
                                         if c > current_date {
                                             return Some(c);
                                         }
@@ -546,7 +556,11 @@ impl CalendarManager {
     /// Get events for a specific month grouped by date, with calendar colors.
     /// Includes events from adjacent months that would be visible in the month view.
     /// Returns a HashMap where key is NaiveDate and value is Vec of DisplayEvents.
-    pub fn get_display_events_for_month(&self, year: i32, month: u32) -> HashMap<chrono::NaiveDate, Vec<DisplayEvent>> {
+    pub fn get_display_events_for_month(
+        &self,
+        year: i32,
+        month: u32,
+    ) -> HashMap<chrono::NaiveDate, Vec<DisplayEvent>> {
         use chrono::NaiveDate;
 
         let mut events_by_date: HashMap<NaiveDate, Vec<DisplayEvent>> = HashMap::new();
@@ -559,9 +573,15 @@ impl CalendarManager {
         let range_start = first_of_month - chrono::Duration::days(6);
         // End up to 13 days after the month ends (max days from next month in grid)
         let days_in_month = if month == 12 {
-            NaiveDate::from_ymd_opt(year + 1, 1, 1).unwrap().signed_duration_since(first_of_month).num_days()
+            NaiveDate::from_ymd_opt(year + 1, 1, 1)
+                .unwrap()
+                .signed_duration_since(first_of_month)
+                .num_days()
         } else {
-            NaiveDate::from_ymd_opt(year, month + 1, 1).unwrap().signed_duration_since(first_of_month).num_days()
+            NaiveDate::from_ymd_opt(year, month + 1, 1)
+                .unwrap()
+                .signed_duration_since(first_of_month)
+                .num_days()
         };
         let range_end = first_of_month + chrono::Duration::days(days_in_month + 13);
 
@@ -614,16 +634,22 @@ impl CalendarManager {
                                     (None, None)
                                 } else {
                                     (
-                                        Some(chrono::NaiveTime::from_hms_opt(
-                                            occurrence_event.start.hour(),
-                                            occurrence_event.start.minute(),
-                                            0,
-                                        ).unwrap_or_default()),
-                                        Some(chrono::NaiveTime::from_hms_opt(
-                                            occurrence_event.end.hour(),
-                                            occurrence_event.end.minute(),
-                                            0,
-                                        ).unwrap_or_default()),
+                                        Some(
+                                            chrono::NaiveTime::from_hms_opt(
+                                                occurrence_event.start.hour(),
+                                                occurrence_event.start.minute(),
+                                                0,
+                                            )
+                                            .unwrap_or_default(),
+                                        ),
+                                        Some(
+                                            chrono::NaiveTime::from_hms_opt(
+                                                occurrence_event.end.hour(),
+                                                occurrence_event.end.minute(),
+                                                0,
+                                            )
+                                            .unwrap_or_default(),
+                                        ),
                                     )
                                 };
 
@@ -654,7 +680,10 @@ impl CalendarManager {
 
     /// Get events for a specific week grouped by date, with calendar colors.
     /// Returns a HashMap where key is NaiveDate and value is Vec of DisplayEvents.
-    pub fn get_display_events_for_week(&self, week_days: &[chrono::NaiveDate]) -> HashMap<chrono::NaiveDate, Vec<DisplayEvent>> {
+    pub fn get_display_events_for_week(
+        &self,
+        week_days: &[chrono::NaiveDate],
+    ) -> HashMap<chrono::NaiveDate, Vec<DisplayEvent>> {
         use chrono::NaiveDate;
 
         let mut events_by_date: HashMap<NaiveDate, Vec<DisplayEvent>> = HashMap::new();
@@ -714,16 +743,22 @@ impl CalendarManager {
                                     (None, None)
                                 } else {
                                     (
-                                        Some(chrono::NaiveTime::from_hms_opt(
-                                            occurrence_event.start.hour(),
-                                            occurrence_event.start.minute(),
-                                            0,
-                                        ).unwrap_or_default()),
-                                        Some(chrono::NaiveTime::from_hms_opt(
-                                            occurrence_event.end.hour(),
-                                            occurrence_event.end.minute(),
-                                            0,
-                                        ).unwrap_or_default()),
+                                        Some(
+                                            chrono::NaiveTime::from_hms_opt(
+                                                occurrence_event.start.hour(),
+                                                occurrence_event.start.minute(),
+                                                0,
+                                            )
+                                            .unwrap_or_default(),
+                                        ),
+                                        Some(
+                                            chrono::NaiveTime::from_hms_opt(
+                                                occurrence_event.end.hour(),
+                                                occurrence_event.end.minute(),
+                                                0,
+                                            )
+                                            .unwrap_or_default(),
+                                        ),
                                     )
                                 };
 
@@ -909,11 +944,11 @@ mod tests {
         assert_eq!(
             dates,
             vec![
-                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),  // DTSTART (Tue)
-                NaiveDate::from_ymd_opt(2026, 9, 2).unwrap(),  // Wed
-                NaiveDate::from_ymd_opt(2026, 9, 4).unwrap(),  // Fri
-                NaiveDate::from_ymd_opt(2026, 9, 7).unwrap(),  // Mon
-                NaiveDate::from_ymd_opt(2026, 9, 9).unwrap(),  // Wed
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(), // DTSTART (Tue)
+                NaiveDate::from_ymd_opt(2026, 9, 2).unwrap(), // Wed
+                NaiveDate::from_ymd_opt(2026, 9, 4).unwrap(), // Fri
+                NaiveDate::from_ymd_opt(2026, 9, 7).unwrap(), // Mon
+                NaiveDate::from_ymd_opt(2026, 9, 9).unwrap(), // Wed
                 NaiveDate::from_ymd_opt(2026, 9, 11).unwrap(), // Fri
                 NaiveDate::from_ymd_opt(2026, 9, 14).unwrap(), // Mon
             ]
@@ -933,7 +968,7 @@ mod tests {
         assert_eq!(
             dates,
             vec![
-                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),  // DTSTART (Tue)
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(), // DTSTART (Tue)
                 NaiveDate::from_ymd_opt(2026, 9, 14).unwrap(), // Mon, week 2
                 NaiveDate::from_ymd_opt(2026, 9, 28).unwrap(), // Mon, week 4
             ]
@@ -951,7 +986,7 @@ mod tests {
         assert_eq!(
             dates,
             vec![
-                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),  // DTSTART
+                NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(), // DTSTART
                 NaiveDate::from_ymd_opt(2026, 9, 15).unwrap(),
                 NaiveDate::from_ymd_opt(2026, 10, 15).unwrap(),
                 NaiveDate::from_ymd_opt(2026, 11, 15).unwrap(),

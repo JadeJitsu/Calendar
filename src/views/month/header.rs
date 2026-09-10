@@ -9,10 +9,15 @@ use cosmic::{widget, Element};
 use crate::fl;
 use crate::localized_names;
 use crate::message::Message;
-use crate::ui_constants::{FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, PADDING_SMALL, SPACING_TINY, WEEK_NUMBER_WIDTH};
+use crate::ui_constants::{
+    FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, PADDING_SMALL, SPACING_TINY, WEEK_NUMBER_WIDTH,
+};
 
 /// Render the weekday header row with responsive names
-pub fn render_weekday_header(show_week_numbers: bool, use_short_names: bool) -> Element<'static, Message> {
+pub fn render_weekday_header(
+    show_week_numbers: bool,
+    use_short_names: bool,
+) -> Element<'static, Message> {
     let mut header_row = row([]).spacing(SPACING_TINY);
 
     // Week number header (only if enabled)
@@ -21,7 +26,7 @@ pub fn render_weekday_header(show_week_numbers: bool, use_short_names: bool) -> 
             container(widget::text(fl!("week-abbr")).size(FONT_SIZE_SMALL))
                 .width(Length::Fixed(WEEK_NUMBER_WIDTH))
                 .padding(PADDING_SMALL)
-                .align_y(alignment::Vertical::Center)
+                .align_y(alignment::Vertical::Center),
         );
     }
 

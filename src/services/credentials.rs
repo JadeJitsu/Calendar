@@ -27,7 +27,10 @@ impl std::fmt::Display for CredentialError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CredentialError::KeyringUnavailable => {
-                write!(f, "Credential storage unavailable — CalDAV requires a system keyring")
+                write!(
+                    f,
+                    "Credential storage unavailable — CalDAV requires a system keyring"
+                )
             }
             CredentialError::NotFound => write!(f, "No stored credential for this account"),
             CredentialError::Other(msg) => write!(f, "Credential error: {}", msg),

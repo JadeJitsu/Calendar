@@ -32,7 +32,10 @@ pub const ALL_DAY_SPACING: f32 = 2.0;
 pub fn separate_events(
     events_by_date: &HashMap<NaiveDate, Vec<DisplayEvent>>,
     week_days: &[NaiveDate],
-) -> (HashMap<NaiveDate, Vec<DisplayEvent>>, HashMap<NaiveDate, Vec<DisplayEvent>>) {
+) -> (
+    HashMap<NaiveDate, Vec<DisplayEvent>>,
+    HashMap<NaiveDate, Vec<DisplayEvent>>,
+) {
     let mut all_day: HashMap<NaiveDate, Vec<DisplayEvent>> = HashMap::new();
     let mut timed: HashMap<NaiveDate, Vec<DisplayEvent>> = HashMap::new();
 
@@ -52,16 +55,20 @@ pub fn separate_events(
 }
 
 /// Calculate the maximum number of all-day event slots needed
-pub fn calculate_max_all_day_slots(all_day_events: &HashMap<NaiveDate, Vec<DisplayEvent>>) -> usize {
+pub fn calculate_max_all_day_slots(
+    all_day_events: &HashMap<NaiveDate, Vec<DisplayEvent>>,
+) -> usize {
     all_day_events.values().map(|v| v.len()).max().unwrap_or(0)
 }
 
 /// Get the time range of an event in minutes from midnight
 pub fn event_time_range(event: &DisplayEvent) -> (u32, u32) {
-    let start = event.start_time
+    let start = event
+        .start_time
         .map(|t| t.hour() * 60 + t.minute())
         .unwrap_or(0);
-    let end = event.end_time
+    let end = event
+        .end_time
         .map(|t| t.hour() * 60 + t.minute())
         .unwrap_or(start + 60); // Default 1 hour if no end time
 
@@ -73,10 +80,18 @@ pub fn event_time_range(event: &DisplayEvent) -> (u32, u32) {
 
 /// Check if two events overlap in time
 pub fn events_overlap(e1: &DisplayEvent, e2: &DisplayEvent) -> bool {
-    let Some(start1) = e1.start_time else { return false };
-    let Some(end1) = e1.end_time else { return false };
-    let Some(start2) = e2.start_time else { return false };
-    let Some(end2) = e2.end_time else { return false };
+    let Some(start1) = e1.start_time else {
+        return false;
+    };
+    let Some(end1) = e1.end_time else {
+        return false;
+    };
+    let Some(start2) = e2.start_time else {
+        return false;
+    };
+    let Some(end2) = e2.end_time else {
+        return false;
+    };
 
     // Events overlap if one starts before the other ends
     start1 < end2 && start2 < end1
@@ -104,8 +119,12 @@ pub fn calculate_event_columns(events: &[DisplayEvent]) -> Vec<PositionedEvent> 
     let mut column_ends: Vec<NaiveTime> = Vec::new(); // Track when each column becomes free
 
     for event in sorted {
-        let start = event.start_time.unwrap_or(NaiveTime::from_hms_opt(0, 0, 0).unwrap());
-        let end = event.end_time.unwrap_or(NaiveTime::from_hms_opt(23, 59, 59).unwrap());
+        let start = event
+            .start_time
+            .unwrap_or(NaiveTime::from_hms_opt(0, 0, 0).unwrap());
+        let end = event
+            .end_time
+            .unwrap_or(NaiveTime::from_hms_opt(23, 59, 59).unwrap());
 
         // Find the first column where this event can fit (column is free before this event starts)
         let mut assigned_column = None;

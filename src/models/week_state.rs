@@ -1,8 +1,8 @@
 //! Cached week-view state: the 7 days of the displayed week plus the
 //! pre-formatted week-range header text.
 
-use chrono::{Datelike, NaiveDate, Weekday};
 use crate::locale::LocalePreferences;
+use chrono::{Datelike, NaiveDate, Weekday};
 
 /// Cached week state for week view
 #[derive(Debug, Clone, PartialEq)]
@@ -63,13 +63,21 @@ impl WeekState {
     /// Navigate to previous week
     #[allow(dead_code)] // Navigation used by view transitions
     pub fn previous(&self, locale: &LocalePreferences) -> Self {
-        Self::new(self.days[0] - chrono::Duration::days(7), self.first_day_of_week, locale)
+        Self::new(
+            self.days[0] - chrono::Duration::days(7),
+            self.first_day_of_week,
+            locale,
+        )
     }
 
     /// Navigate to next week
     #[allow(dead_code)] // Navigation used by view transitions
     pub fn next(&self, locale: &LocalePreferences) -> Self {
-        Self::new(self.days[0] + chrono::Duration::days(7), self.first_day_of_week, locale)
+        Self::new(
+            self.days[0] + chrono::Duration::days(7),
+            self.first_day_of_week,
+            locale,
+        )
     }
 
     /// Check if a given date is today

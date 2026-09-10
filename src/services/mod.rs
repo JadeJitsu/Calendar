@@ -23,7 +23,7 @@ mod sync_handler;
 mod tray;
 
 pub use calendar_handler::{CalendarHandler, NewCalendarData, UpdateCalendarData};
-pub use credentials::{CalDavCredentials, host_of};
+pub use credentials::{host_of, CalDavCredentials};
 pub use event_handler::EventHandler;
 pub use export_handler::ExportHandler;
 pub use notification_scheduler::{fire_notifications, NotificationScheduler};
@@ -46,4 +46,4 @@ pub(crate) use export_handler::{ExportError, ExportResult};
 #[allow(unused_imports)]
 pub(crate) use settings_handler::{SettingsError, SettingsResult};
 #[allow(unused_imports)]
-pub(crate) use sync_handler::{SyncHandler, SyncError, SyncResult, SyncReport, CalendarSyncStatus};
+pub(crate) use sync_handler::{CalendarSyncStatus, SyncError, SyncHandler, SyncReport, SyncResult};

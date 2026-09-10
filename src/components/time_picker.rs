@@ -5,8 +5,8 @@
 
 use chrono::{NaiveTime, Timelike};
 use cosmic::app::Task;
-use cosmic::iced::Length;
 use cosmic::iced::widget::scrollable as iced_scrollable;
+use cosmic::iced::Length;
 use cosmic::widget::Id;
 use cosmic::widget::{button, column, container, row, scrollable, text};
 use cosmic::Element;
@@ -47,11 +47,17 @@ pub fn scroll_start_time_to(hour: u32, minute: u32) -> Task<Message> {
     Task::batch(vec![
         iced_scrollable::scroll_to(
             start_time_hour_id(),
-            iced_scrollable::AbsoluteOffset { x: Some(0.0), y: Some(hour_offset) },
+            iced_scrollable::AbsoluteOffset {
+                x: Some(0.0),
+                y: Some(hour_offset),
+            },
         ),
         iced_scrollable::scroll_to(
             start_time_minute_id(),
-            iced_scrollable::AbsoluteOffset { x: Some(0.0), y: Some(minute_offset) },
+            iced_scrollable::AbsoluteOffset {
+                x: Some(0.0),
+                y: Some(minute_offset),
+            },
         ),
     ])
 }
@@ -66,11 +72,17 @@ pub fn scroll_end_time_to(hour: u32, minute: u32) -> Task<Message> {
     Task::batch(vec![
         iced_scrollable::scroll_to(
             end_time_hour_id(),
-            iced_scrollable::AbsoluteOffset { x: Some(0.0), y: Some(hour_offset) },
+            iced_scrollable::AbsoluteOffset {
+                x: Some(0.0),
+                y: Some(hour_offset),
+            },
         ),
         iced_scrollable::scroll_to(
             end_time_minute_id(),
-            iced_scrollable::AbsoluteOffset { x: Some(0.0), y: Some(minute_offset) },
+            iced_scrollable::AbsoluteOffset {
+                x: Some(0.0),
+                y: Some(minute_offset),
+            },
         ),
     ])
 }
@@ -115,19 +127,15 @@ pub fn render_time_picker<'a, M: Clone + 'static>(
         let is_selected = hour == current_hour;
         let on_hour = on_hour_change(hour);
         hour_buttons = hour_buttons.push(
-            button::custom(
-                text(format!("{:02}", hour))
-                    .size(14)
-                    .center()
-            )
-            .on_press(on_hour)
-            .width(Length::Fixed(40.0))
-            .padding([4, 8])
-            .class(if is_selected {
-                cosmic::theme::Button::Suggested
-            } else {
-                cosmic::theme::Button::Text
-            }),
+            button::custom(text(format!("{:02}", hour)).size(14).center())
+                .on_press(on_hour)
+                .width(Length::Fixed(40.0))
+                .padding([4, 8])
+                .class(if is_selected {
+                    cosmic::theme::Button::Suggested
+                } else {
+                    cosmic::theme::Button::Text
+                }),
         );
     }
 
@@ -137,19 +145,15 @@ pub fn render_time_picker<'a, M: Clone + 'static>(
         let is_selected = (current_minute / 5) * 5 == minute;
         let on_minute = on_minute_change(minute);
         minute_buttons = minute_buttons.push(
-            button::custom(
-                text(format!("{:02}", minute))
-                    .size(14)
-                    .center()
-            )
-            .on_press(on_minute)
-            .width(Length::Fixed(40.0))
-            .padding([4, 8])
-            .class(if is_selected {
-                cosmic::theme::Button::Suggested
-            } else {
-                cosmic::theme::Button::Text
-            }),
+            button::custom(text(format!("{:02}", minute)).size(14).center())
+                .on_press(on_minute)
+                .width(Length::Fixed(40.0))
+                .padding([4, 8])
+                .class(if is_selected {
+                    cosmic::theme::Button::Suggested
+                } else {
+                    cosmic::theme::Button::Text
+                }),
         );
     }
 
@@ -189,8 +193,7 @@ pub fn render_time_picker<'a, M: Clone + 'static>(
         .push(minute_col);
 
     // Apply button at bottom
-    let apply_btn = button::suggested(fl!("button-apply"))
-        .on_press(on_apply);
+    let apply_btn = button::suggested(fl!("button-apply")).on_press(on_apply);
 
     let full_content = column([])
         .spacing(12)

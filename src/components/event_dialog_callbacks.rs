@@ -12,8 +12,8 @@
 use chrono::NaiveDate;
 use cosmic::widget::text_editor;
 
-use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
 use crate::app::EventDialogField;
+use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
 
 /// Callbacks for the event dialog component
 ///

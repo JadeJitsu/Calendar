@@ -64,12 +64,17 @@ pub fn handle_commit_quick_event(app: &mut CosmicCalendar) -> Task<Message> {
     debug!("handle_commit_quick_event: Starting");
 
     // Get the event data from DialogManager and clear the dialog state
-    let result = DialogManager::handle_action(
-        &mut app.active_dialog,
-        DialogAction::CommitQuickEvent,
-    );
+    let result =
+        DialogManager::handle_action(&mut app.active_dialog, DialogAction::CommitQuickEvent);
 
-    let Some(QuickEventResult { start_date, end_date, start_time: evt_start_time, end_time: evt_end_time, text }) = result else {
+    let Some(QuickEventResult {
+        start_date,
+        end_date,
+        start_time: evt_start_time,
+        end_time: evt_end_time,
+        text,
+    }) = result
+    else {
         debug!("handle_commit_quick_event: No quick event editing state");
         return Task::none();
     };
@@ -109,15 +114,16 @@ pub fn handle_commit_quick_event(app: &mut CosmicCalendar) -> Task<Message> {
     }
 
     // Set times based on whether this is a timed event
-    let (start_time, end_time, all_day) = if let (Some(st), Some(et)) = (evt_start_time, evt_end_time) {
-        // Timed event - use the specified times
-        (st, et, false)
-    } else {
-        // All-day event - use midnight to end of day
-        let midnight = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
-        let end_of_day = NaiveTime::from_hms_opt(23, 59, 59).unwrap();
-        (midnight, end_of_day, true)
-    };
+    let (start_time, end_time, all_day) =
+        if let (Some(st), Some(et)) = (evt_start_time, evt_end_time) {
+            // Timed event - use the specified times
+            (st, et, false)
+        } else {
+            // All-day event - use midnight to end of day
+            let midnight = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+            let end_of_day = NaiveTime::from_hms_opt(23, 59, 59).unwrap();
+            (midnight, end_of_day, true)
+        };
 
     let start = Utc.from_utc_datetime(&start_date.and_time(start_time));
     let end = Utc.from_utc_datetime(&end_date.and_time(end_time));
@@ -144,7 +150,10 @@ pub fn handle_commit_quick_event(app: &mut CosmicCalendar) -> Task<Message> {
     // CalDAV calendars: write to the server off-thread; the write-result
     // handler (CalDavEventCreated) updates the cache.
     if is_caldav_calendar(&app.calendar_manager, &calendar_id) {
-        info!("handle_commit_quick_event: Writing quick event to CalDAV calendar '{}'", calendar_id);
+        info!(
+            "handle_commit_quick_event: Writing quick event to CalDAV calendar '{}'",
+            calendar_id
+        );
         return write_caldav_event(app, calendar_id, event, false);
     }
 
@@ -161,7 +170,10 @@ pub fn handle_commit_quick_event(app: &mut CosmicCalendar) -> Task<Message> {
 }
 
 /// Returns true if the calendar with the given id is a CalDAV source.
-fn is_caldav_calendar(calendar_manager: &crate::calendars::CalendarManager, calendar_id: &str) -> bool {
+fn is_caldav_calendar(
+    calendar_manager: &crate::calendars::CalendarManager,
+    calendar_id: &str,
+) -> bool {
     calendar_manager
         .sources()
         .iter()
@@ -182,7 +194,10 @@ fn is_caldav_calendar(calendar_manager: &crate::calendars::CalendarManager, cale
 pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) -> Task<Message> {
     // Extract master UID for recurring events (occurrence UIDs have format master-uid_YYYYMMDD)
     let master_uid = extract_master_uid(&uid);
-    info!("handle_delete_event: Deleting event uid={} (master_uid={})", uid, master_uid);
+    info!(
+        "handle_delete_event: Deleting event uid={} (master_uid={})",
+        uid, master_uid
+    );
 
     // Clear selection if deleting the selected event (check both occurrence and master UID)
     if let Some(selected) = &app.selected_event_uid {
@@ -197,7 +212,10 @@ pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) -> Task<Messag
     // the cache; we also clear the UI caches now so the event disappears
     // immediately.
     if let Some(calendar_id) = find_caldav_calendar_for_event(&app.calendar_manager, master_uid) {
-        info!("handle_delete_event: Deleting event from CalDAV calendar '{}'", calendar_id);
+        info!(
+            "handle_delete_event: Deleting event from CalDAV calendar '{}'",
+            calendar_id
+        );
         app.cached_week_events.clear();
         app.cached_month_events.clear();
         app.refresh_cached_events();
@@ -277,7 +295,10 @@ pub fn handle_drag_event_start(
     summary: String,
     color: String,
 ) {
-    debug!("handle_drag_event_start: calendar={}, uid={}, date={}, summary={}", calendar_id, uid, original_date, summary);
+    debug!(
+        "handle_drag_event_start: calendar={}, uid={}, date={}, summary={}",
+        calendar_id, uid, original_date, summary
+    );
 
     // Cancel any day selection in progress
     app.selection_state.cancel();
@@ -286,7 +307,8 @@ pub fn handle_drag_event_start(
     let unique_id = format!("{}:{}", calendar_id, uid);
 
     // Start the drag operation with display info for the preview
-    app.event_drag_state.start(calendar_id, uid, original_date, summary, color);
+    app.event_drag_state
+        .start(calendar_id, uid, original_date, summary, color);
 
     // Cache the unique_id for UI rendering
     app.dragging_event_unique_id = Some(unique_id);
@@ -312,14 +334,20 @@ pub fn handle_drag_event_end(app: &mut CosmicCalendar) {
             // Event was dragged to a different date - move it
             // Extract master UID for recurring events (occurrence UIDs have format master-uid_YYYYMMDD)
             let master_uid = extract_master_uid(&uid);
-            info!("handle_drag_event_end: Moving calendar={} event={} (master_uid={}) from {} to {}",
-                  calendar_id, uid, master_uid, original_date, new_date);
+            info!(
+                "handle_drag_event_end: Moving calendar={} event={} (master_uid={}) from {} to {}",
+                calendar_id, uid, master_uid, original_date, new_date
+            );
 
             // Calculate the offset in days
             let offset = (new_date - original_date).num_days();
 
             // Find the event in the specific calendar (use master UID for recurring events)
-            if let Ok(event) = EventHandler::find_event_in_calendar(&app.calendar_manager, &calendar_id, master_uid) {
+            if let Ok(event) = EventHandler::find_event_in_calendar(
+                &app.calendar_manager,
+                &calendar_id,
+                master_uid,
+            ) {
                 // Calculate new start and end times by adding the offset
                 let new_start = event.start + chrono::Duration::days(offset);
                 let new_end = event.end + chrono::Duration::days(offset);
@@ -332,7 +360,11 @@ pub fn handle_drag_event_end(app: &mut CosmicCalendar) {
                 };
 
                 // Update the event
-                if let Err(e) = EventHandler::update_event(&mut app.calendar_manager, &calendar_id, updated_event) {
+                if let Err(e) = EventHandler::update_event(
+                    &mut app.calendar_manager,
+                    &calendar_id,
+                    updated_event,
+                ) {
                     error!("handle_drag_event_end: Failed to move event: {}", e);
                     return;
                 }
@@ -348,7 +380,10 @@ pub fn handle_drag_event_end(app: &mut CosmicCalendar) {
             if let (Some(calendar_id), Some(uid)) = (calendar_id_opt, event_uid) {
                 // Create unique_id for selection (calendar_id:uid)
                 let unique_id = format!("{}:{}", calendar_id, uid);
-                debug!("handle_drag_event_end: No move, selecting event {}", unique_id);
+                debug!(
+                    "handle_drag_event_end: No move, selecting event {}",
+                    unique_id
+                );
                 // Toggle selection like regular click
                 if app.selected_event_uid.as_ref() == Some(&unique_id) {
                     app.selected_event_uid = None;
@@ -374,24 +409,42 @@ pub fn handle_drag_event_cancel(app: &mut CosmicCalendar) {
 /// Start editing a quick event on a specific date
 /// Uses DialogManager to open ActiveDialog::QuickEvent
 pub fn handle_start_quick_event(app: &mut CosmicCalendar, date: NaiveDate) {
-    debug!("handle_start_quick_event: Starting quick event for {}", date);
+    debug!(
+        "handle_start_quick_event: Starting quick event for {}",
+        date
+    );
     DialogManager::handle_action(&mut app.active_dialog, DialogAction::StartQuickEvent(date));
 }
 
 /// Start editing a quick timed event with specific start and end times
 /// Uses DialogManager to open ActiveDialog::QuickEvent with time info
-pub fn handle_start_quick_timed_event(app: &mut CosmicCalendar, date: NaiveDate, start_time: NaiveTime, end_time: NaiveTime) {
-    debug!("handle_start_quick_timed_event: Starting timed quick event for {} from {:?} to {:?}", date, start_time, end_time);
+pub fn handle_start_quick_timed_event(
+    app: &mut CosmicCalendar,
+    date: NaiveDate,
+    start_time: NaiveTime,
+    end_time: NaiveTime,
+) {
+    debug!(
+        "handle_start_quick_timed_event: Starting timed quick event for {} from {:?} to {:?}",
+        date, start_time, end_time
+    );
     DialogManager::handle_action(
         &mut app.active_dialog,
-        DialogAction::StartQuickTimedEvent { date, start_time, end_time },
+        DialogAction::StartQuickTimedEvent {
+            date,
+            start_time,
+            end_time,
+        },
     );
 }
 
 /// Update the quick event text while editing
 /// Uses DialogManager to update the text in ActiveDialog::QuickEvent
 pub fn handle_quick_event_text_changed(app: &mut CosmicCalendar, text: String) {
-    DialogManager::handle_action(&mut app.active_dialog, DialogAction::QuickEventTextChanged(text));
+    DialogManager::handle_action(
+        &mut app.active_dialog,
+        DialogAction::QuickEventTextChanged(text),
+    );
 }
 
 /// Cancel quick event editing
@@ -452,7 +505,10 @@ pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
         repeat_until: None,
         repeat_until_input: String::new(),
         repeat_until_picker_open: false,
-        repeat_until_calendar: CalendarModel::new(crate::dates::to_jiff(today), crate::dates::to_jiff(today)),
+        repeat_until_calendar: CalendarModel::new(
+            crate::dates::to_jiff(today),
+            crate::dates::to_jiff(today),
+        ),
         custom_rrule_input: String::new(),
         calendar_id,
         invitees: vec![],
@@ -464,9 +520,15 @@ pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
         notes_content: text_editor::Content::new(),
         editing_field: None,
         start_date_picker_open: false,
-        start_date_calendar: CalendarModel::new(crate::dates::to_jiff(today), crate::dates::to_jiff(today)),
+        start_date_calendar: CalendarModel::new(
+            crate::dates::to_jiff(today),
+            crate::dates::to_jiff(today),
+        ),
         end_date_picker_open: false,
-        end_date_calendar: CalendarModel::new(crate::dates::to_jiff(today), crate::dates::to_jiff(today)),
+        end_date_calendar: CalendarModel::new(
+            crate::dates::to_jiff(today),
+            crate::dates::to_jiff(today),
+        ),
         start_time_picker_open: false,
         end_time_picker_open: false,
     });
@@ -481,7 +543,11 @@ pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, calendar_id: Stri
            calendar_id, uid, master_uid);
 
     // Use EventHandler to find the event in the specific calendar (use master UID)
-    let event = match EventHandler::find_event_in_calendar(&app.calendar_manager, &calendar_id, master_uid) {
+    let event = match EventHandler::find_event_in_calendar(
+        &app.calendar_manager,
+        &calendar_id,
+        master_uid,
+    ) {
         Ok(event) => event,
         Err(e) => {
             warn!("handle_open_edit_event_dialog: Event not found in calendar '{}': {} (master_uid={})",
@@ -490,7 +556,10 @@ pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, calendar_id: Stri
         }
     };
 
-    info!("handle_open_edit_event_dialog: Found event uid={} in calendar '{}'", event.uid, calendar_id);
+    info!(
+        "handle_open_edit_event_dialog: Found event uid={} in calendar '{}'",
+        event.uid, calendar_id
+    );
 
     // Convert UTC times to local dates/times
     let start_date = event.start.date_naive();
@@ -544,9 +613,15 @@ pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, calendar_id: Stri
         notes_content: text_editor::Content::with_text(&event.notes.unwrap_or_default()),
         editing_field: None,
         start_date_picker_open: false,
-        start_date_calendar: CalendarModel::new(crate::dates::to_jiff(start_date), crate::dates::to_jiff(start_date)),
+        start_date_calendar: CalendarModel::new(
+            crate::dates::to_jiff(start_date),
+            crate::dates::to_jiff(start_date),
+        ),
         end_date_picker_open: false,
-        end_date_calendar: CalendarModel::new(crate::dates::to_jiff(end_date), crate::dates::to_jiff(end_date)),
+        end_date_calendar: CalendarModel::new(
+            crate::dates::to_jiff(end_date),
+            crate::dates::to_jiff(end_date),
+        ),
         start_time_picker_open: false,
         end_time_picker_open: false,
     });
@@ -565,7 +640,10 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) -> Task<Message> {
     };
 
     let is_edit = dialog.editing_uid.is_some();
-    debug!("handle_confirm_event_dialog: {} event", if is_edit { "Updating" } else { "Creating" });
+    debug!(
+        "handle_confirm_event_dialog: {} event",
+        if is_edit { "Updating" } else { "Creating" }
+    );
 
     // Validate: title is required
     let title = dialog.title.trim();
@@ -580,13 +658,17 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) -> Task<Message> {
     let start_time = if dialog.all_day {
         NaiveTime::from_hms_opt(0, 0, 0).unwrap()
     } else {
-        dialog.start_time.unwrap_or_else(|| NaiveTime::from_hms_opt(9, 0, 0).unwrap())
+        dialog
+            .start_time
+            .unwrap_or_else(|| NaiveTime::from_hms_opt(9, 0, 0).unwrap())
     };
 
     let end_time = if dialog.all_day {
         NaiveTime::from_hms_opt(23, 59, 59).unwrap()
     } else {
-        dialog.end_time.unwrap_or_else(|| NaiveTime::from_hms_opt(10, 0, 0).unwrap())
+        dialog
+            .end_time
+            .unwrap_or_else(|| NaiveTime::from_hms_opt(10, 0, 0).unwrap())
     };
 
     let start = Utc.from_utc_datetime(&dialog.start_date.and_time(start_time));
@@ -596,11 +678,17 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) -> Task<Message> {
     // (starts with FREQ=); otherwise fall back to Never. `repeat_until` is
     // dropped for non-repeating events.
     let resolved_repeat = crate::caldav::resolve_custom_rrule(&dialog.repeat);
-    let resolved_repeat_until =
-        if matches!(resolved_repeat, RepeatFrequency::Never) { None } else { dialog.repeat_until };
+    let resolved_repeat_until = if matches!(resolved_repeat, RepeatFrequency::Never) {
+        None
+    } else {
+        dialog.repeat_until
+    };
 
     let event = CalendarEvent {
-        uid: dialog.editing_uid.clone().unwrap_or_else(|| Uuid::new_v4().to_string()),
+        uid: dialog
+            .editing_uid
+            .clone()
+            .unwrap_or_else(|| Uuid::new_v4().to_string()),
         summary: title.to_string(),
         location: if dialog.location.is_empty() {
             None
@@ -637,20 +725,32 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) -> Task<Message> {
     // handler (CalDavEventCreated/Updated) updates the cache.
     if is_caldav_calendar(&app.calendar_manager, &dialog.calendar_id) {
         if is_edit {
-            info!("handle_confirm_event_dialog: Updating event in CalDAV calendar '{}'", dialog.calendar_id);
+            info!(
+                "handle_confirm_event_dialog: Updating event in CalDAV calendar '{}'",
+                dialog.calendar_id
+            );
         } else {
-            info!("handle_confirm_event_dialog: Creating event in CalDAV calendar '{}'", dialog.calendar_id);
+            info!(
+                "handle_confirm_event_dialog: Creating event in CalDAV calendar '{}'",
+                dialog.calendar_id
+            );
         }
         return write_caldav_event(app, dialog.calendar_id, event, is_edit);
     }
 
     // Local calendars: use EventHandler for create or update
     let result = if dialog.editing_uid.is_some() {
-        info!("handle_confirm_event_dialog: Updating event '{}' in calendar '{}'", title, dialog.calendar_id);
+        info!(
+            "handle_confirm_event_dialog: Updating event '{}' in calendar '{}'",
+            title, dialog.calendar_id
+        );
         // Update existing event (EventHandler handles delete + add)
         EventHandler::update_event(&mut app.calendar_manager, &dialog.calendar_id, event)
     } else {
-        info!("handle_confirm_event_dialog: Creating event '{}' in calendar '{}'", title, dialog.calendar_id);
+        info!(
+            "handle_confirm_event_dialog: Creating event '{}' in calendar '{}'",
+            title, dialog.calendar_id
+        );
         // Create new event
         EventHandler::add_event(&mut app.calendar_manager, &dialog.calendar_id, event)
     };

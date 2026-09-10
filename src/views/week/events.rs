@@ -3,18 +3,18 @@
 //! Contains timed event chip rendering and event overlay positioning.
 
 use chrono::{Local, NaiveDate, Timelike};
-use cosmic::iced::{Background, Border, Length};
 use cosmic::iced::widget::keyed::Column as KeyedColumn;
+use cosmic::iced::{Background, Border, Length};
 use cosmic::widget::{container, mouse_area, row};
 use cosmic::{widget, Element};
-use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
-use crate::components::{parse_color_safe, ChipOpacity, DisplayEvent};
 use crate::components::spacer::vertical_spacer;
+use crate::components::{parse_color_safe, ChipOpacity, DisplayEvent};
 use crate::message::Message;
 use crate::selection::is_drag_active;
-use crate::ui_constants::{HOUR_ROW_HEIGHT, BORDER_RADIUS};
+use crate::ui_constants::{BORDER_RADIUS, HOUR_ROW_HEIGHT};
 
 use super::utils::{event_time_range, PositionedEvent};
 
@@ -45,7 +45,8 @@ pub fn render_events_overlay_layer(
 
     for col_idx in 0..max_columns {
         // Get all events for this column, sorted by start time
-        let mut col_events: Vec<&PositionedEvent> = positioned_events.iter()
+        let mut col_events: Vec<&PositionedEvent> = positioned_events
+            .iter()
             .filter(|pe| pe.column == col_idx)
             .collect();
         col_events.sort_by_key(|pe| event_time_range(&pe.event).0);
@@ -53,10 +54,7 @@ pub fn render_events_overlay_layer(
         // Build this column's content with spacers and events
         let col_content = render_column_events(date, &col_events, selected_event_uid);
 
-        columns_row = columns_row.push(
-            container(col_content)
-                .width(Length::Fill)
-        );
+        columns_row = columns_row.push(container(col_content).width(Length::Fill));
     }
 
     columns_row.into()
@@ -84,18 +82,19 @@ fn render_column_events(
             let spacer_height = ((start_mins - current_mins) as f32 / 60.0) * HOUR_ROW_HEIGHT;
             keyed_children.push((
                 hash_key(&format!("spacer-pre-{}", idx)),
-                vertical_spacer(spacer_height).into()
+                vertical_spacer(spacer_height).into(),
             ));
         }
 
         // Add top margin spacer for this event
         keyed_children.push((
             hash_key(&format!("margin-top-{}", pe.event.uid)),
-            vertical_spacer(half_spacing).into()
+            vertical_spacer(half_spacing).into(),
         ));
 
         // Render the event (subtract full spacing from height for top + bottom margins)
-        let ev_height = ((end_mins - start_mins) as f32 / 60.0) * HOUR_ROW_HEIGHT - EVENT_BLOCK_SPACING;
+        let ev_height =
+            ((end_mins - start_mins) as f32 / 60.0) * HOUR_ROW_HEIGHT - EVENT_BLOCK_SPACING;
         let event_block = render_positioned_event_block(
             date,
             &pe.event,
@@ -108,7 +107,7 @@ fn render_column_events(
         // Add bottom margin spacer
         keyed_children.push((
             hash_key(&format!("margin-bottom-{}", pe.event.uid)),
-            vertical_spacer(half_spacing).into()
+            vertical_spacer(half_spacing).into(),
         ));
 
         current_mins = end_mins;
@@ -120,7 +119,7 @@ fn render_column_events(
         let remaining_height = ((total_mins - current_mins) as f32 / 60.0) * HOUR_ROW_HEIGHT;
         keyed_children.push((
             hash_key("spacer-remaining"),
-            vertical_spacer(remaining_height).into()
+            vertical_spacer(remaining_height).into(),
         ));
     }
 
@@ -168,35 +167,33 @@ fn render_positioned_event_block(
     let (bg_opacity, border_width) = ChipOpacity::timed_event_opacity(is_selected, is_past);
 
     // Build the label with time and summary
-    let time_str = event.start_time
+    let time_str = event
+        .start_time
         .map(|t| format!("{:02}:{:02}", t.hour(), t.minute()))
         .unwrap_or_default();
     let label = format!("{} {}", time_str, event.summary);
 
-    let chip = container(
-        widget::text(label.clone())
-            .size(10)
-    )
-    .padding([2, 6])
-    .width(Length::Fill)
-    .height(Length::Fixed(height))
-    .style(move |theme: &cosmic::Theme| container::Style {
-        background: Some(Background::Color(cosmic::iced::Color {
-            a: bg_opacity,
-            ..color
-        })),
-        text_color: Some(cosmic::iced::Color::WHITE),
-        border: Border {
-            radius: BORDER_RADIUS.into(),
-            width: border_width,
-            color: if is_selected {
-                theme.cosmic().accent_color().into()
-            } else {
-                cosmic::iced::Color::TRANSPARENT
+    let chip = container(widget::text(label.clone()).size(10))
+        .padding([2, 6])
+        .width(Length::Fill)
+        .height(Length::Fixed(height))
+        .style(move |theme: &cosmic::Theme| container::Style {
+            background: Some(Background::Color(cosmic::iced::Color {
+                a: bg_opacity,
+                ..color
+            })),
+            text_color: Some(cosmic::iced::Color::WHITE),
+            border: Border {
+                radius: BORDER_RADIUS.into(),
+                width: border_width,
+                color: if is_selected {
+                    theme.cosmic().accent_color().into()
+                } else {
+                    cosmic::iced::Color::TRANSPARENT
+                },
             },
-        },
-        ..Default::default()
-    });
+            ..Default::default()
+        });
 
     // Get color hex for drag preview
     let color_hex = event.color.clone();
@@ -205,7 +202,13 @@ fn render_positioned_event_block(
     // idle cursor move over a chip dispatches DragEventUpdate -> full
     // view rebuild + redraw, which flickers the (transparent) week view.
     let mut area = mouse_area(chip)
-        .on_press(Message::DragEventStart(calendar_id.clone(), uid.clone(), date, event.summary.clone(), color_hex))
+        .on_press(Message::DragEventStart(
+            calendar_id.clone(),
+            uid.clone(),
+            date,
+            event.summary.clone(),
+            color_hex,
+        ))
         .on_release(Message::DragEventEnd)
         .on_double_click(Message::OpenEditEventDialog(calendar_id, uid));
     if is_drag_active() {

@@ -1,8 +1,8 @@
 //! Cached month-view state: the `CalendarDay` grid cell and the
 //! `CalendarState` (week rows + header text) computed once per month.
 
-use chrono::Datelike;
 use crate::localized_names;
+use chrono::Datelike;
 
 /// Represents a day in the calendar grid with full date info
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -57,7 +57,9 @@ impl CalendarState {
             (year, month - 1)
         };
         let prev_month_days = if month == 1 {
-            chrono::NaiveDate::from_ymd_opt(year - 1, 12, 31).unwrap().day()
+            chrono::NaiveDate::from_ymd_opt(year - 1, 12, 31)
+                .unwrap()
+                .day()
         } else {
             chrono::NaiveDate::from_ymd_opt(year, month, 1)
                 .unwrap()
@@ -171,8 +173,8 @@ impl CalendarState {
     /// Get the weekday for a specific day in the month
     #[allow(dead_code)] // Reserved for future weekday-based features
     pub fn get_weekday(&self, day: u32) -> chrono::Weekday {
-        let date = chrono::NaiveDate::from_ymd_opt(self.year, self.month, day)
-            .expect("Invalid date");
+        let date =
+            chrono::NaiveDate::from_ymd_opt(self.year, self.month, day).expect("Invalid date");
         date.weekday()
     }
 }

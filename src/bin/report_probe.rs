@@ -31,7 +31,11 @@ fn main() {
                     .lines()
                     .filter(|l| l.to_uppercase().starts_with("UID:"))
                     .collect();
-                println!("  {}  uid={:?}", href, uids.first().copied().unwrap_or("<none>"));
+                println!(
+                    "  {}  uid={:?}",
+                    href,
+                    uids.first().copied().unwrap_or("<none>")
+                );
             }
         }
         Err(e) => {

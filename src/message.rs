@@ -1,11 +1,11 @@
 //! The central `Message` enum for the Elm/MVU architecture, plus the
 //! dialog/event-dialog field types it carries.
 
-use chrono::{NaiveDate, NaiveTime};
 use crate::app::EventDialogField;
 use crate::caldav::{AlertTime, CalendarEvent, DiscoveredCalendar, RepeatFrequency, TravelTime};
 use crate::dialogs::DialogAction;
 use crate::views::CalendarView;
+use chrono::{NaiveDate, NaiveTime};
 use cosmic::iced::widget::scrollable::Viewport;
 use cosmic::widget::text_editor;
 use std::path::PathBuf;

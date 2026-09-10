@@ -9,9 +9,9 @@ use crate::localized_names;
 use crate::message::Message;
 use crate::models::CalendarState;
 use crate::ui_constants::{
-    SPACING_MEDIUM, SPACING_XXS, SPACING_SMALL, SPACING_MINI_CALENDAR,
-    PADDING_TINY, FONT_SIZE_SMALL, FONT_SIZE_BODY, MINI_CALENDAR_DAY_BUTTON_SIZE,
-    MINI_CALENDAR_GRID_HEIGHT, ICON_PREVIOUS, ICON_NEXT
+    FONT_SIZE_BODY, FONT_SIZE_SMALL, ICON_NEXT, ICON_PREVIOUS, MINI_CALENDAR_DAY_BUTTON_SIZE,
+    MINI_CALENDAR_GRID_HEIGHT, PADDING_TINY, SPACING_MEDIUM, SPACING_MINI_CALENDAR, SPACING_SMALL,
+    SPACING_XXS,
 };
 
 /// Render the compact month grid in the sidebar, with prev/next month
@@ -31,7 +31,9 @@ pub fn render_mini_calendar(
                 .on_press(Message::MiniCalendarPrevMonth)
                 .padding(PADDING_TINY),
         )
-        .push(container(widget::text::body(month_year_text).size(FONT_SIZE_BODY)).width(Length::Fill))
+        .push(
+            container(widget::text::body(month_year_text).size(FONT_SIZE_BODY)).width(Length::Fill),
+        )
         .push(
             button::icon(widget::icon::from_name(ICON_NEXT))
                 .on_press(Message::MiniCalendarNextMonth)
@@ -47,7 +49,7 @@ pub fn render_mini_calendar(
         header_row = header_row.push(
             container(widget::text(weekday).size(FONT_SIZE_SMALL))
                 .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
-                .center_x(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
+                .center_x(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE)),
         );
     }
 
@@ -97,5 +99,9 @@ pub fn render_mini_calendar(
     // Wrap grid in fixed-height container to prevent layout shifts between months
     let grid_container = container(grid).height(Length::Fixed(MINI_CALENDAR_GRID_HEIGHT));
 
-    column([]).spacing(SPACING_MINI_CALENDAR).push(header).push(grid_container).into()
+    column([])
+        .spacing(SPACING_MINI_CALENDAR)
+        .push(header)
+        .push(grid_container)
+        .into()
 }

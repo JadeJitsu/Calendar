@@ -7,7 +7,7 @@ use cosmic::{widget, Element};
 
 use crate::message::Message;
 use crate::styles::today_filled_style;
-use crate::ui_constants::{SPACING_TINY, PADDING_SMALL, PADDING_MEDIUM};
+use crate::ui_constants::{PADDING_MEDIUM, PADDING_SMALL, SPACING_TINY};
 
 /// Configuration for rendering a day header
 pub struct DayHeaderConfig {
@@ -50,11 +50,9 @@ impl DayHeaderConfig {
 /// The number gets a filled accent background if it's today
 pub fn render_day_header(config: DayHeaderConfig) -> Element<'static, Message> {
     let day_number_container = if config.is_today {
-        container(
-            widget::text(config.day_number).size(config.day_number_size)
-        )
-        .padding(config.padding)
-        .style(|theme: &cosmic::Theme| today_filled_style(theme))
+        container(widget::text(config.day_number).size(config.day_number_size))
+            .padding(config.padding)
+            .style(|theme: &cosmic::Theme| today_filled_style(theme))
     } else {
         container(widget::text(config.day_number).size(config.day_number_size))
             .padding(config.padding)

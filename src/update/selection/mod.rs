@@ -39,7 +39,10 @@ pub fn handle_selection_update(app: &mut CosmicCalendar, date: NaiveDate) {
 /// End the selection (mouse release)
 /// Dispatches to view-specific handlers based on current view
 pub fn handle_selection_end(app: &mut CosmicCalendar) {
-    debug!("handle_selection_end: Ending selection in {:?} view", app.current_view);
+    debug!(
+        "handle_selection_end: Ending selection in {:?} view",
+        app.current_view
+    );
 
     let Some(range) = app.selection_state.end() else {
         return;
@@ -72,14 +75,20 @@ pub fn handle_selection_cancel(app: &mut CosmicCalendar) {
 
 /// Start a time-based selection at the given date and time (mouse press on hour cell)
 pub fn handle_time_selection_start(app: &mut CosmicCalendar, date: NaiveDate, time: NaiveTime) {
-    debug!("handle_time_selection_start: Starting time selection at {} {:?}", date, time);
+    debug!(
+        "handle_time_selection_start: Starting time selection at {} {:?}",
+        date, time
+    );
     app.selection_state.start_with_time(date, time);
 }
 
 /// Update the time selection end point (mouse move while dragging)
 pub fn handle_time_selection_update(app: &mut CosmicCalendar, date: NaiveDate, time: NaiveTime) {
     if app.selection_state.is_active {
-        debug!("handle_time_selection_update: Updating time selection to {} {:?}", date, time);
+        debug!(
+            "handle_time_selection_update: Updating time selection to {} {:?}",
+            date, time
+        );
         app.selection_state.update_with_time(date, time);
     }
 }

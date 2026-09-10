@@ -1,16 +1,16 @@
 //! Cached day-view state: the displayed date plus pre-formatted header
 //! strings.
 
-use chrono::{Datelike, NaiveDate};
 use crate::locale::LocalePreferences;
 use crate::localized_names;
+use chrono::{Datelike, NaiveDate};
 
 /// Cached day state for day view
 #[derive(Debug, Clone, PartialEq)]
 pub struct DayState {
     pub date: NaiveDate,
-    pub day_text: String,      // Pre-formatted "Monday"
-    pub date_number: String,   // Pre-formatted "15"
+    pub day_text: String,        // Pre-formatted "Monday"
+    pub date_number: String,     // Pre-formatted "15"
     pub month_year_text: String, // Pre-formatted with locale-aware format
     pub today: NaiveDate,
 }

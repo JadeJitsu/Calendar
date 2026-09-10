@@ -7,10 +7,9 @@
 use cosmic::iced::Size;
 
 use crate::ui_constants::{
-    COMPACT_EVENT_HEIGHT, COMPACT_OVERFLOW_HEIGHT, DATE_EVENT_HEIGHT,
-    DAY_HEADER_HEIGHT, MIN_CELL_HEIGHT_FOR_FULL_EVENTS, MIN_CELL_HEIGHT_FOR_OVERFLOW,
-    MIN_CELL_WIDTH_FOR_FULL_EVENTS, OVERFLOW_INDICATOR_HEIGHT, PADDING_DAY_CELL,
-    SPACING_TINY,
+    COMPACT_EVENT_HEIGHT, COMPACT_OVERFLOW_HEIGHT, DATE_EVENT_HEIGHT, DAY_HEADER_HEIGHT,
+    MIN_CELL_HEIGHT_FOR_FULL_EVENTS, MIN_CELL_HEIGHT_FOR_OVERFLOW, MIN_CELL_WIDTH_FOR_FULL_EVENTS,
+    OVERFLOW_INDICATOR_HEIGHT, PADDING_DAY_CELL, SPACING_TINY,
 };
 
 /// Vertical-only padding for day cells (derived from PADDING_DAY_CELL)
@@ -85,24 +84,42 @@ pub fn calculate_display_mode(cell_size: Size) -> EventDisplayMode {
     let show_overflow = cell_size.height >= MIN_CELL_HEIGHT_FOR_OVERFLOW;
 
     // Available height for events (cell height minus header and padding)
-    let base_available = (cell_size.height - DAY_HEADER_HEIGHT - (PADDING_DAY_CELL_VERTICAL_TOP * 2.0)).max(0.0);
+    let base_available =
+        (cell_size.height - DAY_HEADER_HEIGHT - (PADDING_DAY_CELL_VERTICAL_TOP * 2.0)).max(0.0);
 
     if use_compact {
         // Reserve space for overflow indicator if we'll show it
-        let overflow_reserve = if show_overflow { COMPACT_OVERFLOW_HEIGHT + EVENT_SPACING } else { 0.0 };
+        let overflow_reserve = if show_overflow {
+            COMPACT_OVERFLOW_HEIGHT + EVENT_SPACING
+        } else {
+            0.0
+        };
         let available_height = (base_available - overflow_reserve).max(0.0);
 
         // Compact mode: thin lines
-        let max_visible = ((available_height + EVENT_SPACING) / (COMPACT_EVENT_HEIGHT + EVENT_SPACING)).floor() as usize;
-        EventDisplayMode::Compact { max_visible: max_visible.max(1), show_overflow }
+        let max_visible = ((available_height + EVENT_SPACING)
+            / (COMPACT_EVENT_HEIGHT + EVENT_SPACING))
+            .floor() as usize;
+        EventDisplayMode::Compact {
+            max_visible: max_visible.max(1),
+            show_overflow,
+        }
     } else {
         // Reserve space for overflow indicator if we'll show it
-        let overflow_reserve = if show_overflow { OVERFLOW_INDICATOR_HEIGHT + EVENT_SPACING } else { 0.0 };
+        let overflow_reserve = if show_overflow {
+            OVERFLOW_INDICATOR_HEIGHT + EVENT_SPACING
+        } else {
+            0.0
+        };
         let available_height = (base_available - overflow_reserve).max(0.0);
 
         // Full mode: regular event chips
-        let max_visible = ((available_height + EVENT_SPACING) / (DATE_EVENT_HEIGHT + EVENT_SPACING)).floor() as usize;
-        EventDisplayMode::Full { max_visible: max_visible.max(1), show_overflow }
+        let max_visible = ((available_height + EVENT_SPACING) / (DATE_EVENT_HEIGHT + EVENT_SPACING))
+            .floor() as usize;
+        EventDisplayMode::Full {
+            max_visible: max_visible.max(1),
+            show_overflow,
+        }
     }
 }
 
@@ -118,6 +135,5 @@ pub fn calculate_display_mode(cell_size: Size) -> EventDisplayMode {
 /// # Returns
 /// `true` if compact mode should be used
 pub fn should_use_compact(cell_width: f32, cell_height: f32) -> bool {
-    cell_height < MIN_CELL_HEIGHT_FOR_FULL_EVENTS
-        || cell_width < MIN_CELL_WIDTH_FOR_FULL_EVENTS
+    cell_height < MIN_CELL_HEIGHT_FOR_FULL_EVENTS || cell_width < MIN_CELL_WIDTH_FOR_FULL_EVENTS
 }

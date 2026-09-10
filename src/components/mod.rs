@@ -4,8 +4,6 @@
 mod calendar_dialog;
 mod calendar_dialog_callbacks;
 mod calendar_list;
-mod search;
-mod settings_dialog;
 pub mod color_picker;
 mod day_cell;
 mod day_header;
@@ -15,31 +13,39 @@ mod event_dialog;
 mod event_dialog_callbacks;
 mod header_menu;
 mod mini_calendar;
+mod search;
+mod settings_dialog;
 pub mod spacer;
 mod time_grid;
 pub mod time_picker;
 mod toolbar;
 
-pub use search::{render_search_bar, search_input_id};
-pub use settings_dialog::render_settings_dialog;
 pub use calendar_dialog::{
     render_add_caldav_dialog, render_calendar_dialog, render_delete_calendar_dialog,
     render_delete_event_dialog,
 };
 pub use calendar_list::render_calendar_list;
-pub use event_dialog::render_event_dialog;
-pub use color_picker::{render_color_indicator, render_quick_color_picker, parse_hex_color, parse_color_safe};
+pub use color_picker::{
+    parse_color_safe, parse_hex_color, render_color_indicator, render_quick_color_picker,
+};
 pub use day_cell::{render_day_cell_with_events, DayCellConfig};
 pub use day_header::{render_day_header, DayHeaderConfig};
-pub use event_chip::{render_quick_event_input, render_spanning_quick_event_input, render_compact_events, render_unified_events_with_selection, quick_event_input_id, DisplayEvent, span_border_radius_from_flags, ChipOpacity};
+pub use event_chip::{
+    quick_event_input_id, render_compact_events, render_quick_event_input,
+    render_spanning_quick_event_input, render_unified_events_with_selection,
+    span_border_radius_from_flags, ChipOpacity, DisplayEvent,
+};
+pub use event_dialog::render_event_dialog;
 pub use header_menu::{render_header_end, render_header_start};
 pub use mini_calendar::render_mini_calendar;
-pub use time_grid::{render_time_grid, render_time_column_placeholder, DayColumn};
+pub use search::{render_search_bar, search_input_id};
+pub use settings_dialog::render_settings_dialog;
+pub use time_grid::{render_time_column_placeholder, render_time_grid, DayColumn};
 // time_picker is used internally by event_dialog
+pub use display_mode::{calculate_display_mode, should_use_compact, EventDisplayMode};
 #[allow(unused_imports)]
 pub use time_picker::render_time_picker;
 pub use toolbar::render_toolbar;
-pub use display_mode::{EventDisplayMode, calculate_display_mode, should_use_compact};
 
 // These callback structs are available for future use when we complete the refactoring
 // to make dialogs generic over message type (like time_picker.rs)

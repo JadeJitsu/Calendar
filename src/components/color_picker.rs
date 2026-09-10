@@ -8,10 +8,9 @@ use cosmic::{widget, Element};
 use crate::message::Message;
 use crate::styles::color_button_style;
 use crate::ui_constants::{
-    COLOR_BUTTON_SIZE_SMALL, COLOR_BUTTON_SIZE_MEDIUM, COLOR_BUTTON_SIZE_LARGE,
-    SPACING_COLOR_GRID, SPACING_COLOR_CONTAINER, PADDING_STANDARD,
-    COLOR_DEFAULT_GRAY, border_light, border_selected,
-    BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_SELECTED
+    border_light, border_selected, BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_SELECTED,
+    COLOR_BUTTON_SIZE_LARGE, COLOR_BUTTON_SIZE_MEDIUM, COLOR_BUTTON_SIZE_SMALL, COLOR_DEFAULT_GRAY,
+    PADDING_STANDARD, SPACING_COLOR_CONTAINER, SPACING_COLOR_GRID,
 };
 
 /// Predefined color palette for calendars (full list with names)
@@ -69,14 +68,11 @@ pub fn render_color_indicator<'a>(
 ) -> Element<'a, Message> {
     let color = parse_hex_color(current_color).unwrap_or(COLOR_DEFAULT_GRAY);
 
-    button::custom(
-        container(widget::text(""))
-            .width(size)
-            .height(size)
-            .style(move |theme: &cosmic::Theme| {
-                color_button_style(color, size, BORDER_WIDTH_HIGHLIGHT, border_light(theme))
-            })
-    )
+    button::custom(container(widget::text("")).width(size).height(size).style(
+        move |theme: &cosmic::Theme| {
+            color_button_style(color, size, BORDER_WIDTH_HIGHLIGHT, border_light(theme))
+        },
+    ))
     .on_press(Message::ToggleColorPicker(calendar_id))
     .padding(0)
     .into()
@@ -101,8 +97,13 @@ pub fn render_color_palette<'a>(calendar_id: String) -> Element<'a, Message> {
                     .width(COLOR_BUTTON_SIZE_MEDIUM)
                     .height(COLOR_BUTTON_SIZE_MEDIUM)
                     .style(move |theme: &cosmic::Theme| {
-                        color_button_style(color, COLOR_BUTTON_SIZE_MEDIUM, BORDER_WIDTH_HIGHLIGHT, border_light(theme))
-                    })
+                        color_button_style(
+                            color,
+                            COLOR_BUTTON_SIZE_MEDIUM,
+                            BORDER_WIDTH_HIGHLIGHT,
+                            border_light(theme),
+                        )
+                    }),
             )
             .on_press(Message::ChangeCalendarColor(calendar_id_clone, hex_owned))
             .padding(0);
@@ -112,16 +113,14 @@ pub fn render_color_palette<'a>(calendar_id: String) -> Element<'a, Message> {
                     .width(Length::Fixed(COLOR_BUTTON_SIZE_LARGE))
                     .height(Length::Fixed(COLOR_BUTTON_SIZE_LARGE))
                     .center_x(Length::Fill)
-                    .center_y(Length::Fill)
+                    .center_y(Length::Fill),
             );
         }
 
         color_grid = color_grid.push(color_row);
     }
 
-    container(color_grid)
-        .padding(PADDING_STANDARD)
-        .into()
+    container(color_grid).padding(PADDING_STANDARD).into()
 }
 
 /// Render a compact color picker with 20 colors in a 4x5 grid
@@ -140,7 +139,11 @@ pub fn render_quick_color_picker<'a>(
             let calendar_id_clone = calendar_id.clone();
             let is_selected = current_color == hex;
 
-            let border_width = if is_selected { BORDER_WIDTH_SELECTED } else { BORDER_WIDTH_HIGHLIGHT };
+            let border_width = if is_selected {
+                BORDER_WIDTH_SELECTED
+            } else {
+                BORDER_WIDTH_HIGHLIGHT
+            };
 
             let color_button = button::custom(
                 container(widget::text(""))
@@ -152,8 +155,13 @@ pub fn render_quick_color_picker<'a>(
                         } else {
                             border_light(theme)
                         };
-                        color_button_style(color, COLOR_BUTTON_SIZE_SMALL, border_width, border_color)
-                    })
+                        color_button_style(
+                            color,
+                            COLOR_BUTTON_SIZE_SMALL,
+                            border_width,
+                            border_color,
+                        )
+                    }),
             )
             .on_press(Message::ChangeCalendarColor(calendar_id_clone, hex_owned))
             .padding(0);

@@ -23,16 +23,25 @@ impl SelectionRange {
         let p2_key = (point2.date, point2.time);
 
         if p1_key <= p2_key {
-            Self { start: point1, end: point2 }
+            Self {
+                start: point1,
+                end: point2,
+            }
         } else {
-            Self { start: point2, end: point1 }
+            Self {
+                start: point2,
+                end: point1,
+            }
         }
     }
 
     /// Create a date-only range (for month view compatibility)
     #[allow(dead_code)] // Part of selection API
     pub fn from_dates(date1: NaiveDate, date2: NaiveDate) -> Self {
-        Self::new(SelectionPoint::date_only(date1), SelectionPoint::date_only(date2))
+        Self::new(
+            SelectionPoint::date_only(date1),
+            SelectionPoint::date_only(date2),
+        )
     }
 
     /// Get the start date

@@ -53,9 +53,9 @@ pub fn span_border_radius_from_flags(is_start: bool, is_end: bool, radius: f32) 
 pub fn span_padding(span_position: SpanPosition) -> [u16; 4] {
     match span_position {
         SpanPosition::Single => [2, 4, 2, 4],
-        SpanPosition::First => [2, 0, 2, 4],   // No right padding - continues right
-        SpanPosition::Middle => [2, 0, 2, 0],  // No horizontal padding - continues both sides
-        SpanPosition::Last => [2, 4, 2, 0],    // No left padding - continues left
+        SpanPosition::First => [2, 0, 2, 4], // No right padding - continues right
+        SpanPosition::Middle => [2, 0, 2, 0], // No horizontal padding - continues both sides
+        SpanPosition::Last => [2, 4, 2, 0],  // No left padding - continues left
     }
 }
 
@@ -103,7 +103,11 @@ impl ChipOpacity {
     /// Calculate opacity for a dot/indicator element during drag.
     /// Dots don't have selection state, only drag state.
     pub fn dot_opacity(is_being_dragged: bool) -> f32 {
-        if is_being_dragged { 0.3 } else { 1.0 }
+        if is_being_dragged {
+            0.3
+        } else {
+            1.0
+        }
     }
 
     /// Get background opacity for week/day view timed events.
@@ -112,12 +116,16 @@ impl ChipOpacity {
     /// Past events are more transparent to reduce visual prominence.
     pub fn timed_event_opacity(is_selected: bool, is_past: bool) -> (f32, f32) {
         let (base_bg, border) = if is_selected {
-            (0.8, 2.0)  // Selected: slightly more opaque
+            (0.8, 2.0) // Selected: slightly more opaque
         } else {
-            (0.7, 0.0)  // Normal: transparent for softer look
+            (0.7, 0.0) // Normal: transparent for softer look
         };
         // Past events get additional dimming (multiply by 0.5)
-        let bg = if is_past { base_bg * PAST_EVENT_DIM_FACTOR } else { base_bg };
+        let bg = if is_past {
+            base_bg * PAST_EVENT_DIM_FACTOR
+        } else {
+            base_bg
+        };
         (bg, border)
     }
 }
@@ -136,7 +144,10 @@ pub struct ChipSelectionState {
 impl ChipSelectionState {
     /// Create selection state from individual flags
     pub fn new(is_selected: bool, is_being_dragged: bool) -> Self {
-        Self { is_selected, is_being_dragged }
+        Self {
+            is_selected,
+            is_being_dragged,
+        }
     }
 }
 
@@ -146,8 +157,8 @@ pub struct DisplayEvent {
     pub calendar_id: String, // Calendar ID for unique identification
     pub uid: String,
     pub summary: String,
-    pub color: String,      // Hex color from calendar
-    pub all_day: bool,      // Whether this is an all-day event
+    pub color: String,                 // Hex color from calendar
+    pub all_day: bool,                 // Whether this is an all-day event
     pub start_time: Option<NaiveTime>, // Start time for timed events
     pub end_time: Option<NaiveTime>,   // End time for timed events (for week/day view positioning)
     /// Start date of the event span (for multi-day events)

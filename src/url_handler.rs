@@ -36,8 +36,7 @@ pub enum UrlAction {
 pub fn parse_url(url_str: &str) -> Result<UrlAction, Box<dyn Error>> {
     debug!("UrlHandler: Parsing URL: {}", url_str);
 
-    let url = Url::parse(url_str)
-        .map_err(|e| format!("Invalid URL: {}", e))?;
+    let url = Url::parse(url_str).map_err(|e| format!("Invalid URL: {}", e))?;
 
     match url.scheme() {
         "webcal" | "ics" => {
@@ -54,12 +53,8 @@ pub fn parse_url(url_str: &str) -> Result<UrlAction, Box<dyn Error>> {
             info!("UrlHandler: Import remote calendar from {}", https_url);
             Ok(UrlAction::ImportRemote { url: https_url })
         }
-        "calendar" => {
-            parse_calendar_url(&url)
-        }
-        scheme => {
-            Err(format!("Unsupported URL scheme: {}", scheme).into())
-        }
+        "calendar" => parse_calendar_url(&url),
+        scheme => Err(format!("Unsupported URL scheme: {}", scheme).into()),
     }
 }
 
@@ -120,9 +115,7 @@ fn parse_calendar_url(url: &Url) -> Result<UrlAction, Box<dyn Error>> {
             debug!("UrlHandler: View event uid={}", uid);
             Ok(UrlAction::ViewEvent { uid })
         }
-        _ => {
-            Err(format!("Invalid calendar:// host: {}", host).into())
-        }
+        _ => Err(format!("Invalid calendar:// host: {}", host).into()),
     }
 }
 
@@ -179,7 +172,11 @@ pub async fn download_calendar(url: &str) -> Result<String, Box<dyn Error>> {
         .await
         .map_err(|e| format!("Failed to read calendar data: {}", e))?;
 
-    info!("UrlHandler: Downloaded {} bytes from {}", calendar_data.len(), url);
+    info!(
+        "UrlHandler: Downloaded {} bytes from {}",
+        calendar_data.len(),
+        url
+    );
     Ok(calendar_data)
 }
 

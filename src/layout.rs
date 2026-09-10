@@ -6,7 +6,10 @@ use crate::components::{
     render_add_caldav_dialog, render_calendar_dialog, render_delete_calendar_dialog,
     render_delete_event_dialog, render_event_dialog, render_settings_dialog,
 };
-use crate::dialogs::{render_import_dialog, render_import_progress_dialog, render_import_result_dialog, view_subscribe_dialog};
+use crate::dialogs::{
+    render_import_dialog, render_import_progress_dialog, render_import_result_dialog,
+    view_subscribe_dialog,
+};
 use crate::message::Message;
 use crate::styles;
 use crate::ui_constants::{BORDER_RADIUS, SIDEBAR_WIDTH};
@@ -27,8 +30,7 @@ const DRAG_PREVIEW_OFFSET_Y: f32 = 10.0;
 pub fn render_layout(app: &CosmicCalendar) -> Element<'_, Message> {
     let is_condensed = app.core.is_condensed();
     // Check active_dialog and legacy event_dialog for whether a dialog is open
-    let has_dialog_open = app.active_dialog.is_open()
-        || app.event_dialog.is_some();
+    let has_dialog_open = app.active_dialog.is_open() || app.event_dialog.is_some();
 
     // Build base layout with sidebar inline when appropriate
     let base_content = if !is_condensed && app.show_sidebar {
@@ -172,8 +174,8 @@ fn render_drag_preview_overlay<'a>(
     app: &'a CosmicCalendar,
     base: Element<'a, Message>,
 ) -> Element<'a, Message> {
-    use cosmic::widget::text;
     use cosmic::iced::Background;
+    use cosmic::widget::text;
 
     let drag_state = &app.event_drag_state;
 
@@ -199,30 +201,26 @@ fn render_drag_preview_overlay<'a>(
         .unwrap_or(cosmic::iced::Color::from_rgb(0.5, 0.5, 0.5));
 
     // Create the drag preview chip - styled similar to event chips
-    let preview_content = text(summary)
-        .size(11)
-        .width(Length::Fill);
+    let preview_content = text(summary).size(11).width(Length::Fill);
 
     let preview_chip = container(preview_content)
         .padding([4, 8, 4, 8])
         .width(Length::Fixed(DRAG_PREVIEW_WIDTH))
         .height(Length::Fixed(DRAG_PREVIEW_HEIGHT))
-        .style(move |_theme: &cosmic::Theme| {
-            container::Style {
-                background: Some(Background::Color(color.scale_alpha(0.8))),
-                text_color: Some(cosmic::iced::Color::WHITE),
-                border: cosmic::iced::Border {
-                    color: color,
-                    width: 1.0,
-                    radius: BORDER_RADIUS.into(),
-                },
-                shadow: cosmic::iced::Shadow {
-                    color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.3),
-                    offset: cosmic::iced::Vector::new(2.0, 2.0),
-                    blur_radius: 4.0,
-                },
-                ..Default::default()
-            }
+        .style(move |_theme: &cosmic::Theme| container::Style {
+            background: Some(Background::Color(color.scale_alpha(0.8))),
+            text_color: Some(cosmic::iced::Color::WHITE),
+            border: cosmic::iced::Border {
+                color: color,
+                width: 1.0,
+                radius: BORDER_RADIUS.into(),
+            },
+            shadow: cosmic::iced::Shadow {
+                color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.3),
+                offset: cosmic::iced::Vector::new(2.0, 2.0),
+                blur_radius: 4.0,
+            },
+            ..Default::default()
         });
 
     // Position the preview at cursor location with offset
@@ -247,9 +245,7 @@ fn wrap_main_content_for_dialog_close<'a>(
     dialog_open: bool,
 ) -> Element<'a, Message> {
     if dialog_open {
-        mouse_area(content)
-            .on_press(Message::CloseDialog)
-            .into()
+        mouse_area(content).on_press(Message::CloseDialog).into()
     } else {
         content
     }
@@ -257,10 +253,8 @@ fn wrap_main_content_for_dialog_close<'a>(
 
 /// Render desktop layout with inline sidebar
 fn render_desktop_with_sidebar(app: &CosmicCalendar) -> Element<'_, Message> {
-    let main_content = wrap_main_content_for_dialog_close(
-        app.render_main_content(),
-        app.active_dialog.is_open(),
-    );
+    let main_content =
+        wrap_main_content_for_dialog_close(app.render_main_content(), app.active_dialog.is_open());
 
     row([])
         .spacing(0)
@@ -275,12 +269,11 @@ fn render_mobile_with_overlay<'a>(
     app: &'a CosmicCalendar,
     base_content: Element<'a, Message>,
 ) -> Element<'a, Message> {
-    let overlay_sidebar = container(
-        container(app.render_sidebar()).style(styles::overlay_sidebar_style),
-    )
-    .width(Length::Fixed(SIDEBAR_WIDTH))
-    .height(Length::Fill)
-    .align_x(alignment::Horizontal::Left);
+    let overlay_sidebar =
+        container(container(app.render_sidebar()).style(styles::overlay_sidebar_style))
+            .width(Length::Fixed(SIDEBAR_WIDTH))
+            .height(Length::Fill)
+            .align_x(alignment::Horizontal::Left);
 
     stack![base_content, overlay_sidebar].into()
 }

@@ -43,7 +43,8 @@ pub fn render_settings_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
         .spacing(8)
         .align_y(cosmic::iced::Alignment::Center)
         .push(
-            widget::checkbox(show_week_numbers).label("")
+            widget::checkbox(show_week_numbers)
+                .label("")
                 .on_toggle(move |_| Message::SettingsWeekNumbersToggled(toggled)),
         )
         .push(widget::text(fl!("settings-week-numbers")));
@@ -54,7 +55,8 @@ pub fn render_settings_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
         .spacing(8)
         .align_y(cosmic::iced::Alignment::Center)
         .push(
-            widget::checkbox(close_to_tray).label("")
+            widget::checkbox(close_to_tray)
+                .label("")
                 .on_toggle(move |_| Message::SettingsCloseToTrayToggled(close_to_tray_toggled)),
         )
         .push(widget::text(fl!("settings-close-to-tray")));
@@ -68,7 +70,11 @@ pub fn render_settings_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
         let radio_btn = radio(
             widget::text(label),
             secs,
-            if is_selected { Some(sync_interval_secs) } else { None },
+            if is_selected {
+                Some(sync_interval_secs)
+            } else {
+                None
+            },
             |secs| Message::SettingsSyncIntervalSelected(secs),
         );
         interval_control = interval_control.push(container(radio_btn).padding([0, 0, 0, 16]));

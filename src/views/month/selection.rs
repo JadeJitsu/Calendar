@@ -35,11 +35,9 @@ pub fn render_spanning_overlay<'a>(
         let mut week_end_col: Option<usize> = None;
 
         for (day_idx, calendar_day) in week.iter().enumerate() {
-            if let Some(cell_date) = NaiveDate::from_ymd_opt(
-                calendar_day.year,
-                calendar_day.month,
-                calendar_day.day,
-            ) {
+            if let Some(cell_date) =
+                NaiveDate::from_ymd_opt(calendar_day.year, calendar_day.month, calendar_day.day)
+            {
                 if cell_date >= start_date && cell_date <= end_date {
                     if week_start_col.is_none() {
                         week_start_col = Some(day_idx);
@@ -55,9 +53,7 @@ pub fn render_spanning_overlay<'a>(
     }
 
     // Build the overlay structure matching the grid layout
-    let mut overlay_column = column([])
-        .spacing(SPACING_TINY)
-        .padding(PADDING_MONTH_GRID);
+    let mut overlay_column = column([]).spacing(SPACING_TINY).padding(PADDING_MONTH_GRID);
 
     // Add header spacer (same height as weekday header)
     overlay_column = overlay_column.push(vertical_spacer(WEEKDAY_HEADER_HEIGHT));

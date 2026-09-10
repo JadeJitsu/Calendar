@@ -8,9 +8,9 @@ use chrono::Datelike;
 #[derive(Debug, Clone, PartialEq)]
 pub struct YearState {
     pub year: i32,
-    pub year_text: String, // Pre-formatted year text for display
+    pub year_text: String,          // Pre-formatted year text for display
     pub months: Vec<CalendarState>, // 12 months worth of CalendarState
-    pub today: (i32, u32, u32), // (year, month, day)
+    pub today: (i32, u32, u32),     // (year, month, day)
 }
 
 impl YearState {

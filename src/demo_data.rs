@@ -52,7 +52,11 @@ pub fn populate_demo_data(db: &Database) -> Result<usize, Box<dyn Error>> {
 }
 
 /// Generate weekly recurring meetings using recurring events
-fn generate_recurring_meetings(db: &Database, start: NaiveDate, end: NaiveDate) -> Result<usize, Box<dyn Error>> {
+fn generate_recurring_meetings(
+    db: &Database,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> Result<usize, Box<dyn Error>> {
     let mut count = 0;
 
     // Find first Monday in range
@@ -149,7 +153,11 @@ fn generate_recurring_meetings(db: &Database, start: NaiveDate, end: NaiveDate) 
 }
 
 /// Generate project deadlines throughout the year
-fn generate_project_deadlines(db: &Database, start: NaiveDate, end: NaiveDate) -> Result<usize, Box<dyn Error>> {
+fn generate_project_deadlines(
+    db: &Database,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> Result<usize, Box<dyn Error>> {
     let deadlines = [
         ("Q1 Report Due", 3, 15),
         ("Product Launch v2.0", 4, 1),
@@ -167,15 +175,21 @@ fn generate_project_deadlines(db: &Database, start: NaiveDate, end: NaiveDate) -
     for (summary, month, day) in deadlines {
         if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
             if date >= start && date <= end {
-                insert_event(db, "work", EventTemplate {
-                    summary,
-                    location: None,
-                    duration_hours: 0,
-                    all_day: true,
-                    travel_time: TravelTime::None,
-                    alert: AlertTime::OneDay,
-                    notes: Some("Important deadline - ensure all deliverables are ready."),
-                }, date, NaiveTime::from_hms_opt(0, 0, 0).unwrap())?;
+                insert_event(
+                    db,
+                    "work",
+                    EventTemplate {
+                        summary,
+                        location: None,
+                        duration_hours: 0,
+                        all_day: true,
+                        travel_time: TravelTime::None,
+                        alert: AlertTime::OneDay,
+                        notes: Some("Important deadline - ensure all deliverables are ready."),
+                    },
+                    date,
+                    NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+                )?;
                 count += 1;
             }
         }
@@ -185,7 +199,11 @@ fn generate_project_deadlines(db: &Database, start: NaiveDate, end: NaiveDate) -
 }
 
 /// Generate various work events
-fn generate_work_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Result<usize, Box<dyn Error>> {
+fn generate_work_events(
+    db: &Database,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> Result<usize, Box<dyn Error>> {
     let mut count = 0;
     let year = start.year();
 
@@ -193,15 +211,21 @@ fn generate_work_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Resu
     for month in [1, 4, 7, 10] {
         if let Some(date) = NaiveDate::from_ymd_opt(year, month, 15) {
             if date >= start && date <= end {
-                insert_event(db, "work", EventTemplate {
-                    summary: "All-Hands Meeting",
-                    location: Some("Auditorium"),
-                    duration_hours: 2,
-                    all_day: false,
+                insert_event(
+                    db,
+                    "work",
+                    EventTemplate {
+                        summary: "All-Hands Meeting",
+                        location: Some("Auditorium"),
+                        duration_hours: 2,
+                        all_day: false,
                         travel_time: TravelTime::FifteenMinutes,
-                    alert: AlertTime::OneHour,
-                    notes: Some("Company-wide update from leadership."),
-                }, date, NaiveTime::from_hms_opt(10, 0, 0).unwrap())?;
+                        alert: AlertTime::OneHour,
+                        notes: Some("Company-wide update from leadership."),
+                    },
+                    date,
+                    NaiveTime::from_hms_opt(10, 0, 0).unwrap(),
+                )?;
                 count += 1;
             }
         }
@@ -218,15 +242,21 @@ fn generate_work_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Resu
     for (summary, month, day) in trainings {
         if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
             if date >= start && date <= end {
-                insert_event(db, "work", EventTemplate {
-                    summary,
-                    location: Some("Training Room B"),
-                    duration_hours: 4,
-                    all_day: false,
+                insert_event(
+                    db,
+                    "work",
+                    EventTemplate {
+                        summary,
+                        location: Some("Training Room B"),
+                        duration_hours: 4,
+                        all_day: false,
                         travel_time: TravelTime::None,
-                    alert: AlertTime::OneDay,
-                    notes: Some("Mandatory training session."),
-                }, date, NaiveTime::from_hms_opt(9, 0, 0).unwrap())?;
+                        alert: AlertTime::OneDay,
+                        notes: Some("Mandatory training session."),
+                    },
+                    date,
+                    NaiveTime::from_hms_opt(9, 0, 0).unwrap(),
+                )?;
                 count += 1;
             }
         }
@@ -236,7 +266,11 @@ fn generate_work_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Resu
 }
 
 /// Generate personal events
-fn generate_personal_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Result<usize, Box<dyn Error>> {
+fn generate_personal_events(
+    db: &Database,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> Result<usize, Box<dyn Error>> {
     let mut count = 0;
     let year = start.year();
 
@@ -252,15 +286,21 @@ fn generate_personal_events(db: &Database, start: NaiveDate, end: NaiveDate) -> 
     for (summary, month, day) in birthdays {
         if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
             if date >= start && date <= end {
-                insert_event(db, "personal", EventTemplate {
-                    summary,
-                    location: None,
-                    duration_hours: 0,
-                    all_day: true,
-                    travel_time: TravelTime::None,
-                    alert: AlertTime::OneWeek,
-                    notes: Some("Don't forget to get a gift!"),
-                }, date, NaiveTime::from_hms_opt(0, 0, 0).unwrap())?;
+                insert_event(
+                    db,
+                    "personal",
+                    EventTemplate {
+                        summary,
+                        location: None,
+                        duration_hours: 0,
+                        all_day: true,
+                        travel_time: TravelTime::None,
+                        alert: AlertTime::OneWeek,
+                        notes: Some("Don't forget to get a gift!"),
+                    },
+                    date,
+                    NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+                )?;
                 count += 1;
             }
         }
@@ -283,15 +323,21 @@ fn generate_personal_events(db: &Database, start: NaiveDate, end: NaiveDate) -> 
     for (summary, month, day, hour, minute) in appointments {
         if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
             if date >= start && date <= end {
-                insert_event(db, "personal", EventTemplate {
-                    summary,
-                    location: Some("Downtown"),
-                    duration_hours: 1,
-                    all_day: false,
-                    travel_time: TravelTime::ThirtyMinutes,
-                    alert: AlertTime::TwoHours,
-                    notes: None,
-                }, date, NaiveTime::from_hms_opt(hour, minute, 0).unwrap())?;
+                insert_event(
+                    db,
+                    "personal",
+                    EventTemplate {
+                        summary,
+                        location: Some("Downtown"),
+                        duration_hours: 1,
+                        all_day: false,
+                        travel_time: TravelTime::ThirtyMinutes,
+                        alert: AlertTime::TwoHours,
+                        notes: None,
+                    },
+                    date,
+                    NaiveTime::from_hms_opt(hour, minute, 0).unwrap(),
+                )?;
                 count += 1;
             }
         }
@@ -301,7 +347,11 @@ fn generate_personal_events(db: &Database, start: NaiveDate, end: NaiveDate) -> 
 }
 
 /// Generate social events
-fn generate_social_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Result<usize, Box<dyn Error>> {
+fn generate_social_events(
+    db: &Database,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> Result<usize, Box<dyn Error>> {
     let mut count = 0;
     let year = start.year();
 
@@ -320,15 +370,21 @@ fn generate_social_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Re
     for (summary, month, day, hour, minute, location) in social {
         if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
             if date >= start && date <= end {
-                insert_event(db, "personal", EventTemplate {
-                    summary,
-                    location: Some(location),
-                    duration_hours: 3,
-                    all_day: false,
-                    travel_time: TravelTime::ThirtyMinutes,
-                    alert: AlertTime::OneHour,
-                    notes: None,
-                }, date, NaiveTime::from_hms_opt(hour, minute, 0).unwrap())?;
+                insert_event(
+                    db,
+                    "personal",
+                    EventTemplate {
+                        summary,
+                        location: Some(location),
+                        duration_hours: 3,
+                        all_day: false,
+                        travel_time: TravelTime::ThirtyMinutes,
+                        alert: AlertTime::OneHour,
+                        notes: None,
+                    },
+                    date,
+                    NaiveTime::from_hms_opt(hour, minute, 0).unwrap(),
+                )?;
                 count += 1;
             }
         }
@@ -338,7 +394,11 @@ fn generate_social_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Re
 }
 
 /// Generate health and fitness events using recurring events
-fn generate_health_fitness(db: &Database, start: NaiveDate, end: NaiveDate) -> Result<usize, Box<dyn Error>> {
+fn generate_health_fitness(
+    db: &Database,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> Result<usize, Box<dyn Error>> {
     let mut count = 0;
 
     // Find first Tuesday in range
@@ -439,10 +499,10 @@ fn generate_holidays(db: &Database, year: i32) -> Result<usize, Box<dyn Error>> 
     let holidays = [
         ("New Year's Day", 1, 1),
         ("Martin Luther King Jr. Day", 1, 20), // Third Monday, approximated
-        ("Presidents' Day", 2, 17), // Third Monday, approximated
-        ("Memorial Day", 5, 26), // Last Monday, approximated
+        ("Presidents' Day", 2, 17),            // Third Monday, approximated
+        ("Memorial Day", 5, 26),               // Last Monday, approximated
         ("Independence Day", 7, 4),
-        ("Labor Day", 9, 1), // First Monday, approximated
+        ("Labor Day", 9, 1),      // First Monday, approximated
         ("Columbus Day", 10, 13), // Second Monday, approximated
         ("Veterans Day", 11, 11),
         ("Thanksgiving", 11, 27), // Fourth Thursday, approximated
@@ -455,15 +515,21 @@ fn generate_holidays(db: &Database, year: i32) -> Result<usize, Box<dyn Error>> 
 
     for (summary, month, day) in holidays {
         if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
-            insert_event(db, "personal", EventTemplate {
-                summary,
-                location: None,
-                duration_hours: 0,
-                all_day: true,
-                travel_time: TravelTime::None,
-                alert: AlertTime::OneDay,
-                notes: Some("Holiday"),
-            }, date, NaiveTime::from_hms_opt(0, 0, 0).unwrap())?;
+            insert_event(
+                db,
+                "personal",
+                EventTemplate {
+                    summary,
+                    location: None,
+                    duration_hours: 0,
+                    all_day: true,
+                    travel_time: TravelTime::None,
+                    alert: AlertTime::OneDay,
+                    notes: Some("Holiday"),
+                },
+                date,
+                NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
+            )?;
             count += 1;
         }
     }
@@ -472,7 +538,11 @@ fn generate_holidays(db: &Database, year: i32) -> Result<usize, Box<dyn Error>> 
 }
 
 /// Generate various random events to fill the calendar
-fn generate_varied_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Result<usize, Box<dyn Error>> {
+fn generate_varied_events(
+    db: &Database,
+    start: NaiveDate,
+    end: NaiveDate,
+) -> Result<usize, Box<dyn Error>> {
     let mut count = 0;
     let year = start.year();
 
@@ -485,7 +555,8 @@ fn generate_varied_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Re
 
     for (summary, month, start_day, duration_days) in vacations {
         if let Some(start_date) = NaiveDate::from_ymd_opt(year, month, start_day) {
-            if let Some(end_date) = start_date.checked_add_signed(Duration::days(duration_days - 1)) {
+            if let Some(end_date) = start_date.checked_add_signed(Duration::days(duration_days - 1))
+            {
                 if start_date >= start && end_date <= end {
                     let event = CalendarEvent {
                         uid: Uuid::new_v4().to_string(),
@@ -514,42 +585,156 @@ fn generate_varied_events(db: &Database, start: NaiveDate, end: NaiveDate) -> Re
 
     // Scattered single events with variety
     let misc_events = [
-        ("Coffee with Mentor", "personal", 1, 10, 10, 0, 1, "Local Cafe"),
+        (
+            "Coffee with Mentor",
+            "personal",
+            1,
+            10,
+            10,
+            0,
+            1,
+            "Local Cafe",
+        ),
         ("Book Club", "personal", 1, 28, 19, 0, 2, "Library"),
         ("Team Building Event", "work", 2, 5, 13, 0, 4, "Escape Room"),
         ("Project Kickoff", "work", 2, 18, 10, 0, 2, "Board Room"),
         ("Networking Event", "work", 3, 5, 18, 0, 3, "Tech Hub"),
         ("Volunteer Work", "personal", 3, 22, 9, 0, 4, "Food Bank"),
-        ("Photography Class", "personal", 4, 15, 14, 0, 2, "Community Center"),
-        ("Client Presentation", "work", 4, 25, 11, 0, 1, "Client Office"),
-        ("Cooking Class", "personal", 5, 10, 18, 0, 3, "Culinary School"),
-        ("Tech Conference", "work", 5, 20, 9, 0, 8, "Convention Center"),
-        ("Family Reunion", "personal", 6, 8, 12, 0, 6, "Grandparents' House"),
+        (
+            "Photography Class",
+            "personal",
+            4,
+            15,
+            14,
+            0,
+            2,
+            "Community Center",
+        ),
+        (
+            "Client Presentation",
+            "work",
+            4,
+            25,
+            11,
+            0,
+            1,
+            "Client Office",
+        ),
+        (
+            "Cooking Class",
+            "personal",
+            5,
+            10,
+            18,
+            0,
+            3,
+            "Culinary School",
+        ),
+        (
+            "Tech Conference",
+            "work",
+            5,
+            20,
+            9,
+            0,
+            8,
+            "Convention Center",
+        ),
+        (
+            "Family Reunion",
+            "personal",
+            6,
+            8,
+            12,
+            0,
+            6,
+            "Grandparents' House",
+        ),
         ("Performance Review", "work", 6, 25, 14, 0, 1, "HR Office"),
-        ("Art Gallery Opening", "personal", 7, 10, 19, 0, 2, "Downtown Gallery"),
-        ("Strategy Meeting", "work", 7, 28, 9, 0, 3, "Executive Suite"),
+        (
+            "Art Gallery Opening",
+            "personal",
+            7,
+            10,
+            19,
+            0,
+            2,
+            "Downtown Gallery",
+        ),
+        (
+            "Strategy Meeting",
+            "work",
+            7,
+            28,
+            9,
+            0,
+            3,
+            "Executive Suite",
+        ),
         ("Yoga Retreat", "personal", 8, 3, 8, 0, 8, "Mountain Resort"),
         ("Product Demo", "work", 8, 28, 15, 0, 2, "Demo Room"),
-        ("Language Class", "personal", 9, 10, 18, 30, 1, "Language Center"),
+        (
+            "Language Class",
+            "personal",
+            9,
+            10,
+            18,
+            30,
+            1,
+            "Language Center",
+        ),
         ("Budget Review", "work", 9, 28, 10, 0, 2, "Finance Room"),
-        ("Pottery Workshop", "personal", 10, 5, 10, 0, 3, "Art Studio"),
-        ("Interview Candidate", "work", 10, 18, 14, 0, 1, "Meeting Room C"),
-        ("Theater Show", "personal", 11, 8, 19, 30, 3, "Broadway Theater"),
+        (
+            "Pottery Workshop",
+            "personal",
+            10,
+            5,
+            10,
+            0,
+            3,
+            "Art Studio",
+        ),
+        (
+            "Interview Candidate",
+            "work",
+            10,
+            18,
+            14,
+            0,
+            1,
+            "Meeting Room C",
+        ),
+        (
+            "Theater Show",
+            "personal",
+            11,
+            8,
+            19,
+            30,
+            3,
+            "Broadway Theater",
+        ),
         ("Year-End Party", "work", 12, 18, 18, 0, 4, "Hotel Ballroom"),
     ];
 
     for (summary, calendar, month, day, hour, minute, duration, location) in misc_events {
         if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
             if date >= start && date <= end {
-                insert_event(db, calendar, EventTemplate {
-                    summary,
-                    location: Some(location),
-                    duration_hours: duration,
-                    all_day: false,
-                    travel_time: TravelTime::FifteenMinutes,
-                    alert: AlertTime::OneHour,
-                    notes: None,
-                }, date, NaiveTime::from_hms_opt(hour, minute, 0).unwrap())?;
+                insert_event(
+                    db,
+                    calendar,
+                    EventTemplate {
+                        summary,
+                        location: Some(location),
+                        duration_hours: duration,
+                        all_day: false,
+                        travel_time: TravelTime::FifteenMinutes,
+                        alert: AlertTime::OneHour,
+                        notes: None,
+                    },
+                    date,
+                    NaiveTime::from_hms_opt(hour, minute, 0).unwrap(),
+                )?;
                 count += 1;
             }
         }

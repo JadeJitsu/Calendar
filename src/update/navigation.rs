@@ -1,8 +1,8 @@
 //! Navigation-related message handlers (Previous/Next period, view changes)
 
-use chrono::{Datelike, NaiveDate};
 use crate::app::CosmicCalendar;
 use crate::views::CalendarView;
+use chrono::{Datelike, NaiveDate};
 
 /// Direction for period navigation
 pub enum NavigationDirection {

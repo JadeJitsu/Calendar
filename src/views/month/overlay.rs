@@ -14,9 +14,8 @@ use crate::components::DisplayEvent;
 use crate::message::Message;
 use crate::models::CalendarDay;
 use crate::ui_constants::{
-    COMPACT_EVENT_HEIGHT, DATE_EVENT_HEIGHT, DATE_EVENT_SPACING,
-    DAY_CELL_HEADER_OFFSET, DAY_CELL_TOP_PADDING, PADDING_MONTH_GRID,
-    SPACING_TINY, WEEK_NUMBER_WIDTH,
+    COMPACT_EVENT_HEIGHT, DATE_EVENT_HEIGHT, DATE_EVENT_SPACING, DAY_CELL_HEADER_OFFSET,
+    DAY_CELL_TOP_PADDING, PADDING_MONTH_GRID, SPACING_TINY, WEEK_NUMBER_WIDTH,
 };
 
 use super::events::{render_compact_date_event_chip, render_date_event_chip};
@@ -73,7 +72,8 @@ pub fn compute_week_date_event_slots(
     events_by_date: &HashMap<NaiveDate, Vec<DisplayEvent>>,
 ) -> WeekSlotInfo {
     let mut slots: HashMap<String, usize> = HashMap::new();
-    let mut slot_occupancy: Vec<std::collections::HashSet<usize>> = vec![std::collections::HashSet::new(); 7];
+    let mut slot_occupancy: Vec<std::collections::HashSet<usize>> =
+        vec![std::collections::HashSet::new(); 7];
 
     // Get dates for this week
     let week_dates: Vec<NaiveDate> = week
@@ -82,7 +82,10 @@ pub fn compute_week_date_event_slots(
         .collect();
 
     if week_dates.is_empty() {
-        return WeekSlotInfo { slots, day_occupied_slots: slot_occupancy };
+        return WeekSlotInfo {
+            slots,
+            day_occupied_slots: slot_occupancy,
+        };
     }
 
     let week_start = week_dates[0];
@@ -108,14 +111,10 @@ pub fn compute_week_date_event_slots(
                     match (event.span_start, event.span_end) {
                         (Some(s), Some(e)) if s <= week_end && e >= week_start => {
                             // Calculate column range clipped to this week
-                            let sc = week_dates.iter()
-                                .position(|&d| d >= s)
-                                .unwrap_or(0);
-                            let ec = week_dates.iter()
-                                .rposition(|&d| d <= e)
-                                .unwrap_or(6);
+                            let sc = week_dates.iter().position(|&d| d >= s).unwrap_or(0);
+                            let ec = week_dates.iter().rposition(|&d| d <= e).unwrap_or(6);
                             (sc, ec)
-                        },
+                        }
                         _ => continue,
                     }
                 } else {
@@ -130,8 +129,7 @@ pub fn compute_week_date_event_slots(
 
     // Sort by start column, then by span length (longer events first for stable ordering)
     date_events.sort_by(|a, b| {
-        a.0.cmp(&b.0)
-            .then_with(|| (b.1 - b.0).cmp(&(a.1 - a.0))) // Longer events first
+        a.0.cmp(&b.0).then_with(|| (b.1 - b.0).cmp(&(a.1 - a.0))) // Longer events first
     });
 
     // Greedy interval scheduling: assign each event to the first available slot
@@ -161,7 +159,10 @@ pub fn compute_week_date_event_slots(
         slots.insert(uid, slot);
     }
 
-    WeekSlotInfo { slots, day_occupied_slots: slot_occupancy }
+    WeekSlotInfo {
+        slots,
+        day_occupied_slots: slot_occupancy,
+    }
 }
 
 /// Compute slot assignments for all date events in a week (used by day_cell for placeholders).
@@ -219,7 +220,8 @@ pub fn collect_date_event_segments(
                     // Determine start/end columns for this event in this week
                     // Also capture the event's start date for drag operations
                     let (start_col, end_col, event_start_date) = if event.is_multi_day() {
-                        let (Some(span_start), Some(span_end)) = (event.span_start, event.span_end) else {
+                        let (Some(span_start), Some(span_end)) = (event.span_start, event.span_end)
+                        else {
                             continue;
                         };
 
@@ -229,12 +231,11 @@ pub fn collect_date_event_segments(
                         }
 
                         // Calculate column range for this week
-                        let sc = week_dates.iter()
+                        let sc = week_dates
+                            .iter()
                             .position(|&d| d >= span_start)
                             .unwrap_or(0);
-                        let ec = week_dates.iter()
-                            .rposition(|&d| d <= span_end)
-                            .unwrap_or(6);
+                        let ec = week_dates.iter().rposition(|&d| d <= span_end).unwrap_or(6);
                         (sc, ec, span_start)
                     } else {
                         // Single-day event: only spans its own column
@@ -313,12 +314,14 @@ pub fn render_date_events_overlay<'a>(
     }
 
     // Use appropriate height based on compact mode
-    let event_height = if compact { COMPACT_EVENT_HEIGHT } else { DATE_EVENT_HEIGHT };
+    let event_height = if compact {
+        COMPACT_EVENT_HEIGHT
+    } else {
+        DATE_EVENT_HEIGHT
+    };
 
     // Build overlay with same structure as main grid
-    let mut overlay_column = column([])
-        .spacing(SPACING_TINY)
-        .padding(PADDING_MONTH_GRID);
+    let mut overlay_column = column([]).spacing(SPACING_TINY).padding(PADDING_MONTH_GRID);
 
     // Header spacer
     overlay_column = overlay_column.push(vertical_spacer(WEEKDAY_HEADER_HEIGHT));
@@ -334,17 +337,20 @@ pub fn render_date_events_overlay<'a>(
             let mut week_content = column([]).spacing(DATE_EVENT_SPACING);
 
             // Spacer for day header area
-            week_content = week_content.push(vertical_spacer(DAY_CELL_HEADER_OFFSET + DAY_CELL_TOP_PADDING));
+            week_content = week_content.push(vertical_spacer(
+                DAY_CELL_HEADER_OFFSET + DAY_CELL_TOP_PADDING,
+            ));
 
             // Render each slot as a separate row
             for slot in 0..=max_slot {
                 // Find segments at this slot
-                let slot_segments: Vec<&DateEventSegment> = segs.iter()
-                    .filter(|s| s.slot == slot)
-                    .collect();
+                let slot_segments: Vec<&DateEventSegment> =
+                    segs.iter().filter(|s| s.slot == slot).collect();
 
                 // Build row for this slot
-                let mut slot_row = row([]).spacing(SPACING_TINY).height(Length::Fixed(event_height));
+                let mut slot_row = row([])
+                    .spacing(SPACING_TINY)
+                    .height(Length::Fixed(event_height));
 
                 // Sort segments by start_col to process them in order
                 let mut sorted_segs = slot_segments.clone();
@@ -389,10 +395,8 @@ pub fn render_date_events_overlay<'a>(
                         )
                     };
 
-                    slot_row = slot_row.push(
-                        container(chip)
-                            .width(Length::FillPortion(span_cols as u16))
-                    );
+                    slot_row =
+                        slot_row.push(container(chip).width(Length::FillPortion(span_cols as u16)));
 
                     current_col = seg.end_col + 1;
                 }
@@ -415,10 +419,7 @@ pub fn render_date_events_overlay<'a>(
             }
 
             // The week content takes up the rest of the space
-            week_row = week_row.push(
-                container(week_content)
-                    .width(Length::Fill)
-            );
+            week_row = week_row.push(container(week_content).width(Length::Fill));
 
             overlay_column = overlay_column.push(week_row);
         } else {
@@ -431,6 +432,6 @@ pub fn render_date_events_overlay<'a>(
         container(overlay_column)
             .width(Length::Fill)
             .height(Length::Fill)
-            .into()
+            .into(),
     )
 }

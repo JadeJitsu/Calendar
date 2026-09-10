@@ -111,9 +111,7 @@ impl SelectionState {
     /// Check if the current selection spans multiple days
     #[allow(dead_code)] // Part of selection API
     pub fn is_multi_day(&self) -> bool {
-        self.get_range()
-            .map(|r| r.is_multi_day())
-            .unwrap_or(false)
+        self.get_range().map(|r| r.is_multi_day()).unwrap_or(false)
     }
 
     /// Check if a date+hour cell is within the current time-based selection
@@ -128,8 +126,14 @@ impl SelectionState {
         let cell_end = NaiveTime::from_hms_opt(hour, 59, 59).unwrap();
 
         // Get selection times (default to full day if not set)
-        let sel_start_time = range.start.time.unwrap_or_else(|| NaiveTime::from_hms_opt(0, 0, 0).unwrap());
-        let sel_end_time = range.end.time.unwrap_or_else(|| NaiveTime::from_hms_opt(23, 59, 59).unwrap());
+        let sel_start_time = range
+            .start
+            .time
+            .unwrap_or_else(|| NaiveTime::from_hms_opt(0, 0, 0).unwrap());
+        let sel_end_time = range
+            .end
+            .time
+            .unwrap_or_else(|| NaiveTime::from_hms_opt(23, 59, 59).unwrap());
 
         let sel_start_date = range.start.date;
         let sel_end_date = range.end.date;

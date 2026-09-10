@@ -23,21 +23,20 @@ pub fn render_compact_date_event_chip(
     let color = parse_color_safe(&color_hex);
 
     // Smaller radius for compact mode
-    let border_radius = span_border_radius_from_flags(is_event_start, is_event_end, BORDER_RADIUS_SMALL);
+    let border_radius =
+        span_border_radius_from_flags(is_event_start, is_event_end, BORDER_RADIUS_SMALL);
 
     container(widget::text(""))
         .width(Length::Fill)
         .height(Length::Fill)
-        .style(move |_theme: &cosmic::Theme| {
-            container::Style {
-                background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.6))),
-                border: cosmic::iced::Border {
-                    color: cosmic::iced::Color::TRANSPARENT,
-                    width: 0.0,
-                    radius: border_radius.into(),
-                },
-                ..Default::default()
-            }
+        .style(move |_theme: &cosmic::Theme| container::Style {
+            background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.6))),
+            border: cosmic::iced::Border {
+                color: cosmic::iced::Color::TRANSPARENT,
+                width: 0.0,
+                radius: border_radius.into(),
+            },
+            ..Default::default()
         })
         .into()
 }
@@ -63,7 +62,8 @@ pub fn render_date_event_chip(
     let color = parse_color_safe(&color_hex);
 
     // Border radius based on whether this is start/end of event
-    let border_radius = span_border_radius_from_flags(is_event_start, is_event_end, BORDER_RADIUS_VALUE);
+    let border_radius =
+        span_border_radius_from_flags(is_event_start, is_event_end, BORDER_RADIUS_VALUE);
 
     // Clone summary for the drag preview message (needed because text widget moves it)
     let drag_summary = summary.clone();
@@ -74,9 +74,7 @@ pub fn render_date_event_chip(
             .wrapping(Wrapping::None)
             .into()
     } else {
-        widget::text("")
-            .size(11)
-            .into()
+        widget::text("").size(11).into()
     };
 
     // Check if this event is in the past (before today)
@@ -90,19 +88,25 @@ pub fn render_date_event_chip(
         .padding([2, 4, 2, 4])
         .width(Length::Fill)
         .height(Length::Fill)
-        .style(move |_theme: &cosmic::Theme| {
-            container::Style {
-                background: Some(cosmic::iced::Background::Color(
-                    color.scale_alpha(opacity.background)
-                )),
-                border: cosmic::iced::Border {
-                    color: if is_selected { color } else { cosmic::iced::Color::TRANSPARENT },
-                    width: if is_selected { BORDER_WIDTH_HIGHLIGHT } else { 0.0 },
-                    radius: border_radius.into(),
+        .style(move |_theme: &cosmic::Theme| container::Style {
+            background: Some(cosmic::iced::Background::Color(
+                color.scale_alpha(opacity.background),
+            )),
+            border: cosmic::iced::Border {
+                color: if is_selected {
+                    color
+                } else {
+                    cosmic::iced::Color::TRANSPARENT
                 },
-                text_color: Some(color.scale_alpha(opacity.text)),
-                ..Default::default()
-            }
+                width: if is_selected {
+                    BORDER_WIDTH_HIGHLIGHT
+                } else {
+                    0.0
+                },
+                radius: border_radius.into(),
+            },
+            text_color: Some(color.scale_alpha(opacity.text)),
+            ..Default::default()
         });
 
     // Wrap with mouse area for drag and click handling
@@ -110,7 +114,13 @@ pub fn render_date_event_chip(
     // handle_drag_event_end will treat it as a selection click
     // Pass calendar_id, summary and color_hex for the floating drag preview
     let mut area = mouse_area(chip)
-        .on_press(Message::DragEventStart(calendar_id.clone(), uid.clone(), event_start_date, drag_summary, color_hex))
+        .on_press(Message::DragEventStart(
+            calendar_id.clone(),
+            uid.clone(),
+            event_start_date,
+            drag_summary,
+            color_hex,
+        ))
         .on_release(Message::DragEventEnd)
         .on_double_click(Message::OpenEditEventDialog(calendar_id, uid));
 

@@ -11,7 +11,7 @@ use crate::fl;
 use crate::message::Message;
 use crate::styles::color_button_style;
 use crate::ui_constants::{
-    BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_SELECTED, border_light, border_selected,
+    border_light, border_selected, BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_SELECTED,
     COLOR_BUTTON_SIZE_SMALL, COLOR_DEFAULT_GRAY, SPACING_COLOR_GRID,
 };
 
@@ -63,7 +63,12 @@ pub fn render_calendar_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
                         } else {
                             border_light(theme)
                         };
-                        color_button_style(color, COLOR_BUTTON_SIZE_SMALL, border_width, border_color)
+                        color_button_style(
+                            color,
+                            COLOR_BUTTON_SIZE_SMALL,
+                            border_width,
+                            border_color,
+                        )
                     }),
             )
             .on_press(Message::CalendarDialogColorChanged(hex_owned))
@@ -148,10 +153,15 @@ pub fn render_add_caldav_dialog(active_dialog: &ActiveDialog) -> Element<'_, Mes
         .spacing(8)
         .push(widget::text(fl!("dialog-add-caldav-password")))
         .push(
-            secure_input(fl!("dialog-add-caldav-password-placeholder"), password, None, true)
-                .on_input(|s| Message::CalDavDialogPasswordChanged(s))
-                .on_submit(|_| Message::ConfirmAddCalDav)
-                .width(Length::Fill),
+            secure_input(
+                fl!("dialog-add-caldav-password-placeholder"),
+                password,
+                None,
+                true,
+            )
+            .on_input(|s| Message::CalDavDialogPasswordChanged(s))
+            .on_submit(|_| Message::ConfirmAddCalDav)
+            .width(Length::Fill),
         );
 
     // Note about HTTPS-only + keyring storage
@@ -171,9 +181,7 @@ pub fn render_add_caldav_dialog(active_dialog: &ActiveDialog) -> Element<'_, Mes
         .control(user_control)
         .control(password_control)
         .control(note)
-        .secondary_action(
-            button::text(fl!("button-cancel")).on_press(Message::CancelAddCalDav),
-        )
+        .secondary_action(button::text(fl!("button-cancel")).on_press(Message::CancelAddCalDav))
         .primary_action(primary_btn)
         .width(Length::Fixed(420.0))
         .into()
@@ -211,7 +219,11 @@ pub fn render_delete_calendar_dialog(active_dialog: &ActiveDialog) -> Element<'_
 pub fn render_delete_event_dialog(active_dialog: &ActiveDialog) -> Element<'_, Message> {
     // Extract event data from active_dialog
     let (event_name, is_recurring) = match active_dialog {
-        ActiveDialog::EventDelete { event_name, is_recurring, .. } => (event_name.as_str(), *is_recurring),
+        ActiveDialog::EventDelete {
+            event_name,
+            is_recurring,
+            ..
+        } => (event_name.as_str(), *is_recurring),
         _ => return widget::text("").into(), // Should not happen
     };
 

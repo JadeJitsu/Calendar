@@ -64,14 +64,9 @@ pub enum ActiveDialog {
         text: String,
     },
     /// Color picker for a specific calendar
-    ColorPicker {
-        calendar_id: String,
-    },
+    ColorPicker { calendar_id: String },
     /// Create new calendar dialog
-    CalendarCreate {
-        name: String,
-        color: String,
-    },
+    CalendarCreate { name: String, color: String },
     /// Edit existing calendar dialog
     CalendarEdit {
         calendar_id: String,
@@ -235,11 +230,7 @@ impl ActiveDialog {
                 events,
                 source_file_name,
                 selected_calendar_id,
-            } => Some((
-                events,
-                source_file_name,
-                selected_calendar_id.as_deref(),
-            )),
+            } => Some((events, source_file_name, selected_calendar_id.as_deref())),
             _ => None,
         }
     }
@@ -248,9 +239,12 @@ impl ActiveDialog {
     /// Returns (event_uid, event_name, is_recurring, occurrence_date)
     pub fn event_delete_data(&self) -> Option<(&str, &str, bool, Option<chrono::NaiveDate>)> {
         match self {
-            ActiveDialog::EventDelete { event_uid, event_name, is_recurring, occurrence_date } => {
-                Some((event_uid, event_name, *is_recurring, *occurrence_date))
-            }
+            ActiveDialog::EventDelete {
+                event_uid,
+                event_name,
+                is_recurring,
+                occurrence_date,
+            } => Some((event_uid, event_name, *is_recurring, *occurrence_date)),
             _ => None,
         }
     }
@@ -267,7 +261,9 @@ impl ActiveDialog {
     /// Returns the start date for display purposes (input appears on start date)
     pub fn quick_event_data(&self) -> Option<(NaiveDate, &str)> {
         match self {
-            ActiveDialog::QuickEvent { start_date, text, .. } => Some((*start_date, text)),
+            ActiveDialog::QuickEvent {
+                start_date, text, ..
+            } => Some((*start_date, text)),
             _ => None,
         }
     }
@@ -275,9 +271,12 @@ impl ActiveDialog {
     /// Get full quick event range if editing (start_date, end_date, text)
     pub fn quick_event_range(&self) -> Option<(NaiveDate, NaiveDate, &str)> {
         match self {
-            ActiveDialog::QuickEvent { start_date, end_date, text, .. } => {
-                Some((*start_date, *end_date, text))
-            }
+            ActiveDialog::QuickEvent {
+                start_date,
+                end_date,
+                text,
+                ..
+            } => Some((*start_date, *end_date, text)),
             _ => None,
         }
     }
@@ -285,9 +284,11 @@ impl ActiveDialog {
     /// Get quick event times if this is a timed event
     pub fn quick_event_times(&self) -> Option<(NaiveTime, NaiveTime)> {
         match self {
-            ActiveDialog::QuickEvent { start_time: Some(start), end_time: Some(end), .. } => {
-                Some((*start, *end))
-            }
+            ActiveDialog::QuickEvent {
+                start_time: Some(start),
+                end_time: Some(end),
+                ..
+            } => Some((*start, *end)),
             _ => None,
         }
     }
@@ -295,13 +296,23 @@ impl ActiveDialog {
     /// Check if the quick event is a timed event (has times)
     #[allow(dead_code)] // Reserved for future timed quick event handling
     pub fn is_timed_quick_event(&self) -> bool {
-        matches!(self, ActiveDialog::QuickEvent { start_time: Some(_), .. })
+        matches!(
+            self,
+            ActiveDialog::QuickEvent {
+                start_time: Some(_),
+                ..
+            }
+        )
     }
 
     /// Check if the quick event spans multiple days
     pub fn is_multi_day_quick_event(&self) -> bool {
         match self {
-            ActiveDialog::QuickEvent { start_date, end_date, .. } => start_date != end_date,
+            ActiveDialog::QuickEvent {
+                start_date,
+                end_date,
+                ..
+            } => start_date != end_date,
             _ => false,
         }
     }
@@ -318,9 +329,11 @@ impl ActiveDialog {
     /// Used for showing selection highlight while quick event input is open
     pub fn is_date_in_quick_event_range(&self, date: NaiveDate) -> bool {
         match self {
-            ActiveDialog::QuickEvent { start_date, end_date, .. } => {
-                date >= *start_date && date <= *end_date
-            }
+            ActiveDialog::QuickEvent {
+                start_date,
+                end_date,
+                ..
+            } => date >= *start_date && date <= *end_date,
             _ => false,
         }
     }
@@ -339,7 +352,11 @@ pub enum DialogAction {
     /// Start a quick event spanning a date range (drag selection)
     StartQuickEventRange { start: NaiveDate, end: NaiveDate },
     /// Start a quick timed event with specific times (time slot selection in week/day view)
-    StartQuickTimedEvent { date: NaiveDate, start_time: NaiveTime, end_time: NaiveTime },
+    StartQuickTimedEvent {
+        date: NaiveDate,
+        start_time: NaiveTime,
+        end_time: NaiveTime,
+    },
     /// Update quick event text while typing
     QuickEventTextChanged(String),
     /// Commit the quick event (create the event)
@@ -383,7 +400,10 @@ impl DialogManager {
         if current.is_open() {
             debug!("DialogManager: Closing existing dialog before opening new one");
         }
-        info!("DialogManager: Opening {:?}", std::mem::discriminant(&new_dialog));
+        info!(
+            "DialogManager: Opening {:?}",
+            std::mem::discriminant(&new_dialog)
+        );
         *current = new_dialog;
     }
 
@@ -423,7 +443,10 @@ impl DialogManager {
 
     /// Handle a dialog action, returns true if the action requires further processing
     /// (e.g., CommitQuickEvent needs the caller to actually create the event)
-    pub fn handle_action(current: &mut ActiveDialog, action: DialogAction) -> Option<QuickEventResult> {
+    pub fn handle_action(
+        current: &mut ActiveDialog,
+        action: DialogAction,
+    ) -> Option<QuickEventResult> {
         match action {
             DialogAction::Close => {
                 Self::close(current);
@@ -461,7 +484,11 @@ impl DialogManager {
                 );
                 None
             }
-            DialogAction::StartQuickTimedEvent { date, start_time, end_time } => {
+            DialogAction::StartQuickTimedEvent {
+                date,
+                start_time,
+                end_time,
+            } => {
                 Self::open(
                     current,
                     ActiveDialog::QuickEvent {
@@ -482,7 +509,14 @@ impl DialogManager {
             }
             DialogAction::CommitQuickEvent => {
                 // Extract the data before closing, return it for the caller to process
-                if let ActiveDialog::QuickEvent { start_date, end_date, start_time, end_time, text } = current {
+                if let ActiveDialog::QuickEvent {
+                    start_date,
+                    end_date,
+                    start_time,
+                    end_time,
+                    text,
+                } = current
+                {
                     let result = QuickEventResult {
                         start_date: *start_date,
                         end_date: *end_date,
@@ -689,7 +723,10 @@ mod tests {
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
         DialogManager::handle_action(&mut dialog, DialogAction::StartQuickEvent(date));
-        DialogManager::handle_action(&mut dialog, DialogAction::QuickEventTextChanged("Meeting".to_string()));
+        DialogManager::handle_action(
+            &mut dialog,
+            DialogAction::QuickEventTextChanged("Meeting".to_string()),
+        );
 
         assert!(!dialog.is_quick_event_empty());
         assert_eq!(dialog.quick_event_data(), Some((date, "Meeting")));
@@ -701,7 +738,10 @@ mod tests {
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
         DialogManager::handle_action(&mut dialog, DialogAction::StartQuickEvent(date));
-        DialogManager::handle_action(&mut dialog, DialogAction::QuickEventTextChanged("Meeting".to_string()));
+        DialogManager::handle_action(
+            &mut dialog,
+            DialogAction::QuickEventTextChanged("Meeting".to_string()),
+        );
         let result = DialogManager::handle_action(&mut dialog, DialogAction::CommitQuickEvent);
 
         assert!(!dialog.is_open());
@@ -719,8 +759,14 @@ mod tests {
         let start = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let end = NaiveDate::from_ymd_opt(2024, 1, 18).unwrap();
 
-        DialogManager::handle_action(&mut dialog, DialogAction::StartQuickEventRange { start, end });
-        DialogManager::handle_action(&mut dialog, DialogAction::QuickEventTextChanged("Vacation".to_string()));
+        DialogManager::handle_action(
+            &mut dialog,
+            DialogAction::StartQuickEventRange { start, end },
+        );
+        DialogManager::handle_action(
+            &mut dialog,
+            DialogAction::QuickEventTextChanged("Vacation".to_string()),
+        );
 
         assert!(dialog.is_quick_event());
         assert!(dialog.is_multi_day_quick_event());
@@ -755,7 +801,10 @@ mod tests {
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
         DialogManager::handle_action(&mut dialog, DialogAction::StartQuickEvent(date));
-        DialogManager::handle_action(&mut dialog, DialogAction::QuickEventTextChanged("Meeting".to_string()));
+        DialogManager::handle_action(
+            &mut dialog,
+            DialogAction::QuickEventTextChanged("Meeting".to_string()),
+        );
 
         // Should NOT dismiss because text is not empty
         let dismissed = DialogManager::dismiss_empty_quick_event(&mut dialog);
@@ -773,9 +822,12 @@ mod tests {
         assert!(dialog.is_quick_event());
 
         // Opening a calendar dialog should close the quick event
-        DialogManager::handle_action(&mut dialog, DialogAction::OpenCalendarCreate {
-            default_color: "#FF0000".to_string(),
-        });
+        DialogManager::handle_action(
+            &mut dialog,
+            DialogAction::OpenCalendarCreate {
+                default_color: "#FF0000".to_string(),
+            },
+        );
 
         assert!(!dialog.is_quick_event());
         assert!(dialog.is_calendar_dialog());

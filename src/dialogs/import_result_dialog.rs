@@ -17,7 +17,15 @@ use crate::message::Message;
 /// Render the import result dialog
 pub fn render_import_result_dialog(active_dialog: &ActiveDialog) -> Element<'_, Message> {
     // Extract result data
-    let (success, imported_count, skipped_count, failed_count, source_file_name, calendar_name, error_message) = match active_dialog {
+    let (
+        success,
+        imported_count,
+        skipped_count,
+        failed_count,
+        source_file_name,
+        calendar_name,
+        error_message,
+    ) = match active_dialog {
         ActiveDialog::ImportResult {
             success,
             imported_count,
@@ -27,7 +35,15 @@ pub fn render_import_result_dialog(active_dialog: &ActiveDialog) -> Element<'_, 
             calendar_name,
             error_message,
             ..
-        } => (success, imported_count, skipped_count, failed_count, source_file_name, calendar_name, error_message),
+        } => (
+            success,
+            imported_count,
+            skipped_count,
+            failed_count,
+            source_file_name,
+            calendar_name,
+            error_message,
+        ),
         _ => return widget::text("").into(),
     };
 
@@ -44,18 +60,41 @@ pub fn render_import_result_dialog(active_dialog: &ActiveDialog) -> Element<'_, 
     // Import statistics
     let mut stats = column([]).spacing(8);
 
-    stats = stats.push(text(format!("📁 {}: {}", fl!("import-source-file"), source_file_name)).size(12));
-    stats = stats.push(text(format!("📅 {}: {}", fl!("import-target-calendar"), calendar_name)).size(12));
+    stats = stats.push(
+        text(format!(
+            "📁 {}: {}",
+            fl!("import-source-file"),
+            source_file_name
+        ))
+        .size(12),
+    );
+    stats = stats.push(
+        text(format!(
+            "📅 {}: {}",
+            fl!("import-target-calendar"),
+            calendar_name
+        ))
+        .size(12),
+    );
     stats = stats.push(text("").size(4)); // Spacer
 
     if *imported_count > 0 {
-        stats = stats.push(text(format!("✓ {}: {}", fl!("import-imported"), imported_count)).size(14));
+        stats =
+            stats.push(text(format!("✓ {}: {}", fl!("import-imported"), imported_count)).size(14));
     }
     if *skipped_count > 0 {
-        stats = stats.push(text(format!("⊘ {}: {}", fl!("import-skipped"), skipped_count)).size(14));
+        stats =
+            stats.push(text(format!("⊘ {}: {}", fl!("import-skipped"), skipped_count)).size(14));
     }
     if *failed_count > 0 {
-        stats = stats.push(text(format!("✗ {}: {}", fl!("import-failed-count"), failed_count)).size(14));
+        stats = stats.push(
+            text(format!(
+                "✗ {}: {}",
+                fl!("import-failed-count"),
+                failed_count
+            ))
+            .size(14),
+        );
     }
 
     // Error message if present
@@ -73,12 +112,10 @@ pub fn render_import_result_dialog(active_dialog: &ActiveDialog) -> Element<'_, 
         .push(stats);
 
     // Buttons: Ok (primary) and Revert (destructive, only if imported > 0)
-    let ok_button = button::suggested(fl!("button-ok"))
-        .on_press(Message::CloseDialog);
+    let ok_button = button::suggested(fl!("button-ok")).on_press(Message::CloseDialog);
 
     let revert_button = if *imported_count > 0 {
-        Some(button::destructive(fl!("button-revert"))
-            .on_press(Message::RevertImport))
+        Some(button::destructive(fl!("button-revert")).on_press(Message::RevertImport))
     } else {
         None
     };

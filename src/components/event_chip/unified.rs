@@ -51,7 +51,16 @@ pub fn render_unified_events(
 ) -> UnifiedEventsResult {
     // Use empty set for day_occupied_slots - this legacy function doesn't do Tetris-style rendering
     let empty_slots = std::collections::HashSet::new();
-    render_unified_events_with_selection(events, max_visible, current_date, week_max_slot, &empty_slots, None, false, None)
+    render_unified_events_with_selection(
+        events,
+        max_visible,
+        current_date,
+        week_max_slot,
+        &empty_slots,
+        None,
+        false,
+        None,
+    )
 }
 
 /// Render events as a unified column with selection support.
@@ -114,8 +123,15 @@ pub fn render_unified_events_with_selection(
             if let Some(event) = timed_event_iter.next() {
                 let event_unique_id = event.unique_id();
                 let is_selected = selected_event_uid.map_or(false, |uid| uid == event_unique_id);
-                let is_being_dragged = dragging_event_uid.map_or(false, |uid| uid == event_unique_id);
-                col = col.push(render_clickable_event_chip(event, current_date, is_selected, is_drag_active, is_being_dragged));
+                let is_being_dragged =
+                    dragging_event_uid.map_or(false, |uid| uid == event_unique_id);
+                col = col.push(render_clickable_event_chip(
+                    event,
+                    current_date,
+                    is_selected,
+                    is_drag_active,
+                    is_being_dragged,
+                ));
             } else {
                 // No more timed events - render placeholder to maintain slot alignment
                 col = col.push(render_empty_slot_placeholder());
@@ -132,7 +148,13 @@ pub fn render_unified_events_with_selection(
         let event_unique_id = event.unique_id();
         let is_selected = selected_event_uid.map_or(false, |uid| uid == event_unique_id);
         let is_being_dragged = dragging_event_uid.map_or(false, |uid| uid == event_unique_id);
-        col = col.push(render_clickable_event_chip(event, current_date, is_selected, is_drag_active, is_being_dragged));
+        col = col.push(render_clickable_event_chip(
+            event,
+            current_date,
+            is_selected,
+            is_drag_active,
+            is_being_dragged,
+        ));
         shown += 1;
     }
 

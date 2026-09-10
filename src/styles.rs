@@ -1,16 +1,13 @@
 //! Reusable iced style functions (day cells, buttons, borders, shadows)
 //! shared across the view components.
 
+use crate::color_constants::{adjacent_month_text, day_cell_border, weekend_tint};
+use crate::ui_constants::{
+    BORDER_RADIUS, BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_NORMAL, COLOR_TODAY_BLUE,
+    SHADOW_BLUR_RADIUS, SHADOW_OFFSET_X, SHADOW_OFFSET_Y, SHADOW_OPACITY,
+};
 use cosmic::iced::{Background, Border, Color, Shadow, Vector};
 use cosmic::widget::container;
-use crate::ui_constants::{
-    SHADOW_OPACITY, SHADOW_OFFSET_X, SHADOW_OFFSET_Y, SHADOW_BLUR_RADIUS,
-    BORDER_RADIUS, BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_NORMAL,
-    COLOR_TODAY_BLUE
-};
-use crate::color_constants::{
-    day_cell_border, weekend_tint, adjacent_month_text,
-};
 
 /// Returns the weekend background if is_weekend is true, None otherwise.
 /// Use this instead of repeating the `if is_weekend { Some(Background::Color(...)) } else { None }` pattern.
@@ -46,9 +43,7 @@ pub fn overlay_sidebar_style(theme: &cosmic::Theme) -> container::Style {
 /// Used consistently across day headers in week/day views
 pub fn today_filled_style(theme: &cosmic::Theme) -> container::Style {
     container::Style {
-        background: Some(Background::Color(
-            theme.cosmic().accent_color().into()
-        )),
+        background: Some(Background::Color(theme.cosmic().accent_color().into())),
         border: Border {
             radius: BORDER_RADIUS.into(),
             ..Default::default()
@@ -129,7 +124,12 @@ pub fn adjacent_month_selected_style(theme: &cosmic::Theme) -> container::Style 
 }
 
 /// Style for a circular color button
-pub fn color_button_style(color: Color, size: f32, border_width: f32, border_color: Color) -> container::Style {
+pub fn color_button_style(
+    color: Color,
+    size: f32,
+    border_width: f32,
+    border_color: Color,
+) -> container::Style {
     container::Style {
         background: Some(Background::Color(color)),
         border: Border {
