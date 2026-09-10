@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The build gates are green on the dev machine; CI enforces them so a
+# regression (a broken probe bin, a clippy error, a failing test) can't land
+# on main. `single-instance` is a default feature, so a plain `cargo` build
+# exercises the same code the app ships with.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # --all-targets compiles the probe bins too (they include caldav.rs
+      # standalone), so a break there is caught here, not just in the app.
+      - name: Build all targets
+        run: cargo build --all-targets
+      - name: Test
+        run: cargo test
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      # Gated on clippy's exit code (no -D warnings): the repo still carries
+      # pre-existing warnings, so a hard deny would fail on unrelated code.
+      # Tighten to `-D warnings` once those are cleaned up.
+      - name: Clippy
+        run: cargo clippy --all-targets
