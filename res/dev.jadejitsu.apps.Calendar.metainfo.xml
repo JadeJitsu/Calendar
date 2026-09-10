@@ -54,6 +54,16 @@
   </keywords>
 
   <releases>
+    <release version="0.2.0" date="2026-09-10">
+      <description>
+        <p>Flicker fixes and single-instance activation.</p>
+        <ul>
+          <li>Fixed week-view flicker on mouse/keyboard input (hover handlers now attach only during an active drag)</li>
+          <li>Fixed flicker when restoring the window from the tray/dock (opaque background instead of compositor blur)</li>
+          <li>Dock/systray clicks and file/URL opens now activate the running instance instead of spawning a second one</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.0" date="2025-01-01">
       <description>
         <p>Initial release</p>
