@@ -46,6 +46,15 @@ build-options:
     FLATPAK_ID: dev.jadejitsu.apps.Calendar
 
 modules:
+  # System tray icon backend: tray-icon's Linux/GTK3 backend links against
+  # libayatana-appindicator3 (StatusNotifierItem via GTK's D-Bus loop) at
+  # build time via pkg-config. The org.freedesktop.Platform runtime does not
+  # ship this library, so it must be built into /app before xcalendar links
+  # against it. Module definition + patches vendored from
+  # github.com/flathub/shared-modules (the standard, widely-reused Flatpak
+  # module for this exact dependency chain).
+  - flatpak-shared-modules/libayatana-appindicator-gtk3.json
+
   - name: xcalendar
     buildsystem: simple
     # Dependencies are vendored via cargo-sources.json (generated from Cargo.lock
