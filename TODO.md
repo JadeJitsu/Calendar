@@ -49,7 +49,7 @@
 - [ ] iCloud Calendar support
 
 ### Technical debt
-- [ ] Replace remaining `eprintln!` with proper logging
+- [x] **`eprintln!` audit** (2026-09-10) — reviewed: no debt. The only app `eprintln!` are in the debug-only `--dev-reset-db`/`--dev-seed-data` CLI handlers, each already paired with `log::error!`; the rest are in the standalone probe bins (CLI tools, where stderr is correct). Left as-is.
 - [x] **CI** — GitHub Actions (`.github/workflows/ci.yml`) gates `main` on `cargo build --all-targets`, `cargo test`, and `cargo clippy --all-targets`. Clippy is gated on exit code (not `-D warnings`) until the pre-existing warnings are cleaned up.
 
 ---
