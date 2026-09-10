@@ -26,6 +26,13 @@ cargo fmt
 
 Always use `--release` flag for performance testing.
 
+## Versioning & Releases
+
+- `Cargo.toml` `version` is the **single source of truth**; the Flatpak manifest (`dev.jadejitsu.apps.Calendar.yml`) `version` must match it.
+- Every user-facing release: bump both versions + update `CHANGELOG.md` in the same commit, tag `v<version>`, build the bundle (`just flatpak-bundle`), and publish a GitHub Release tagged `v<version>-flatpak` with the `.flatpak` asset.
+- Semver: `patch` for fixes, `minor` for new features, `major` for breaking changes.
+- Current version: **0.2.0** (2026-09-10).
+
 ## Architecture
 
 Calendar is a calendar application for the COSMIC desktop built with libcosmic (iced-based). It follows the **Elm/MVU (Model-View-Update)** pattern:

@@ -1456,8 +1456,15 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 return cosmic::iced::window::gain_focus(id);
             }
 
+            // Match the main window's surface type: libcosmic creates the
+            // main window with `transparent: true` (Settings::default), but
+            // iced's `window::Settings::default()` is `transparent: false`.
+            // (The restore flicker itself is fixed by the opaque background
+            // in `app::view`; this only keeps the recreated window's surface
+            // type consistent with the original.)
             let mut settings = cosmic::iced::window::Settings {
                 decorations: false,
+                transparent: true,
                 size: cosmic::iced::Size::new(1024.0, 768.0),
                 exit_on_close_request: !app.settings.close_to_tray,
                 ..cosmic::iced::window::Settings::default()
@@ -1469,7 +1476,6 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
 
             let (id, open_task) = cosmic::iced::window::open(settings);
-            info!("[tray-debug] Show: opening fresh window {id:?}");
             app.core.set_main_window_id(Some(id));
             return open_task.discard();
         }

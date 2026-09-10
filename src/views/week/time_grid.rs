@@ -62,12 +62,18 @@ pub fn render_hour_grid_background(
     is_weekend: bool,
     selection: Option<&SelectionState>,
 ) -> Element<'static, Message> {
+    // Only attach the hover handler while a time-range drag is in progress.
+    // Attaching it unconditionally makes every idle cursor move across the
+    // grid dispatch a TimeSelectionUpdate -> full view rebuild + redraw,
+    // which flickers the (transparent) week view.
+    let time_sel_active = selection.map(|s| s.is_active).unwrap_or(false);
+
     let mut hour_cells = column([]).spacing(0);
 
     for hour in 0..24u32 {
         // Check if this hour cell is within the current selection
         let is_selected = selection.map(|s| s.is_active && s.contains_time(date, hour)).unwrap_or(false);
-        let cell = render_clickable_hour_cell(date, hour, is_weekend, is_selected);
+        let cell = render_clickable_hour_cell(date, hour, is_weekend, is_selected, time_sel_active);
         hour_cells = hour_cells.push(cell);
     }
 
@@ -75,7 +81,13 @@ pub fn render_hour_grid_background(
 }
 
 /// Render a clickable hour cell (for creating new events and drag targets)
-fn render_clickable_hour_cell(date: NaiveDate, hour: u32, is_weekend: bool, is_selected: bool) -> Element<'static, Message> {
+fn render_clickable_hour_cell(
+    date: NaiveDate,
+    hour: u32,
+    is_weekend: bool,
+    is_selected: bool,
+    time_sel_active: bool,
+) -> Element<'static, Message> {
     // Create the time for this hour cell
     let start_time = NaiveTime::from_hms_opt(hour, 0, 0).unwrap();
     let _end_time = NaiveTime::from_hms_opt(hour, 59, 59).unwrap_or_else(|| {
@@ -108,12 +120,18 @@ fn render_clickable_hour_cell(date: NaiveDate, hour: u32, is_weekend: bool, is_s
 
     // Press: start time selection for creating timed events
     // Release: end time selection
-    // on_enter: update time selection (for drag selection)
+    // on_enter: update time selection (for drag selection) — attached only
+    // while a drag is active, so idle cursor movement doesn't dispatch
+    // TimeSelectionUpdate (each one forces a full view rebuild + redraw).
     // Double-click: open new event dialog
-    mouse_area(cell)
+    let mut area = mouse_area(cell)
         .on_press(Message::TimeSelectionStart(date, start_time))
         .on_release(Message::TimeSelectionEnd)
-        .on_double_click(Message::OpenNewEventDialog)
-        .on_enter(Message::TimeSelectionUpdate(date, start_time))
-        .into()
+        .on_double_click(Message::OpenNewEventDialog);
+
+    if time_sel_active {
+        area = area.on_enter(Message::TimeSelectionUpdate(date, start_time));
+    }
+
+    area.into()
 }

@@ -148,6 +148,8 @@ flatpak install --user dev.jadejitsu.apps.Calendar.flatpak
 flatpak run dev.jadejitsu.apps.Calendar
 ```
 
+**Latest release: [v0.2.0](https://github.com/JadeJitsu/Calendar/releases/tag/v0.2.0-flatpak)** — week-view input flicker fixed, tray/dock restore flicker fixed (opaque background), dock/systray single-instance. See [CHANGELOG.md](CHANGELOG.md).
+
 To build the bundle yourself from the manifest `dev.jadejitsu.apps.Calendar.yml` (runtime `org.freedesktop.Platform` 25.08 + `rust-stable` SDK extension):
 
 ```bash
@@ -155,6 +157,13 @@ just flatpak-bundle          # → dev.jadejitsu.apps.Calendar.flatpak
 ```
 
 The Flatpak build is self-contained (it vendors its own Rust toolchain and system libraries), so it is the recommended way to run the app on a distribution other than the one it was built on.
+
+## Versioning
+
+- `Cargo.toml` `version` is the single source of truth; the Flatpak manifest `version` must match it.
+- Every user-facing release is a git tag `v<version>` plus a GitHub Release tagged `v<version>-flatpak` carrying the `.flatpak` bundle.
+- `patch` for fixes, `minor` for new features, `major` for breaking changes.
+- [CHANGELOG.md](CHANGELOG.md) is updated in the same commit as the version bump.
 
 ## Distribution Compatibility
 

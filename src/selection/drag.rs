@@ -268,3 +268,39 @@ impl EventDragState {
         self.preview.cursor_position
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The render layer attaches `on_enter(DragEventUpdate)` handlers only
+    /// while `is_drag_active()` is true (see week/header.rs, week/events.rs).
+    /// This pins the flag lifecycle that gating depends on: `start()` must
+    /// set it and `end()`/`reset()` must clear it, so idle cursor movement
+    /// (no drag) never dispatches DragEventUpdate.
+    ///
+    /// Single test on purpose: the flag is process-global, so parallel
+    /// tests would race on it.
+    #[test]
+    fn drag_active_flag_tracks_drag_lifecycle() {
+        // Baseline: no drag in progress
+        set_drag_active(false);
+        assert!(!is_drag_active());
+
+        let mut state = EventDragState::new();
+        state.start("cal-1".into(), "uid-1".into(), NaiveDate::from_ymd_opt(2026, 9, 10).unwrap(), "Event".into(), "#ff0000".into());
+        assert!(state.is_active);
+        assert!(is_drag_active(), "start() must set the global drag-active flag");
+
+        let moved = state.end();
+        assert!(moved.is_none(), "no target change -> no move");
+        assert!(!state.is_active);
+        assert!(!is_drag_active(), "end() must clear the global drag-active flag");
+
+        // Cancel path also clears the flag
+        state.start("cal-1".into(), "uid-2".into(), NaiveDate::from_ymd_opt(2026, 9, 10).unwrap(), "Event".into(), "#ff0000".into());
+        assert!(is_drag_active());
+        state.cancel();
+        assert!(!is_drag_active(), "cancel() must clear the global drag-active flag");
+    }
+}

@@ -565,10 +565,31 @@ impl Application for CosmicCalendar {
     }
 
     fn view(&self) -> Element<'_, Self::Message> {
-        crate::layout::render_layout(self)
+        #[cfg(debug_assertions)]
+        if std::env::var_os("XCAL_FLICKER_TRACE").is_some() {
+            crate::diagnostics::trace_view_rebuild();
+        }
+        // Paint an opaque background so the window doesn't rely on the
+        // compositor's blur layer. libcosmic's root container uses a
+        // semi-transparent background (theme.transparent), which lets the
+        // blurred desktop show through; on window recreate (restore from
+        // tray) the blur layer re-establishes and the whole window flashes.
+        // An opaque base color removes that.
+        cosmic::widget::container(crate::layout::render_layout(self))
+            .style(|theme: &cosmic::Theme| cosmic::widget::container::Style {
+                background: Some(cosmic::iced::Background::Color(
+                    theme.cosmic().background(false).base.into(),
+                )),
+                ..Default::default()
+            })
+            .into()
     }
 
     fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {
+        #[cfg(debug_assertions)]
+        if std::env::var_os("XCAL_FLICKER_TRACE").is_some() {
+            crate::diagnostics::trace_message(&message);
+        }
         crate::update::handle_message(self, message)
     }
 

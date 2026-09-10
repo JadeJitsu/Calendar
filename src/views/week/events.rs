@@ -13,6 +13,7 @@ use std::collections::hash_map::DefaultHasher;
 use crate::components::{parse_color_safe, ChipOpacity, DisplayEvent};
 use crate::components::spacer::vertical_spacer;
 use crate::message::Message;
+use crate::selection::is_drag_active;
 use crate::ui_constants::{HOUR_ROW_HEIGHT, BORDER_RADIUS};
 
 use super::utils::{event_time_range, PositionedEvent};
@@ -200,10 +201,16 @@ fn render_positioned_event_block(
     // Get color hex for drag preview
     let color_hex = event.color.clone();
 
-    mouse_area(chip)
+    // on_enter is attached only while a drag is active — otherwise every
+    // idle cursor move over a chip dispatches DragEventUpdate -> full
+    // view rebuild + redraw, which flickers the (transparent) week view.
+    let mut area = mouse_area(chip)
         .on_press(Message::DragEventStart(calendar_id.clone(), uid.clone(), date, event.summary.clone(), color_hex))
         .on_release(Message::DragEventEnd)
-        .on_double_click(Message::OpenEditEventDialog(calendar_id, uid))
-        .on_enter(Message::DragEventUpdate(date))
-        .into()
+        .on_double_click(Message::OpenEditEventDialog(calendar_id, uid));
+    if is_drag_active() {
+        area = area.on_enter(Message::DragEventUpdate(date));
+    }
+
+    area.into()
 }

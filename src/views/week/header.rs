@@ -17,6 +17,7 @@ use crate::locale::LocalePreferences;
 use crate::localized_names;
 use crate::message::Message;
 use crate::models::WeekState;
+use crate::selection::is_drag_active;
 use crate::styles::{today_filled_style, weekend_background};
 use crate::ui_constants::{
     PADDING_SMALL, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, day_cell_border,
@@ -156,9 +157,13 @@ fn render_all_day_section<'a>(
                 ..Default::default()
             });
 
-        // Wrap in mouse_area for drag support (on_enter allows receiving drag updates)
-        let clickable_cell = mouse_area(cell)
-            .on_enter(Message::DragEventUpdate(date_copy));
+        // Wrap in mouse_area for drag support. on_enter is attached only
+        // while a drag is active — otherwise every idle cursor move over
+        // the all-day row dispatches DragEventUpdate -> full view rebuild.
+        let mut clickable_cell = mouse_area(cell);
+        if is_drag_active() {
+            clickable_cell = clickable_cell.on_enter(Message::DragEventUpdate(date_copy));
+        }
 
         all_day_row = all_day_row.push(clickable_cell);
     }
@@ -213,13 +218,16 @@ fn render_all_day_events_for_day(date: NaiveDate, events: &[DisplayEvent], selec
         // Get color hex for drag preview
         let color_hex = event.color.clone();
 
-        // Wrap with mouse area for click and drag handling
-        let clickable_chip: Element<'static, Message> = mouse_area(chip)
+        // Wrap with mouse area for click and drag handling. on_enter is
+        // attached only while a drag is active (see the all-day row above).
+        let mut area = mouse_area(chip)
             .on_press(Message::DragEventStart(calendar_id.clone(), uid.clone(), date, event.summary.clone(), color_hex))
             .on_release(Message::DragEventEnd)
-            .on_double_click(Message::OpenEditEventDialog(calendar_id, uid))
-            .on_enter(Message::DragEventUpdate(date))
-            .into();
+            .on_double_click(Message::OpenEditEventDialog(calendar_id, uid));
+        if is_drag_active() {
+            area = area.on_enter(Message::DragEventUpdate(date));
+        }
+        let clickable_chip: Element<'static, Message> = area.into();
 
         // Use event UID hash as the key for proper reconciliation
         (key, clickable_chip)

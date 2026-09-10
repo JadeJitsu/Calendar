@@ -11,6 +11,8 @@ mod components;
 mod database;
 #[cfg(debug_assertions)]
 mod demo_data;
+#[cfg(debug_assertions)]
+mod diagnostics;
 mod dialogs;
 mod keyboard;
 mod layout;
