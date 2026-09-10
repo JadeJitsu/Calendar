@@ -463,8 +463,7 @@ use caldav::{
     handle_caldav_discovery_failed, handle_caldav_event_created, handle_caldav_event_deleted,
     handle_caldav_event_updated, handle_caldav_sync_failed, handle_caldav_sync_started,
     handle_caldav_synced, handle_caldav_write_conflict, handle_caldav_write_failed,
-    handle_confirm_add_caldav,
-    handle_open_add_caldav_dialog, handle_sync_calendars,
+    handle_confirm_add_caldav, handle_open_add_caldav_dialog, handle_sync_calendars,
 };
 use calendar::{
     handle_change_calendar_color, handle_confirm_calendar_dialog, handle_confirm_delete_calendar,
@@ -1516,11 +1515,36 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
         Message::WindowClosed(id) => {
             // The window was destroyed (CSD close button, or our own
-            // `window::close`). Clear the main-window id if it was the main
-            // window so `TrayShowOrRestore` opens a fresh window rather than
-            // gain_focus-ing a dead id (a no-op on Wayland).
-            if app.core.main_window_id() == Some(id) {
-                app.core.set_main_window_id(None);
+            // `window::close`). Clear whichever tracked id(s) matched so
+            // `TrayShowOrRestore`/`TrayShowMiniCalendar` open a fresh window
+            // rather than acting on a dead id (a no-op on Wayland).
+            let (main_window_id, mini_calendar_window_id) =
+                windows_after_close(app.core.main_window_id(), app.mini_calendar_window_id, id);
+            app.core.set_main_window_id(main_window_id);
+            app.mini_calendar_window_id = mini_calendar_window_id;
+        }
+        Message::TrayShowMiniCalendar => {
+            match mini_calendar_popup_action(app.mini_calendar_window_id) {
+                MiniCalendarPopupAction::Focus(id) => {
+                    return cosmic::iced::window::gain_focus(id);
+                }
+                MiniCalendarPopupAction::Open => {
+                    let mut settings = cosmic::iced::window::Settings {
+                        size: cosmic::iced::Size::new(300.0, 320.0),
+                        resizable: false,
+                        exit_on_close_request: true,
+                        ..cosmic::iced::window::Settings::default()
+                    };
+                    #[cfg(target_os = "linux")]
+                    {
+                        settings.platform_specific.application_id =
+                            <CosmicCalendar as cosmic::Application>::APP_ID.to_string();
+                    }
+
+                    let (id, open_task) = cosmic::iced::window::open(settings);
+                    app.mini_calendar_window_id = Some(id);
+                    return open_task.discard();
+                }
             }
         }
         Message::TrayShowOrRestore => {
@@ -1873,5 +1897,115 @@ mod effective_sync_interval_tests {
             effective_sync_interval(&AppSettings::default()),
             DEFAULT_BACKGROUND_SYNC_INTERVAL_SECS
         );
+    }
+}
+
+/// The action to take when the tray's "Mini Calendar" item is clicked.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum MiniCalendarPopupAction {
+    /// A popup window is already open; bring it to the front.
+    Focus(cosmic::iced::window::Id),
+    /// No popup window is open; create one.
+    Open,
+}
+
+/// Decide what the tray's "Mini Calendar" click should do: focus an
+/// already-open popup window, or signal that a new one must be created.
+pub(crate) fn mini_calendar_popup_action(
+    existing: Option<cosmic::iced::window::Id>,
+) -> MiniCalendarPopupAction {
+    match existing {
+        Some(id) => MiniCalendarPopupAction::Focus(id),
+        None => MiniCalendarPopupAction::Open,
+    }
+}
+
+/// Compute the tracked main-window and mini-calendar-popup ids after a
+/// window closes. Each id is cleared only if it matches the closed window —
+/// closing one window must never clear the other's tracked id.
+pub(crate) fn windows_after_close(
+    main_window_id: Option<cosmic::iced::window::Id>,
+    mini_calendar_window_id: Option<cosmic::iced::window::Id>,
+    closed: cosmic::iced::window::Id,
+) -> (
+    Option<cosmic::iced::window::Id>,
+    Option<cosmic::iced::window::Id>,
+) {
+    let main = if main_window_id == Some(closed) {
+        None
+    } else {
+        main_window_id
+    };
+    let mini = if mini_calendar_window_id == Some(closed) {
+        None
+    } else {
+        mini_calendar_window_id
+    };
+    (main, mini)
+}
+
+#[cfg(test)]
+mod mini_calendar_popup_action_tests {
+    use super::*;
+    use cosmic::iced::window::Id;
+
+    #[test]
+    fn focuses_an_existing_popup_window() {
+        let id = Id::unique();
+        assert_eq!(
+            mini_calendar_popup_action(Some(id)),
+            MiniCalendarPopupAction::Focus(id)
+        );
+    }
+
+    #[test]
+    fn opens_a_new_window_when_none_is_tracked() {
+        assert_eq!(
+            mini_calendar_popup_action(None),
+            MiniCalendarPopupAction::Open
+        );
+    }
+}
+
+#[cfg(test)]
+mod windows_after_close_tests {
+    use super::*;
+    use cosmic::iced::window::Id;
+
+    #[test]
+    fn clears_only_the_main_window_id_when_it_closes() {
+        let main = Id::unique();
+        let mini = Id::unique();
+        assert_eq!(
+            windows_after_close(Some(main), Some(mini), main),
+            (None, Some(mini))
+        );
+    }
+
+    #[test]
+    fn clears_only_the_mini_calendar_id_when_it_closes() {
+        let main = Id::unique();
+        let mini = Id::unique();
+        assert_eq!(
+            windows_after_close(Some(main), Some(mini), mini),
+            (Some(main), None)
+        );
+    }
+
+    #[test]
+    fn leaves_both_untouched_when_an_unrelated_window_closes() {
+        let main = Id::unique();
+        let mini = Id::unique();
+        let other = Id::unique();
+        assert_eq!(
+            windows_after_close(Some(main), Some(mini), other),
+            (Some(main), Some(mini))
+        );
+    }
+
+    #[test]
+    fn leaves_both_untouched_when_neither_is_tracked() {
+        let other = Id::unique();
+        assert_eq!(windows_after_close(None, None, other), (None, None));
     }
 }

@@ -35,6 +35,8 @@ use crate::message::Message;
 pub enum TrayEvent {
     /// "Show/Restore" menu item clicked.
     ShowOrRestore,
+    /// "Mini Calendar" menu item clicked.
+    ShowMiniCalendar,
     /// "Quit" menu item clicked.
     Quit,
 }
@@ -83,15 +85,17 @@ pub fn init() {
 /// On Linux this runs on the GTK thread (after `gtk::init()`).
 fn build_tray() {
     let show = MenuItem::new(fl!("tray-menu-show"), true, None);
+    let mini_calendar = MenuItem::new(fl!("tray-menu-mini-calendar"), true, None);
     let quit = MenuItem::new(fl!("tray-menu-quit"), true, None);
     let menu = Menu::new();
-    if let Err(e) = menu.append_items(&[&show, &quit]) {
+    if let Err(e) = menu.append_items(&[&show, &mini_calendar, &quit]) {
         log::error!("tray: failed to build menu: {}", e);
         return;
     }
     // Capture the (cheap, Send+Sync) ids rather than the MenuItems, which are
     // !Send and can't be moved into the event handler closure.
     let show_id = show.id().clone();
+    let mini_calendar_id = mini_calendar.id().clone();
     let quit_id = quit.id().clone();
 
     // On Linux the icon will not appear unless a menu is attached — we always
@@ -121,6 +125,8 @@ fn build_tray() {
     MenuEvent::set_event_handler(Some(move |e: MenuEvent| {
         let ev = if e.id() == &show_id {
             TrayEvent::ShowOrRestore
+        } else if e.id() == &mini_calendar_id {
+            TrayEvent::ShowMiniCalendar
         } else if e.id() == &quit_id {
             TrayEvent::Quit
         } else {
@@ -159,6 +165,9 @@ pub fn tray_event_stream() -> impl Stream<Item = Message> {
             match ev {
                 Some(TrayEvent::ShowOrRestore) => {
                     return Some((Message::TrayShowOrRestore, ()));
+                }
+                Some(TrayEvent::ShowMiniCalendar) => {
+                    return Some((Message::TrayShowMiniCalendar, ()));
                 }
                 Some(TrayEvent::Quit) => return Some((Message::TrayQuit, ())),
                 None => {

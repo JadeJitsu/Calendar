@@ -201,6 +201,7 @@ settings-dialog-title = Settings
 settings-week-numbers = Show week numbers
 settings-close-to-tray = Close to tray
 tray-menu-show = Show
+tray-menu-mini-calendar = Mini Calendar
 tray-menu-quit = Quit
 settings-sync-interval = Background sync interval
 settings-sync-interval-5min = Every 5 minutes

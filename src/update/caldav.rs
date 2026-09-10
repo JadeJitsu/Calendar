@@ -264,7 +264,11 @@ pub fn handle_sync_calendars(app: &mut CosmicCalendar) -> Task<Message> {
                                 match ExportHandler::parse_ical_string(&ics) {
                                     Ok(mut parsed) => {
                                         for event in parsed.drain(..) {
-                                            hrefs.push((event.uid.clone(), href.clone(), etag.clone()));
+                                            hrefs.push((
+                                                event.uid.clone(),
+                                                href.clone(),
+                                                etag.clone(),
+                                            ));
                                             events.push(event);
                                         }
                                     }

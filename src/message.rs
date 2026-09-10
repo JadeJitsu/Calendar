@@ -266,6 +266,8 @@ pub enum Message {
     WindowClosed(cosmic::iced::window::Id),
     /// Tray menu "Show/Restore" clicked
     TrayShowOrRestore,
+    /// Tray menu "Mini Calendar" clicked
+    TrayShowMiniCalendar,
     /// Tray menu "Quit" clicked
     TrayQuit,
     About,
@@ -342,7 +344,11 @@ pub enum Message {
     CalDavSyncStarted(String),
     /// Sync finished for a calendar (calendar_id, fetched events,
     /// uid→(href, etag) triples)
-    CalDavSynced(String, Vec<CalendarEvent>, Vec<(String, String, Option<String>)>),
+    CalDavSynced(
+        String,
+        Vec<CalendarEvent>,
+        Vec<(String, String, Option<String>)>,
+    ),
     /// Sync failed for a calendar (calendar_id, error_message)
     CalDavSyncFailed(String, String),
 

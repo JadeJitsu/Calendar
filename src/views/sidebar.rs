@@ -20,8 +20,9 @@ pub fn render_sidebar<'a>(
     active_dialog: &'a ActiveDialog,
     selected_calendar_id: Option<&'a String>,
     sync_status: Option<&'a (String, bool)>,
+    show_week_numbers: bool,
 ) -> Element<'a, Message> {
-    let mini_calendar = render_mini_calendar(calendar_state, selected_day);
+    let mini_calendar = render_mini_calendar(calendar_state, selected_day, show_week_numbers);
 
     // Use the calendar list component
     let calendars_section =

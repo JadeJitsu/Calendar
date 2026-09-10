@@ -190,6 +190,8 @@ pub struct CosmicCalendar {
     /// Saved scroll position to restore after quick event closes
     /// Captured when quick event starts, used to restore when it ends (prevents focus-induced jump)
     pub week_view_scroll_restore: Option<cosmic::iced::widget::scrollable::AbsoluteOffset>,
+    /// Id of the tray's "Mini Calendar" popup window, if one is open.
+    pub mini_calendar_window_id: Option<cosmic::iced::window::Id>,
 
     // Legacy field - kept because text_editor::Content doesn't implement Clone
     /// Event dialog state (for Create/Edit) - None when dialog is closed
@@ -299,6 +301,7 @@ impl CosmicCalendar {
             dragging_event_unique_id: None,
             week_view_scroll_opt: None,
             week_view_scroll_restore: None,
+            mini_calendar_window_id: None,
             // Legacy field - kept because text_editor::Content doesn't implement Clone
             event_dialog: None,
         }
@@ -392,25 +395,43 @@ impl CosmicCalendar {
         self.mini_calendar_state = CalendarState::new(year, month);
     }
 
-    /// Render the sidebar
-    #[allow(deprecated)]
-    pub fn render_sidebar(&self) -> Element<'_, Message> {
-        let selected_day = if self.mini_calendar_state.year == self.selected_date.year()
+    /// The day (if any) highlighted in the mini calendar: the selected date's
+    /// day-of-month, but only while the mini calendar is showing that same
+    /// year/month. Shared by the sidebar and the tray's mini-calendar popup.
+    fn mini_calendar_selected_day(&self) -> Option<u32> {
+        if self.mini_calendar_state.year == self.selected_date.year()
             && self.mini_calendar_state.month == self.selected_date.month()
         {
             Some(self.selected_date.day())
         } else {
             None
-        };
+        }
+    }
 
+    /// Render the sidebar
+    #[allow(deprecated)]
+    pub fn render_sidebar(&self) -> Element<'_, Message> {
         views::render_sidebar(
             &self.mini_calendar_state,
             self.calendar_manager.sources(),
-            selected_day,
+            self.mini_calendar_selected_day(),
             &self.active_dialog,
             self.selected_calendar_id.as_ref(),
             self.sync_status.as_ref(),
+            self.settings.show_week_numbers,
         )
+    }
+
+    /// Render the tray's "Mini Calendar" popup window content: the same
+    /// compact month grid shown in the sidebar, on its own.
+    pub fn render_mini_calendar_popup(&self) -> Element<'_, Message> {
+        cosmic::widget::container(components::render_mini_calendar(
+            &self.mini_calendar_state,
+            self.mini_calendar_selected_day(),
+            self.settings.show_week_numbers,
+        ))
+        .padding(crate::ui_constants::PADDING_STANDARD)
+        .into()
     }
 
     /// Render the main content area (toolbar + calendar view)
@@ -626,6 +647,16 @@ impl Application for CosmicCalendar {
                 ..Default::default()
             })
             .into()
+    }
+
+    /// Content for windows other than the main one — currently just the
+    /// tray's "Mini Calendar" popup.
+    fn view_window(&self, id: cosmic::iced::window::Id) -> Element<'_, Self::Message> {
+        if Some(id) == self.mini_calendar_window_id {
+            self.render_mini_calendar_popup()
+        } else {
+            self.view()
+        }
     }
 
     fn update(&mut self, message: Self::Message) -> cosmic::app::Task<Self::Message> {

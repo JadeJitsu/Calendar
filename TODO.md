@@ -1,5 +1,10 @@
 # Calendar - Development TODO
 
+## Recently Completed ✅ (2026-09-10 — tray mini calendar)
+
+- [x] **Tray "Mini Calendar" popup** — a third tray menu item opens a small standalone window showing the same compact month grid as the sidebar (prev/next month, day selection), reusing `components::mini_calendar` as-is via libcosmic's `view_window` hook. Clicking the item again focuses the existing popup instead of opening a duplicate; closing it clears the tracked window id independently of the main window's. `src/services/tray.rs`, `src/message.rs`, `src/app.rs`, `src/update/mod.rs`
+- [x] **Week numbers in the mini calendar** — `render_mini_calendar` gained a `show_week_numbers` flag (gated on the existing `settings.show_week_numbers`, same as the main month view), so both the sidebar mini calendar and the new tray popup show ISO week numbers. `src/components/mini_calendar.rs`, `src/views/sidebar.rs`
+
 ## Recently Completed ✅ (2026-09-10 — v0.3.0)
 
 - [x] **CalDAV write safety (If-Match/ETag)** — edits and deletes send an `If-Match` ETag, so a server-side change since the last sync rejects the write (412) instead of silently clobbering it. ETag captured from the REPORT (was requested but dropped) and from each PUT response, tracked per event beside its href. On a 412: desktop notification + auto re-sync to server truth. New events / pre-first-sync edits fall back to last-writer-wins. Verified live against Nextcloud 34 (stale If-Match → 412). `src/caldav.rs`, `src/calendars/caldav_calendar.rs`, `src/message.rs`, `src/update/caldav.rs`

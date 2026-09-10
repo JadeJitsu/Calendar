@@ -11,14 +11,17 @@ use crate::models::CalendarState;
 use crate::ui_constants::{
     FONT_SIZE_BODY, FONT_SIZE_SMALL, ICON_NEXT, ICON_PREVIOUS, MINI_CALENDAR_DAY_BUTTON_SIZE,
     MINI_CALENDAR_GRID_HEIGHT, PADDING_TINY, SPACING_MEDIUM, SPACING_MINI_CALENDAR, SPACING_SMALL,
-    SPACING_XXS,
+    SPACING_XXS, WEEK_NUMBER_WIDTH,
 };
 
 /// Render the compact month grid in the sidebar, with prev/next month
-/// navigation and the currently selected day highlighted.
+/// navigation and the currently selected day highlighted. When
+/// `show_week_numbers` is set, a narrow ISO week-number column is added
+/// before each week row (mirrors the main month view's own toggle).
 pub fn render_mini_calendar(
     calendar_state: &CalendarState,
     selected_day: Option<u32>,
+    show_week_numbers: bool,
 ) -> Element<'static, Message> {
     let month_year_text = calendar_state.month_year_text.clone();
     let year = calendar_state.year;
@@ -42,8 +45,13 @@ pub fn render_mini_calendar(
 
     let mut grid = column([]).spacing(SPACING_SMALL);
 
-    // Weekday headers (abbreviated)
+    // Weekday headers (abbreviated), with a leading blank spacer to align
+    // with the week-number column when it's shown.
     let mut header_row = row([]).spacing(SPACING_XXS);
+    if show_week_numbers {
+        header_row =
+            header_row.push(container(widget::text("")).width(Length::Fixed(WEEK_NUMBER_WIDTH)));
+    }
     let weekday_names = localized_names::get_weekday_names_short();
     for weekday in weekday_names {
         header_row = header_row.push(
@@ -56,8 +64,19 @@ pub fn render_mini_calendar(
     grid = grid.push(header_row);
 
     // Use pre-calculated weeks from CalendarState
-    for week in &calendar_state.weeks {
+    let week_numbers = calendar_state.week_numbers();
+    for (week_index, week) in calendar_state.weeks.iter().enumerate() {
         let mut week_row = row([]).spacing(SPACING_XXS);
+        if show_week_numbers {
+            let week_number = week_numbers.get(week_index).copied().unwrap_or(0);
+            week_row = week_row.push(
+                container(widget::text(format!("{}", week_number)).size(FONT_SIZE_SMALL))
+                    .width(Length::Fixed(WEEK_NUMBER_WIDTH))
+                    .height(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
+                    .center_x(Length::Fixed(WEEK_NUMBER_WIDTH))
+                    .center_y(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE)),
+            );
+        }
         for day_opt in week {
             let cell: Element<'static, Message> = if let Some(day) = day_opt {
                 let is_today = calendar_state.is_today(*day);
