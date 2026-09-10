@@ -23,6 +23,14 @@ libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "822d3b2a0f
 tokio = { version = "1", features = ["sync", "rt"] }
 futures-util = "0.3"
 
+# D-Bus for self-contained single-instance support (see src/services/single_instance.rs).
+# libcosmic's own single-instance registration is broken under the tokio backend
+# (its executor is never driven, so the app-id name is never owned), so we own
+# the name and serve org.freedesktop.DbusActivation ourselves with the
+# self-contained blocking API. `blocking-api` + `tokio` match libcosmic's build
+# so there is one zbus in the dependency graph.
+zbus = { version = "5.19", default-features = false, features = ["blocking-api", "tokio"] }
+
 # Date/Time handling
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
@@ -116,9 +124,10 @@ clap = { version = "4.5", features = ["derive"] }
 dpi = { git = "https://github.com/pop-os/winit.git", tag = "cosmic-0.14" }
 
 [features]
-# Single-instance support via D-Bus (disabled by default due to system compatibility issues)
-# Enable with: cargo build --features single-instance
-# Or disable at runtime with: COSMIC_SINGLE_INSTANCE=false sol-calendar
+default = ["single-instance"]
+# Single-instance support via D-Bus. Enabled by default so a dock click
+# re-activates the running instance instead of spawning a second one.
+# Disable at runtime with COSMIC_SINGLE_INSTANCE=false.
 single-instance = ["libcosmic/single-instance"]
 
 # Debug aid: live CalDAV discovery probe. Not part of the test suite —

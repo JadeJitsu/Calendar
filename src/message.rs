@@ -262,6 +262,8 @@ pub enum Message {
     CancelSettings,
     /// Window close requested while close-to-tray is on -> minimize to tray
     TrayMinimizeToTray,
+    /// A window was destroyed (any path) — keeps `main_window_id` in sync
+    WindowClosed(cosmic::iced::window::Id),
     /// Tray menu "Show/Restore" clicked
     TrayShowOrRestore,
     /// Tray menu "Quit" clicked

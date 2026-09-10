@@ -2,6 +2,26 @@
 
 use chrono::{NaiveDate, NaiveTime};
 use log::debug;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// Global flag mirroring whether an event drag is currently active.
+///
+/// The event subscription in `app.rs` is a stateless `Fn` closure, so it
+/// cannot read the app's `EventDragState` directly. It consults this flag to
+/// decide whether to forward `CursorMoved` events as messages. Forwarding
+/// them while no drag is active would force a full iced view rebuild + wgpu
+/// redraw on every mouse move, which flickers the (transparent) week view.
+static DRAG_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+/// Mark a drag as active (called from the drag-start handler).
+pub fn set_drag_active(active: bool) {
+    DRAG_ACTIVE.store(active, Ordering::SeqCst);
+}
+
+/// Whether a drag is currently active (read by the event subscription).
+pub fn is_drag_active() -> bool {
+    DRAG_ACTIVE.load(Ordering::SeqCst)
+}
 
 /// Display information for the drag preview.
 /// Separated from EventDragState to maintain clean architecture.
@@ -113,6 +133,7 @@ impl EventDragState {
         self.target = Some(DragTarget { date: original_date, time: original_time });
         self.is_active = true;
         self.preview.set_event_info(summary, color);
+        set_drag_active(true);
     }
 
     /// Update cursor position during drag
@@ -207,6 +228,7 @@ impl EventDragState {
         self.target = None;
         self.is_active = false;
         self.preview.reset();
+        set_drag_active(false);
     }
 
     /// Get the target date (if any)

@@ -508,6 +508,13 @@ impl Application for CosmicCalendar {
         // non-fatal — a tray failure should not block the app from starting.
         crate::services::init_tray();
 
+        // Own the D-Bus app-id name and serve org.freedesktop.DbusActivation so
+        // a dock-icon click re-activates this instance instead of spawning a
+        // second one (which would add a second tray icon). Idempotent and
+        // non-fatal — a missing session bus just disables dock re-activation.
+        #[cfg(feature = "single-instance")]
+        crate::services::init_single_instance(Self::APP_ID);
+
         // Handle file arguments if provided
         if !flags.files_to_open.is_empty() {
             info!("CosmicCalendar: {} file(s) to open on startup", flags.files_to_open.len());
@@ -580,65 +587,12 @@ impl Application for CosmicCalendar {
     fn subscription(&self) -> cosmic::iced::Subscription<Self::Message> {
         use cosmic::iced::Subscription;
 
-        // Event listener for keyboard, window resize, and mouse events
-        let event_sub = cosmic::iced::event::listen_with(|event, _status, _window_id| {
-            match event {
-                // Handle keyboard shortcuts
-                cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed {
-                    key,
-                    modifiers,
-                    ..
-                }) => {
-                    // Handle Escape key to close dialogs (no modifiers)
-                    if key == keyboard::Key::Named(keyboard::key::Named::Escape) {
-                        return Some(Message::CloseDialog);
-                    }
-
-                    // Convert modifiers to menu modifiers
-                    let mut menu_modifiers = Vec::new();
-                    if modifiers.control() {
-                        menu_modifiers.push(menu::key_bind::Modifier::Ctrl);
-                    }
-                    if modifiers.shift() {
-                        menu_modifiers.push(menu::key_bind::Modifier::Shift);
-                    }
-                    if modifiers.alt() {
-                        menu_modifiers.push(menu::key_bind::Modifier::Alt);
-                    }
-                    if modifiers.logo() {
-                        menu_modifiers.push(menu::key_bind::Modifier::Super);
-                    }
-
-                    let key_bind = menu::KeyBind {
-                        modifiers: menu_modifiers,
-                        key: key.clone(),
-                    };
-
-                    // Look up the action in the global keyboard shortcuts
-                    if let Some(action) = crate::keyboard::get_key_binds().get(&key_bind) {
-                        return Some(action.message());
-                    }
-                    None
-                }
-                // Handle window resize to sync sidebar with condensed state
-                // The actual condensed state is checked in update handler
-                cosmic::iced::Event::Window(cosmic::iced::window::Event::Resized { .. }) => {
-                    Some(Message::WindowResized)
-                }
-                // Close button pressed. With exit_on_close(false) (set in
-                // main.rs when close-to-tray is on) the surface is NOT closed
-                // and this event is delivered here instead; the update handler
-                // decides whether to minimize (close-to-tray) or let it pass.
-                cosmic::iced::Event::Window(cosmic::iced::window::Event::CloseRequested) => {
-                    Some(Message::TrayMinimizeToTray)
-                }
-                // Track mouse position for drag preview
-                // Always emit cursor move events - the handler will check if drag is active
-                cosmic::iced::Event::Mouse(cosmic::iced::mouse::Event::CursorMoved { position }) => {
-                    Some(Message::DragEventCursorMove(position.x, position.y))
-                }
-                _ => None,
-            }
+        // Event listener for keyboard, window resize, and mouse events.
+        // The mapping is delegated to `map_event` (unit-tested); the only
+        // stateful input is the drag-active flag, which gates `CursorMoved`
+        // forwarding so idle mouse movement doesn't force a full redraw.
+        let event_sub = cosmic::iced::event::listen_with(|event, _status, window_id| {
+            map_event(event, window_id, crate::selection::is_drag_active())
         });
 
         // Timer subscription for updating the current time indicator (every 30 seconds).
@@ -652,70 +606,207 @@ impl Application for CosmicCalendar {
         let tray_sub =
             cosmic::iced::Subscription::run_with((), |_| crate::services::tray_event_stream());
 
-        Subscription::batch([event_sub, timer_sub, tray_sub])
+        // Drain D-Bus activations (dock-icon clicks) from the single-instance
+        // thread; inert when the feature is off.
+        #[cfg(feature = "single-instance")]
+        let activation_sub =
+            cosmic::iced::Subscription::run_with((), |_| crate::services::activation_stream());
+        #[cfg(not(feature = "single-instance"))]
+        let activation_sub = cosmic::iced::Subscription::none();
+
+        Subscription::batch([event_sub, timer_sub, tray_sub, activation_sub])
     }
 
-    #[cfg(feature = "single-instance")]
-    fn dbus_activation(
-        &mut self,
-        msg: cosmic::dbus_activation::Message,
-    ) -> cosmic::app::Task<Self::Message> {
-        use cosmic::app::Task;
-        use cosmic::dbus_activation::Details;
-        use log::{debug, info};
+}
 
-        info!(
-            "D-Bus activation received: token={:?}",
-            msg.activation_token
-        );
-
-        match msg.msg {
-            Details::Activate => {
-                // Another instance tried to launch - window automatically comes to front
-                info!("D-Bus activation: Activate (bringing window to foreground)");
-                Task::none()
+/// Map a raw iced window event to an app [`Message`], or `None` if the event
+/// should be ignored.
+///
+/// Extracted from [`CosmicCalendar::subscription`] so the gating logic can be
+/// unit-tested. The critical rule: `CursorMoved` must only produce a message
+/// while a drag is active. In iced every dispatched message runs a full
+/// `update()` → `view()` rebuild + wgpu redraw, and on a transparent window
+/// under a compositor that redraw flashes. Forwarding every mouse move
+/// (the old behavior) therefore made the week view flicker on any input.
+fn map_event(
+    event: cosmic::iced::Event,
+    window_id: cosmic::iced::window::Id,
+    drag_active: bool,
+) -> Option<Message> {
+    match event {
+        // Handle keyboard shortcuts
+        cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed {
+            key,
+            modifiers,
+            ..
+        }) => {
+            // Handle Escape key to close dialogs (no modifiers)
+            if key == keyboard::Key::Named(keyboard::key::Named::Escape) {
+                return Some(Message::CloseDialog);
             }
-            Details::Open { url } => {
-                // Another instance tried to open files/URLs
-                info!("D-Bus activation: Open with {} URL(s)", url.len());
 
-                if url.is_empty() {
-                    return Task::none();
-                }
-
-                // Process the first URL/file
-                let first_url = &url[0];
-                debug!("D-Bus activation: Processing URL: {}", first_url);
-
-                if first_url.scheme() == "file" {
-                    // File path - trigger import
-                    if let Ok(path) = first_url.to_file_path() {
-                        info!("D-Bus activation: Importing file: {:?}", path);
-                        return Task::done(cosmic::Action::App(Message::ImportFile(
-                            path,
-                        )));
-                    }
-                } else if first_url.scheme() == "webcal"
-                    || first_url.scheme() == "ics"
-                    || first_url.scheme() == "calendar"
-                {
-                    // Calendar URL - trigger subscription
-                    let url_str = first_url.to_string();
-                    info!("D-Bus activation: Processing calendar URL: {}", url_str);
-                    return Task::done(cosmic::Action::App(Message::ProcessUrl(
-                        url_str,
-                    )));
-                }
-
-                // Unknown scheme - window still comes to front
-                info!("D-Bus activation: Unknown URL scheme: {}", first_url.scheme());
-                Task::none()
+            // Convert modifiers to menu modifiers
+            let mut menu_modifiers = Vec::new();
+            if modifiers.control() {
+                menu_modifiers.push(menu::key_bind::Modifier::Ctrl);
             }
-            Details::ActivateAction { .. } => {
-                // Not used by this app
-                debug!("D-Bus activation: ActivateAction (not implemented)");
-                Task::none()
+            if modifiers.shift() {
+                menu_modifiers.push(menu::key_bind::Modifier::Shift);
             }
+            if modifiers.alt() {
+                menu_modifiers.push(menu::key_bind::Modifier::Alt);
+            }
+            if modifiers.logo() {
+                menu_modifiers.push(menu::key_bind::Modifier::Super);
+            }
+
+            let key_bind = menu::KeyBind {
+                modifiers: menu_modifiers,
+                key,
+            };
+
+            // Look up the action in the global keyboard shortcuts
+            if let Some(action) = crate::keyboard::get_key_binds().get(&key_bind) {
+                return Some(action.message());
+            }
+            None
         }
+        // Handle window resize to sync sidebar with condensed state
+        // The actual condensed state is checked in update handler
+        cosmic::iced::Event::Window(cosmic::iced::window::Event::Resized { .. }) => {
+            Some(Message::WindowResized)
+        }
+        // Close button pressed. With exit_on_close(false) (set in
+        // main.rs when close-to-tray is on) the surface is NOT closed
+        // and this event is delivered here instead; the update handler
+        // decides whether to minimize (close-to-tray) or let it pass.
+        cosmic::iced::Event::Window(cosmic::iced::window::Event::CloseRequested) => {
+            Some(Message::TrayMinimizeToTray)
+        }
+        // The CSD close button destroys the window without delivering
+        // CloseRequested to the app, so this is the only reliable
+        // signal that the main window is gone. Keep `main_window_id`
+        // in sync so the tray's "Show" opens a fresh window instead
+        // of gain_focus-ing a dead id (a no-op on Wayland).
+        cosmic::iced::Event::Window(cosmic::iced::window::Event::Closed) => {
+            Some(Message::WindowClosed(window_id))
+        }
+        // Track mouse position for the drag preview. Only forwarded while a
+        // drag is active — see the note on `map_event`.
+        cosmic::iced::Event::Mouse(cosmic::iced::mouse::Event::CursorMoved { position })
+            if drag_active =>
+        {
+            Some(Message::DragEventCursorMove(position.x, position.y))
+        }
+        // Safety net: if the pointer is released while a drag is active, end
+        // it. (The event chips also dispatch `DragEventEnd` on `on_release`;
+        // this covers releases that land off the chip.)
+        cosmic::iced::Event::Mouse(cosmic::iced::mouse::Event::ButtonReleased(
+            cosmic::iced::mouse::Button::Left,
+        )) if drag_active => {
+            Some(Message::DragEventEnd)
+        }
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmic::iced::keyboard::{self, Modifiers};
+    use cosmic::iced::mouse::{self, Button};
+    use cosmic::iced::window::{self, Id};
+    use cosmic::iced::{Point, Size};
+
+    fn cursor_moved() -> cosmic::iced::Event {
+        cosmic::iced::Event::Mouse(mouse::Event::CursorMoved {
+            position: Point::new(10.0, 20.0),
+        })
+    }
+
+    #[test]
+    fn cursor_moved_is_dropped_when_no_drag_is_active() {
+        // The flicker fix: idle mouse movement must not dispatch a message,
+        // because every dispatched message forces a full view rebuild + redraw.
+        assert!(map_event(cursor_moved(), Id::RESERVED, false).is_none());
+    }
+
+    #[test]
+    fn cursor_moved_is_forwarded_while_dragging() {
+        match map_event(cursor_moved(), Id::RESERVED, true) {
+            Some(Message::DragEventCursorMove(x, y)) => {
+                assert_eq!(x, 10.0);
+                assert_eq!(y, 20.0);
+            }
+            other => panic!("expected DragEventCursorMove, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn close_requested_maps_to_tray_minimize() {
+        let event = cosmic::iced::Event::Window(window::Event::CloseRequested);
+        assert!(matches!(
+            map_event(event, Id::RESERVED, false),
+            Some(Message::TrayMinimizeToTray)
+        ));
+    }
+
+    #[test]
+    fn closed_maps_to_window_closed_with_id() {
+        let id = Id::unique();
+        let event = cosmic::iced::Event::Window(window::Event::Closed);
+        assert!(matches!(
+            map_event(event, id, false),
+            Some(Message::WindowClosed(closed_id)) if closed_id == id
+        ));
+    }
+
+    #[test]
+    fn resized_maps_to_window_resized() {
+        let event = cosmic::iced::Event::Window(window::Event::Resized(Size::new(
+            100.0, 200.0,
+        )));
+        assert!(matches!(
+            map_event(event, Id::RESERVED, false),
+            Some(Message::WindowResized)
+        ));
+    }
+
+    #[test]
+    fn left_button_released_ends_an_active_drag() {
+        let event = cosmic::iced::Event::Mouse(mouse::Event::ButtonReleased(Button::Left));
+        assert!(matches!(
+            map_event(event, Id::RESERVED, true),
+            Some(Message::DragEventEnd)
+        ));
+    }
+
+    #[test]
+    fn left_button_released_is_ignored_when_no_drag_is_active() {
+        let event = cosmic::iced::Event::Mouse(mouse::Event::ButtonReleased(Button::Left));
+        assert!(map_event(event, Id::RESERVED, false).is_none());
+    }
+
+    #[test]
+    fn escape_key_closes_dialog() {
+        let event = cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed {
+            key: keyboard::Key::Named(keyboard::key::Named::Escape),
+            modified_key: keyboard::Key::Named(keyboard::key::Named::Escape),
+            physical_key: keyboard::key::Physical::Code(keyboard::key::Code::Escape),
+            location: keyboard::Location::Standard,
+            modifiers: Modifiers::NONE,
+            text: None,
+            repeat: false,
+        });
+        assert!(matches!(
+            map_event(event, Id::RESERVED, false),
+            Some(Message::CloseDialog)
+        ));
+    }
+
+    #[test]
+    fn unrelated_events_are_ignored() {
+        let event = cosmic::iced::Event::Window(window::Event::Focused);
+        assert!(map_event(event, Id::RESERVED, true).is_none());
     }
 }

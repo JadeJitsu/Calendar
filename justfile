@@ -88,7 +88,10 @@ install-user:
     install -Dm0644 {{desktop-src}} ~/.local/share/applications/{{desktop}}
     sed -i "s|^Exec=.*|Exec=$HOME/.local/bin/{{name}} %u|" ~/.local/share/applications/{{desktop}}
     install -Dm0644 {{metainfo-src}} ~/.local/share/metainfo/{{metainfo}}
+    # The D-Bus service file ships the Flatpak path (/app/bin/...); rewrite it
+    # to the native install location for D-Bus autolaunch to find the binary.
     install -Dm0644 {{dbus-service-src}} ~/.local/share/dbus-1/services/{{dbus-service}}
+    sed -i "s|^Exec=.*|Exec=$HOME/.local/bin/{{name}}|" ~/.local/share/dbus-1/services/{{dbus-service}}
     install -Dm0644 {{icon-svg-src}} ~/.local/share/icons/hicolor/scalable/apps/{{icon-svg}}
     install -Dm0644 {{icon-png-src}} ~/.local/share/icons/hicolor/64x64/apps/{{icon-png}}
     @update-desktop-database ~/.local/share/applications 2>/dev/null || true

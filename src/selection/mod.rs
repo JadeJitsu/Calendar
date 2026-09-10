@@ -50,7 +50,7 @@ mod state;
 
 // Re-export public types
 #[allow(unused_imports)] // Part of selection API
-pub use drag::{DragPreviewInfo, DragTarget, EventDragState};
+pub use drag::{DragPreviewInfo, DragTarget, EventDragState, is_drag_active, set_drag_active};
 #[allow(unused_imports)] // Part of selection API, used by tests
 pub use point::SelectionPoint;
 #[allow(unused_imports)] // Part of selection API, used by tests

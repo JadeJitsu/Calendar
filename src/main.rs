@@ -35,7 +35,7 @@ mod views;
 
 use app::{AppFlags, CosmicCalendar};
 use clap::Parser;
-use cosmic::app::Settings;
+use cosmic::app::{Application, Settings};
 #[cfg(debug_assertions)]
 use database::Database;
 use log::info;
@@ -175,15 +175,25 @@ pub fn main() -> cosmic::iced::Result {
         // keep exit_on_close(true) (prevents the D-Bus blocking hang).
         .exit_on_close(!close_to_tray);
 
+    // Single-instance: if another instance owns our D-Bus name, forward the
+    // activation (dock click, file/URL args) to it and exit. libcosmic's
+    // `run_single_instance` is not used because its registration never owns
+    // the name under the tokio backend (see src/services/single_instance.rs).
     #[cfg(feature = "single-instance")]
+    if std::env::var("COSMIC_SINGLE_INSTANCE")
+        .map(|v| v.to_lowercase() == "false" || v == "0")
+        .unwrap_or(false)
     {
-        info!("Launching with single-instance support (use COSMIC_SINGLE_INSTANCE=false to disable)");
-        cosmic::app::run_single_instance::<CosmicCalendar>(settings, app_flags)
+        info!("Single-instance disabled via COSMIC_SINGLE_INSTANCE=false");
+    } else {
+        // Forward both URLs and file paths to the running instance.
+        let mut targets = urls_to_open.clone();
+        targets.extend(files_to_open.iter().map(|p| p.to_string_lossy().into_owned()));
+        if crate::services::activate_existing(CosmicCalendar::APP_ID, &targets) {
+            return Ok(());
+        }
     }
 
-    #[cfg(not(feature = "single-instance"))]
-    {
-        info!("Launching without single-instance");
-        cosmic::app::run::<CosmicCalendar>(settings, app_flags)
-    }
+    info!("Launching application");
+    cosmic::app::run::<CosmicCalendar>(settings, app_flags)
 }

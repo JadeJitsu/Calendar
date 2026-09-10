@@ -1437,6 +1437,15 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 }
             }
         }
+        Message::WindowClosed(id) => {
+            // The window was destroyed (CSD close button, or our own
+            // `window::close`). Clear the main-window id if it was the main
+            // window so `TrayShowOrRestore` opens a fresh window rather than
+            // gain_focus-ing a dead id (a no-op on Wayland).
+            if app.core.main_window_id() == Some(id) {
+                app.core.set_main_window_id(None);
+            }
+        }
         Message::TrayShowOrRestore => {
             // Tray "Show/Restore". If close-to-tray closed the window, there
             // is nothing to un-minimize (see TrayMinimizeToTray) - open a
@@ -1460,6 +1469,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
 
             let (id, open_task) = cosmic::iced::window::open(settings);
+            info!("[tray-debug] Show: opening fresh window {id:?}");
             app.core.set_main_window_id(Some(id));
             return open_task.discard();
         }
