@@ -340,20 +340,24 @@ pub enum Message {
     SyncCalendars,
     /// Sync started for a calendar (calendar_id)
     CalDavSyncStarted(String),
-    /// Sync finished for a calendar (calendar_id, fetched events, uid→href map)
-    CalDavSynced(String, Vec<CalendarEvent>, Vec<(String, String)>),
+    /// Sync finished for a calendar (calendar_id, fetched events,
+    /// uid→(href, etag) triples)
+    CalDavSynced(String, Vec<CalendarEvent>, Vec<(String, String, Option<String>)>),
     /// Sync failed for a calendar (calendar_id, error_message)
     CalDavSyncFailed(String, String),
 
     // CalDAV event write-back results
-    /// Event created on the server (calendar_id, event, href)
-    CalDavEventCreated(String, CalendarEvent, String),
-    /// Event updated on the server (calendar_id, event, href)
-    CalDavEventUpdated(String, CalendarEvent, String),
+    /// Event created on the server (calendar_id, event, href, etag)
+    CalDavEventCreated(String, CalendarEvent, String, String),
+    /// Event updated on the server (calendar_id, event, href, etag)
+    CalDavEventUpdated(String, CalendarEvent, String, String),
     /// Event deleted on the server (calendar_id, uid)
     CalDavEventDeleted(String, String),
     /// A CalDAV write operation failed (calendar_id, error_message)
     CalDavWriteFailed(String, String),
+    /// A CalDAV write was rejected with 412 (calendar_id, uid) — the event
+    /// changed on the server since the last sync; re-sync to catch up.
+    CalDavWriteConflict(String, String),
 
     /// No-op message for cancelled operations
     None,

@@ -148,7 +148,7 @@ flatpak install --user dev.jadejitsu.apps.Calendar.flatpak
 flatpak run dev.jadejitsu.apps.Calendar
 ```
 
-**Latest release: [v0.2.0](https://github.com/JadeJitsu/Calendar/releases/tag/v0.2.0-flatpak)** — week-view input flicker fixed, tray/dock restore flicker fixed (opaque background), dock/systray single-instance. See [CHANGELOG.md](CHANGELOG.md).
+**Latest release: [v0.3.0](https://github.com/JadeJitsu/Calendar/releases/tag/v0.3.0-flatpak)** — CalDAV write safety (If-Match/ETag optimistic concurrency; a server-side change since the last sync now rejects the write with a 412 and an auto re-sync instead of silently clobbering it). See [CHANGELOG.md](CHANGELOG.md).
 
 To build the bundle yourself from the manifest `dev.jadejitsu.apps.Calendar.yml` (runtime `org.freedesktop.Platform` 25.08 + `rust-stable` SDK extension):
 

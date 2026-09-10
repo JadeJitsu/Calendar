@@ -25,16 +25,17 @@ fn main() {
     match client.fetch_events(url) {
         Ok(pairs) => {
             println!("REPORT OK: {} event resource(s)", pairs.len());
-            for (href, ics) in &pairs {
+            for (href, ics, etag) in &pairs {
                 // Extract UID lines only (safe to print).
                 let uids: Vec<&str> = ics
                     .lines()
                     .filter(|l| l.to_uppercase().starts_with("UID:"))
                     .collect();
                 println!(
-                    "  {}  uid={:?}",
+                    "  {}  uid={:?}  etag={:?}",
                     href,
-                    uids.first().copied().unwrap_or("<none>")
+                    uids.first().copied().unwrap_or("<none>"),
+                    etag
                 );
             }
         }

@@ -126,8 +126,22 @@ pub enum CalDavError {
     Http(reqwest::Error),
     /// The server returned a non-success status.
     Status(reqwest::StatusCode),
+    /// The server rejected the write because the resource changed since the
+    /// `If-Match` ETag we sent (HTTP 412 Precondition Failed).
+    Conflict,
     /// A response could not be parsed.
     Parse(String),
+}
+
+/// Map a non-success status to the right error variant. 412 (an `If-Match`
+/// conflict) gets its own variant so callers can react to it distinctly from
+/// a generic failure.
+fn error_for_status(status: reqwest::StatusCode) -> CalDavError {
+    if status == reqwest::StatusCode::PRECONDITION_FAILED {
+        CalDavError::Conflict
+    } else {
+        CalDavError::Status(status)
+    }
 }
 
 impl std::fmt::Display for CalDavError {
@@ -136,6 +150,10 @@ impl std::fmt::Display for CalDavError {
             CalDavError::NotHttps => write!(f, "CalDAV server URL must use HTTPS"),
             CalDavError::Http(e) => write!(f, "CalDAV request failed: {e}"),
             CalDavError::Status(s) => write!(f, "CalDAV server returned {s}"),
+            CalDavError::Conflict => write!(
+                f,
+                "CalDAV write rejected: the event changed on the server since the last sync"
+            ),
             CalDavError::Parse(msg) => write!(f, "CalDAV response parse error: {msg}"),
         }
     }
@@ -345,7 +363,10 @@ impl CalDavClient {
 
     /// REPORT a calendar collection. Returns `(href, ics_body)` pairs — the
     /// caller parses the ICS (shared parser) and keeps the uid→href map.
-    pub fn fetch_events(&self, collection_url: &str) -> Result<Vec<(String, String)>, CalDavError> {
+    pub fn fetch_events(
+        &self,
+        collection_url: &str,
+    ) -> Result<Vec<(String, String, Option<String>)>, CalDavError> {
         let caldav_query = r#"<?xml version="1.0" encoding="utf-8" ?>
 <C:calendar-query xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
     <D:prop>
@@ -399,7 +420,7 @@ impl CalDavClient {
         let response = req.send()?;
         let status = response.status();
         if !status.is_success() {
-            return Err(CalDavError::Status(status));
+            return Err(error_for_status(status));
         }
         Ok(response
             .headers()
@@ -421,7 +442,7 @@ impl CalDavClient {
         let response = req.send()?;
         let status = response.status();
         if !status.is_success() {
-            return Err(CalDavError::Status(status));
+            return Err(error_for_status(status));
         }
         Ok(())
     }
@@ -543,11 +564,13 @@ pub fn parse_calendar_multistatus(
     Ok(out)
 }
 
-/// Parse a REPORT calendar-query multistatus into `(href, ics_body)` pairs.
+/// Parse a REPORT calendar-query multistatus into `(href, ics_body, etag)`
+/// triples. The ETag (from `<D:getetag/>`) is `None` when the server omits it;
+/// it is what `If-Match` writes are later checked against.
 pub fn parse_event_multistatus(
     xml: &str,
     base_url: &str,
-) -> Result<Vec<(String, String)>, CalDavError> {
+) -> Result<Vec<(String, String, Option<String>)>, CalDavError> {
     let doc = roxmltree::Document::parse(xml).map_err(|e| CalDavError::Parse(e.to_string()))?;
     let mut out = Vec::new();
     for resp in doc.descendants().filter(|e| e.has_tag_name("response")) {
@@ -561,7 +584,18 @@ pub fn parse_event_multistatus(
             .find(|e| e.has_tag_name("calendar-data"))
             .and_then(|e| e.text())
             .ok_or_else(|| CalDavError::Parse("response without calendar-data".into()))?;
-        out.push((CalDavClient::resolve_href(base_url, href), ics.to_string()));
+        // getetag is optional — a server may omit it, in which case we have
+        // nothing to If-Match against for this event.
+        let etag = resp
+            .descendants()
+            .find(|e| e.has_tag_name("getetag"))
+            .and_then(|e| e.text())
+            .map(|s| s.to_string());
+        out.push((
+            CalDavClient::resolve_href(base_url, href),
+            ics.to_string(),
+            etag,
+        ));
     }
     Ok(out)
 }
@@ -927,14 +961,42 @@ VERSION:2.0
 END:VCALENDAR</c:calendar-data>
     </d:prop></d:propstat>
   </d:response>
+  <d:response>
+    <d:href>/calendars/user/work/evt-2.ics</d:href>
+    <d:propstat><d:prop>
+      <c:calendar-data>BEGIN:VCALENDAR
+VERSION:2.0
+END:VCALENDAR</c:calendar-data>
+    </d:prop></d:propstat>
+  </d:response>
 </d:multistatus>"#;
         let events = parse_event_multistatus(xml, "https://example.com/caldav/").expect("parse");
-        assert_eq!(events.len(), 1);
+        assert_eq!(events.len(), 2);
         assert_eq!(
             events[0].0,
             "https://example.com/calendars/user/work/evt-1.ics"
         );
         assert!(events[0].1.contains("BEGIN:VCALENDAR"));
+        // ETag captured from the getetag element.
+        assert_eq!(events[0].2.as_deref(), Some("\"abc123\""));
+        // A response without getetag yields a None etag.
+        assert_eq!(events[1].0, "https://example.com/calendars/user/work/evt-2.ics");
+        assert_eq!(events[1].2, None);
+    }
+
+    #[test]
+    fn test_error_for_status() {
+        use reqwest::StatusCode;
+        // 412 Precondition Failed is the If-Match conflict — its own variant.
+        match error_for_status(StatusCode::PRECONDITION_FAILED) {
+            CalDavError::Conflict => {}
+            other => panic!("expected Conflict, got {other:?}"),
+        }
+        // Anything else is a plain status error.
+        match error_for_status(StatusCode::INTERNAL_SERVER_ERROR) {
+            CalDavError::Status(s) => assert_eq!(s, StatusCode::INTERNAL_SERVER_ERROR),
+            other => panic!("expected Status, got {other:?}"),
+        }
     }
 }
 

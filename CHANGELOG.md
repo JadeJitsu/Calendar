@@ -10,6 +10,24 @@ All notable changes to the Calendar app are documented here.
 - Bump `patch` for fixes, `minor` for new features, `major` for breaking
   changes. Update this file in the same commit as the version bump.
 
+## [0.3.0] — 2026-09-10
+
+### Added
+- **CalDAV write safety (optimistic concurrency).** CalDAV edits and deletes
+  now send an `If-Match` header carrying the event's ETag, so a change made
+  on the server since the last sync rejects the write (HTTP 412) instead of
+  silently clobbering it. The ETag is captured from the REPORT response (it
+  was already requested but previously dropped) and from each PUT's response,
+  and tracked per event alongside its href.
+  - On a 412 the app shows a desktop notification ("Calendar sync conflict")
+    and automatically re-syncs that calendar to server truth, so the view and
+    the ETag map catch up; the rejected edit is discarded and can be
+    re-applied on the fresh copy.
+  - New events, and edits made before the first sync (no ETag captured yet),
+    fall back to the previous last-writer-wins behavior.
+  - Verified live against a Nextcloud 34 server: a stale `If-Match` returns
+    412 (the server enforces it), and the ETag advances on each write.
+
 ## [0.2.0] — 2026-09-10
 
 ### Fixed

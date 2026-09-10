@@ -11,7 +11,7 @@ use cosmic::app::Task;
 use log::{debug, error, info, warn};
 
 use crate::app::CosmicCalendar;
-use crate::caldav::{CalDavClient, CalendarEvent, DiscoveredCalendar};
+use crate::caldav::{CalDavClient, CalDavError, CalendarEvent, DiscoveredCalendar};
 use crate::calendars::{CalDavCalendar, CalendarSource, CalendarType};
 use crate::dialogs::{ActiveDialog, DialogManager};
 use crate::message::Message;
@@ -260,11 +260,11 @@ pub fn handle_sync_calendars(app: &mut CosmicCalendar) -> Task<Message> {
                                 .map_err(|e| e.to_string())?;
                             let mut events = Vec::new();
                             let mut hrefs = Vec::new();
-                            for (href, ics) in pairs {
+                            for (href, ics, etag) in pairs {
                                 match ExportHandler::parse_ical_string(&ics) {
                                     Ok(mut parsed) => {
                                         for event in parsed.drain(..) {
-                                            hrefs.push((event.uid.clone(), href.clone()));
+                                            hrefs.push((event.uid.clone(), href.clone(), etag.clone()));
                                             events.push(event);
                                         }
                                     }
@@ -348,7 +348,7 @@ pub fn handle_caldav_synced(
     app: &mut CosmicCalendar,
     calendar_id: String,
     events: Vec<CalendarEvent>,
-    hrefs: Vec<(String, String)>,
+    hrefs: Vec<(String, String, Option<String>)>,
 ) -> Task<Message> {
     info!(
         "CalDAV: Sync complete for '{}' ({} events)",
@@ -402,6 +402,7 @@ pub fn handle_caldav_event_created(
     calendar_id: String,
     event: CalendarEvent,
     href: String,
+    etag: String,
 ) {
     if let Some(source) = app
         .calendar_manager
@@ -410,7 +411,7 @@ pub fn handle_caldav_event_created(
         .find(|s| s.info().id == calendar_id)
     {
         if let Some(caldav) = source.as_any().downcast_mut::<CalDavCalendar>() {
-            caldav.apply_created(event, href);
+            caldav.apply_created(event, href, etag);
         }
     }
     app.refresh_cached_events();
@@ -422,6 +423,7 @@ pub fn handle_caldav_event_updated(
     calendar_id: String,
     event: CalendarEvent,
     _href: String,
+    etag: String,
 ) {
     if let Some(source) = app
         .calendar_manager
@@ -430,7 +432,7 @@ pub fn handle_caldav_event_updated(
         .find(|s| s.info().id == calendar_id)
     {
         if let Some(caldav) = source.as_any().downcast_mut::<CalDavCalendar>() {
-            caldav.apply_updated(event);
+            caldav.apply_updated(event, etag);
         }
     }
     app.refresh_cached_events();
@@ -464,6 +466,41 @@ pub fn handle_caldav_write_failed(
     // No toast/notification widget exists in this app yet — the error is
     // logged. The sync-status indicator covers sync failures; write failures
     // surface via the log for now.
+}
+
+/// A CalDAV write was rejected with 412: the event changed on the server
+/// since the last sync. Tell the user and re-sync the calendar so the view
+/// (and the ETag map) catch up to server truth. The rejected edit is
+/// discarded — the user re-applies it on the fresh copy.
+pub fn handle_caldav_write_conflict(
+    app: &mut CosmicCalendar,
+    calendar_id: String,
+    uid: String,
+) -> Task<Message> {
+    warn!(
+        "CalDAV: Conflict on write for '{}' ({}); re-syncing to server truth",
+        calendar_id, uid
+    );
+    // Surface it to the user — a desktop notification, reusing the same
+    // notify_rust idiom as event alerts.
+    if let Err(e) = notify_rust::Notification::new()
+        .summary("Calendar sync conflict")
+        .body("An event changed on the server since your last sync. Re-syncing to the latest version.")
+        .appname("Calendar")
+        .show()
+    {
+        warn!("CalDAV: Conflict notification failed: {e}");
+    }
+    // If a sync is already in flight it will catch us up — don't stack another.
+    let is_syncing = app
+        .sync_status
+        .as_ref()
+        .map(|(_, syncing)| *syncing)
+        .unwrap_or(false);
+    if is_syncing {
+        return Task::none();
+    }
+    handle_sync_calendars(app)
 }
 
 /// PUT an event to a CalDAV calendar off-thread. Returns a `Task` that posts
@@ -503,6 +540,14 @@ pub fn write_caldav_event(
     } else {
         caldav.new_event_href(&uid)
     };
+    // Send If-Match only when editing an event whose ETag we've captured.
+    // A brand-new event has nothing to match; an edit before the first sync
+    // has no ETag yet, so it falls back to last-writer-wins.
+    let if_match = if is_edit {
+        caldav.event_etag(&uid).map(|s| s.to_string())
+    } else {
+        None
+    };
     let client = caldav.client_clone();
     let ics = ExportHandler::event_to_ical(&event).to_string();
     // The callback is `Fn` + `'static`, so it needs its own copies of the
@@ -511,13 +556,9 @@ pub fn write_caldav_event(
 
     Task::perform(
         async move {
-            tokio::task::spawn_blocking(move || {
-                client
-                    .put_event(&href, &ics, None)
-                    .map_err(|e| e.to_string())
-            })
-            .await
-            .unwrap_or_else(|e| Err(format!("Write task panicked: {}", e)))
+            tokio::task::spawn_blocking(move || client.put_event(&href, &ics, if_match.as_deref()))
+                .await
+                .unwrap_or_else(|e| Err(CalDavError::Parse(format!("Write task panicked: {e}"))))
         },
         move |result| match result {
             Ok(etag) => {
@@ -530,21 +571,36 @@ pub fn write_caldav_event(
                         calendar_id.clone(),
                         event.clone(),
                         href_cb.clone(),
+                        etag,
                     ))
                 } else {
                     cosmic::Action::App(Message::CalDavEventCreated(
                         calendar_id.clone(),
                         event.clone(),
                         href_cb.clone(),
+                        etag,
                     ))
                 }
+            }
+            Err(CalDavError::Conflict) => {
+                warn!(
+                    "CalDAV: Write rejected (412) for '{}' ({}): event changed on the server",
+                    calendar_id, uid
+                );
+                cosmic::Action::App(Message::CalDavWriteConflict(
+                    calendar_id.clone(),
+                    uid.clone(),
+                ))
             }
             Err(e) => {
                 error!(
                     "CalDAV: Write failed for '{}' ({}): {}",
                     calendar_id, uid, e
                 );
-                cosmic::Action::App(Message::CalDavWriteFailed(calendar_id.clone(), e))
+                cosmic::Action::App(Message::CalDavWriteFailed(
+                    calendar_id.clone(),
+                    e.to_string(),
+                ))
             }
         },
     )
@@ -576,15 +632,16 @@ pub fn delete_caldav_event(
         .event_href(&uid)
         .map(|s| s.to_string())
         .unwrap_or_else(|| caldav.new_event_href(&uid));
+    // If-Match the captured ETag so a concurrent server-side change rejects
+    // the delete (412) rather than silently removing a changed event.
+    let if_match = caldav.event_etag(&uid).map(|s| s.to_string());
     let client = caldav.client_clone();
 
     Task::perform(
         async move {
-            tokio::task::spawn_blocking(move || {
-                client.delete_event(&href, None).map_err(|e| e.to_string())
-            })
-            .await
-            .unwrap_or_else(|e| Err(format!("Delete task panicked: {}", e)))
+            tokio::task::spawn_blocking(move || client.delete_event(&href, if_match.as_deref()))
+                .await
+                .unwrap_or_else(|e| Err(CalDavError::Parse(format!("Delete task panicked: {e}"))))
         },
         move |result| match result {
             Ok(()) => {
@@ -594,12 +651,25 @@ pub fn delete_caldav_event(
                     uid.clone(),
                 ))
             }
+            Err(CalDavError::Conflict) => {
+                warn!(
+                    "CalDAV: Delete rejected (412) for '{}' ({}): event changed on the server",
+                    calendar_id, uid
+                );
+                cosmic::Action::App(Message::CalDavWriteConflict(
+                    calendar_id.clone(),
+                    uid.clone(),
+                ))
+            }
             Err(e) => {
                 error!(
                     "CalDAV: Delete failed for '{}' ({}): {}",
                     calendar_id, uid, e
                 );
-                cosmic::Action::App(Message::CalDavWriteFailed(calendar_id.clone(), e))
+                cosmic::Action::App(Message::CalDavWriteFailed(
+                    calendar_id.clone(),
+                    e.to_string(),
+                ))
             }
         },
     )

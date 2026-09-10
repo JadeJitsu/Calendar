@@ -54,6 +54,15 @@
   </keywords>
 
   <releases>
+    <release version="0.3.0" date="2026-09-10">
+      <description>
+        <p>CalDAV write safety.</p>
+        <ul>
+          <li>Edits and deletes now send an If-Match ETag, so a server-side change since the last sync rejects the write (412) instead of silently clobbering it</li>
+          <li>On a conflict the app shows a desktop notification and re-syncs the calendar to the latest server version</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-09-10">
       <description>
         <p>Flicker fixes and single-instance activation.</p>

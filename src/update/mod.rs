@@ -462,7 +462,8 @@ use caldav::{
     handle_caldav_dialog_url_changed, handle_caldav_dialog_user_changed, handle_caldav_discovered,
     handle_caldav_discovery_failed, handle_caldav_event_created, handle_caldav_event_deleted,
     handle_caldav_event_updated, handle_caldav_sync_failed, handle_caldav_sync_started,
-    handle_caldav_synced, handle_caldav_write_failed, handle_confirm_add_caldav,
+    handle_caldav_synced, handle_caldav_write_conflict, handle_caldav_write_failed,
+    handle_confirm_add_caldav,
     handle_open_add_caldav_dialog, handle_sync_calendars,
 };
 use calendar::{
@@ -1686,17 +1687,20 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
 
         // === CalDAV event write-back results ===
-        Message::CalDavEventCreated(calendar_id, event, href) => {
-            handle_caldav_event_created(app, calendar_id, event, href);
+        Message::CalDavEventCreated(calendar_id, event, href, etag) => {
+            handle_caldav_event_created(app, calendar_id, event, href, etag);
         }
-        Message::CalDavEventUpdated(calendar_id, event, href) => {
-            handle_caldav_event_updated(app, calendar_id, event, href);
+        Message::CalDavEventUpdated(calendar_id, event, href, etag) => {
+            handle_caldav_event_updated(app, calendar_id, event, href, etag);
         }
         Message::CalDavEventDeleted(calendar_id, uid) => {
             handle_caldav_event_deleted(app, calendar_id, uid);
         }
         Message::CalDavWriteFailed(calendar_id, error_message) => {
             handle_caldav_write_failed(app, calendar_id, error_message);
+        }
+        Message::CalDavWriteConflict(calendar_id, uid) => {
+            return handle_caldav_write_conflict(app, calendar_id, uid);
         }
 
         // No-op for cancelled operations
