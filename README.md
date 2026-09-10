@@ -1,5 +1,5 @@
 <div align="center">    
-  <img src="res/icons/hicolor/scalable/apps/dev.xarbit.apps.Calendar.svg" alt="Calendar Icon" width="300" height="300">
+  <img src="res/icons/hicolor/scalable/apps/dev.jadejitsu.apps.Calendar.svg" alt="Calendar Icon" width="300" height="300">
 
   # A Calendar made for the COSMIC Desktop
 </div>
@@ -16,7 +16,7 @@
 
 ## Fork
 
-This project is a **fork of [xarbit/sol](https://github.com/xarbit/sol)** — "The missing native Calendar app for the COSMIC Desktop" by [xarbit](https://github.com/xarbit) (app ID `dev.xarbit.apps.Calendar`, licensed under GPLv3). All credit for the original design, UI foundation, and codebase goes to the upstream project. This fork builds on that work to add full CalDAV support (read + write) and related calendar functionality.
+This project is a **fork of [xarbit/sol](https://github.com/xarbit/sol)** — "The missing native Calendar app for the COSMIC Desktop" by [xarbit](https://github.com/xarbit) (licensed under GPLv3; this fork uses app ID `dev.jadejitsu.apps.Calendar`). All credit for the original design, UI foundation, and codebase goes to the upstream project. This fork builds on that work to add full CalDAV support (read + write) and related calendar functionality.
 
 A modern calendar application built with [libcosmic](https://github.com/pop-os/libcosmic), featuring CalDAV support for seamless calendar synchronization.
 
@@ -141,17 +141,17 @@ cargo run --release
 
 ### Flatpak
 
-A standalone Flatpak bundle is published as a [GitHub Release asset](https://github.com/JadeJitsu/Calendar/releases) — download the latest `dev.xarbit.apps.Calendar.flatpak` and install it:
+A standalone Flatpak bundle is published as a [GitHub Release asset](https://github.com/JadeJitsu/Calendar/releases) — download the latest `dev.jadejitsu.apps.Calendar.flatpak` and install it:
 
 ```bash
-flatpak install --user dev.xarbit.apps.Calendar.flatpak
-flatpak run dev.xarbit.apps.Calendar
+flatpak install --user dev.jadejitsu.apps.Calendar.flatpak
+flatpak run dev.jadejitsu.apps.Calendar
 ```
 
-To build the bundle yourself from the manifest `dev.xarbit.apps.Calendar.yml` (runtime `org.freedesktop.Platform` 25.08 + `rust-stable` SDK extension):
+To build the bundle yourself from the manifest `dev.jadejitsu.apps.Calendar.yml` (runtime `org.freedesktop.Platform` 25.08 + `rust-stable` SDK extension):
 
 ```bash
-just flatpak-bundle          # → dev.xarbit.apps.Calendar.flatpak
+just flatpak-bundle          # → dev.jadejitsu.apps.Calendar.flatpak
 ```
 
 The Flatpak build is self-contained (it vendors its own Rust toolchain and system libraries), so it is the recommended way to run the app on a distribution other than the one it was built on.
@@ -163,7 +163,7 @@ The app is a standard iced/libcosmic (winit) application, so it runs on any Wayl
 | Feature | COSMIC | Pop!_OS (GNOME) | Notes |
 |---|---|---|---|
 | Core app (views, CalDAV, SQLite, keyring, file dialogs) | ✅ | ✅ | iced/winit is compositor-agnostic; `rfd`/keyring use XDG portals + Secret Service, which Pop has |
-| Dock icon | ✅ | ✅ | Both docks match a running window to its `.desktop` launcher by app-id (`dev.xarbit.apps.Calendar`) |
+| Dock icon | ✅ | ✅ | Both docks match a running window to its `.desktop` launcher by app-id (`dev.jadejitsu.apps.Calendar`) |
 | System tray icon (Wayland session) | ✅ | ✅ | libappindicator registers a StatusNotifierItem; GNOME 40+ hosts SNI natively. Needs `libappindicator3` + `gtk3` |
 | System tray icon (X11 session) | n/a | ⚠️ | libappindicator falls back to XEmbed on X11, which GNOME has no host for — the tray icon (and close-to-tray) won't appear. Use a Wayland session |
 | Theming | ✅ | ⚠️ | Reads COSMIC theme config v2; on non-COSMIC desktops it falls back to the built-in `cosmic-dark` (functional, just not themed to the desktop) |

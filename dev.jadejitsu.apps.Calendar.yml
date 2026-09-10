@@ -1,4 +1,4 @@
-app-id: dev.xarbit.apps.Calendar
+app-id: dev.jadejitsu.apps.Calendar
 runtime: org.freedesktop.Platform
 runtime-version: "25.08"
 sdk: org.freedesktop.Sdk
@@ -36,13 +36,13 @@ finish-args:
 
   # D-Bus access for URL handler registration
   - --talk-name=org.freedesktop.Flatpak
-  - --own-name=dev.xarbit.apps.Calendar
+  - --own-name=dev.jadejitsu.apps.Calendar
 
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin
   env:
     CARGO_HOME: /run/build/xcalendar/cargo
-    FLATPAK_ID: dev.xarbit.apps.Calendar
+    FLATPAK_ID: dev.jadejitsu.apps.Calendar
 
 modules:
   - name: xcalendar
@@ -55,9 +55,9 @@ modules:
       - cargo --offline fetch --manifest-path Cargo.toml --verbose
       - cargo --offline build --release --verbose --features single-instance
       - install -Dm755 ./target/release/xcalendar -t /app/bin/
-      - install -Dm644 ./res/dev.xarbit.apps.Calendar.desktop /app/share/applications/dev.xarbit.apps.Calendar.desktop
-      - install -Dm644 ./res/dev.xarbit.apps.Calendar.metainfo.xml /app/share/metainfo/dev.xarbit.apps.Calendar.metainfo.xml
-      - install -Dm644 ./res/icons/hicolor/scalable/apps/dev.xarbit.apps.Calendar.svg /app/share/icons/hicolor/scalable/apps/dev.xarbit.apps.Calendar.svg
+      - install -Dm644 ./res/dev.jadejitsu.apps.Calendar.desktop /app/share/applications/dev.jadejitsu.apps.Calendar.desktop
+      - install -Dm644 ./res/dev.jadejitsu.apps.Calendar.metainfo.xml /app/share/metainfo/dev.jadejitsu.apps.Calendar.metainfo.xml
+      - install -Dm644 ./res/icons/hicolor/scalable/apps/dev.jadejitsu.apps.Calendar.svg /app/share/icons/hicolor/scalable/apps/dev.jadejitsu.apps.Calendar.svg
 
     sources:
       - type: dir

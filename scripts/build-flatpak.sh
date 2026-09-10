@@ -13,8 +13,8 @@ flatpak install --user -y flathub org.freedesktop.Sdk.Extension.rust-stable//25.
 
 echo
 echo "🏗️  Building Flatpak..."
-flatpak-builder --user --install --force-clean build-dir dev.xarbit.apps.Calendar.yml
+flatpak-builder --user --install --force-clean build-dir dev.jadejitsu.apps.Calendar.yml
 
 echo
 echo "✅ Build complete!"
-echo "Run with: flatpak run dev.xarbit.apps.Calendar"
+echo "Run with: flatpak run dev.jadejitsu.apps.Calendar"

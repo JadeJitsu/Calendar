@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>dev.xarbit.apps.Calendar</id>
+  <id>dev.jadejitsu.apps.Calendar</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0</project_license>
 
@@ -25,7 +25,7 @@
     </ul>
   </description>
 
-  <launchable type="desktop-id">dev.xarbit.apps.Calendar.desktop</launchable>
+  <launchable type="desktop-id">dev.jadejitsu.apps.Calendar.desktop</launchable>
 
   <provides>
     <mediatype>text/calendar</mediatype>
@@ -33,10 +33,10 @@
     <mediatype>application/ics</mediatype>
   </provides>
 
-  <url type="homepage">https://github.com/xarbit/sol</url>
-  <url type="bugtracker">https://github.com/xarbit/sol/issues</url>
+  <url type="homepage">https://github.com/JadeJitsu/Calendar</url>
+  <url type="bugtracker">https://github.com/JadeJitsu/Calendar/issues</url>
 
-  <developer_name>xarbit</developer_name>
+  <developer_name>JadeJitsu</developer_name>
 
   <content_rating type="oars-1.1" />
 

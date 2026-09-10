@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-APP_ID="dev.xarbit.apps.Calendar"
-BUNDLE_FILE="dev.xarbit.apps.Calendar.flatpak"
+APP_ID="dev.jadejitsu.apps.Calendar"
+BUNDLE_FILE="dev.jadejitsu.apps.Calendar.flatpak"
 
 echo "📦 Building Calendar standalone Flatpak bundle..."
 echo
@@ -16,7 +16,7 @@ flatpak install --user -y flathub org.freedesktop.Sdk.Extension.rust-stable//25.
 
 echo
 echo "🏗️  Building Flatpak..."
-flatpak-builder --user --force-clean --repo=flatpak-repo build-dir dev.xarbit.apps.Calendar.yml
+flatpak-builder --user --force-clean --repo=flatpak-repo build-dir dev.jadejitsu.apps.Calendar.yml
 
 echo
 echo "📦 Creating standalone bundle: $BUNDLE_FILE"

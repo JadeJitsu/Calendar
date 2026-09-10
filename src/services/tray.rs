@@ -172,7 +172,7 @@ pub fn tray_event_stream() -> impl Stream<Item = Message> {
 /// Decode the bundled PNG into an `Icon` (RGBA). Returns `None` (and logs) on
 /// any failure so a bad/missing asset can't crash the app at startup.
 fn load_icon() -> Option<Icon> {
-    let file = TrayIconAssets::get("dev.xarbit.apps.Calendar.png")?;
+    let file = TrayIconAssets::get("dev.jadejitsu.apps.Calendar.png")?;
     // `EmbeddedFile.data` is a `Cow<'static, [u8]>`.
     let bytes: &[u8] = &file.data;
 

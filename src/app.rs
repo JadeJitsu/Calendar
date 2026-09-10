@@ -27,11 +27,11 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 // The app-id must match the installed `.desktop` file and icon name
-// (`dev.xarbit.apps.Calendar`) so the COSMIC dock associates the running
+// (`dev.jadejitsu.apps.Calendar`) so the COSMIC dock associates the running
 // window with the launcher and the window icon resolves via the icon theme.
 // A `.Devel` suffix here would break both: `icon::from_name` would not find
 // the icon, and the dock would not match the window to the launcher.
-const APP_ID: &str = "dev.xarbit.apps.Calendar";
+const APP_ID: &str = "dev.jadejitsu.apps.Calendar";
 
 /// Command-line flags passed to the application
 #[derive(Debug, Clone, Default)]

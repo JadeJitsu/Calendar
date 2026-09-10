@@ -40,12 +40,12 @@ build() {
 package() {
     cd "Calendar-${pkgver}"
     install -Dm755 target/release/xcalendar -t "${pkgdir}/usr/bin/"
-    install -Dm644 res/dev.xarbit.apps.Calendar.desktop -t "${pkgdir}/usr/share/applications/"
-    install -Dm644 res/dev.xarbit.apps.Calendar.metainfo.xml -t "${pkgdir}/usr/share/metainfo/"
-    install -Dm644 res/dev.xarbit.apps.Calendar.service -t "${pkgdir}/usr/share/dbus-1/services/"
+    install -Dm644 res/dev.jadejitsu.apps.Calendar.desktop -t "${pkgdir}/usr/share/applications/"
+    install -Dm644 res/dev.jadejitsu.apps.Calendar.metainfo.xml -t "${pkgdir}/usr/share/metainfo/"
+    install -Dm644 res/dev.jadejitsu.apps.Calendar.service -t "${pkgdir}/usr/share/dbus-1/services/"
     # App icon in the hicolor theme so the `.desktop` Icon= name resolves and
     # the COSMIC dock shows the app's icon for the running window.
-    install -Dm644 res/icons/hicolor/scalable/apps/dev.xarbit.apps.Calendar.svg \
+    install -Dm644 res/icons/hicolor/scalable/apps/dev.jadejitsu.apps.Calendar.svg \
         -t "${pkgdir}/usr/share/icons/hicolor/scalable/apps/"
     # The desktop launcher's PATH does not include the install prefix's bin
     # dir in all environments; the bare `Exec=xcalendar` works system-wide

@@ -1,5 +1,5 @@
 name := 'xcalendar'
-appid := 'dev.xarbit.apps.Calendar'
+appid := 'dev.jadejitsu.apps.Calendar'
 
 rootdir := ''
 prefix := '/usr'
@@ -116,7 +116,7 @@ flatpak-bundle:
 
 # Install standalone Flatpak bundle (.flatpak file)
 flatpak-bundle-install:
-    flatpak install --user dev.xarbit.apps.Calendar.flatpak
+    flatpak install --user dev.jadejitsu.apps.Calendar.flatpak
 
 # Run Flatpak
 flatpak-run *args:
