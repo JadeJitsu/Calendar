@@ -10,6 +10,17 @@ All notable changes to the Calendar app are documented here.
 - Bump `patch` for fixes, `minor` for new features, `major` for breaking
   changes. Update this file in the same commit as the version bump.
 
+## [0.4.2] — 2026-09-11
+
+### Fixed
+- **Flatpak: system tray icon now renders on COSMIC.** The `tray-icon` crate
+  publishes its StatusNotifierItem icon as a file path under
+  `$XDG_RUNTIME_DIR/tray-icon/` *inside* the sandbox; the host-side
+  StatusNotifierWatcher couldn't read it, so the icon registered on D-Bus
+  but drew blank. The manifest now exposes the directory to the host
+  (`--filesystem=xdg-run/tray-icon:create`), which also auto-creates it.
+  Verified live on COSMIC 1.0.
+
 ## [0.4.1] — 2026-09-10
 
 ### Added

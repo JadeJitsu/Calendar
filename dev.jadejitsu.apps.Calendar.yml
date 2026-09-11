@@ -1,5 +1,5 @@
 app-id: dev.jadejitsu.apps.Calendar
-version: "0.4.1"
+version: "0.4.2"
 runtime: org.freedesktop.Platform
 runtime-version: "25.08"
 sdk: org.freedesktop.Sdk
@@ -24,6 +24,13 @@ finish-args:
   # System tray icon (StatusNotifierItem): libappindicator must be able to
   # register with the desktop's StatusNotifierWatcher over the session bus.
   - --talk-name=org.kde.StatusNotifierWatcher
+
+  # The tray-icon crate publishes its SNI icon as a *file path* under
+  # $XDG_RUNTIME_DIR/tray-icon/ (inside the sandbox). The host-side
+  # StatusNotifierWatcher can't read sandbox-internal paths, so the icon
+  # registered but rendered blank. Exposing the dir to the host (and
+  # auto-creating it, since the sandbox app is what populates it) fixes it.
+  - --filesystem=xdg-run/tray-icon:create
 
   # COSMIC config access for theme switching
   - --filesystem=xdg-config/cosmic:ro
