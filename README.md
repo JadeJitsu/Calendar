@@ -126,6 +126,7 @@ This project is in **active development**. Core calendar functionality — event
 - Rust (latest stable version)
 - libcosmic dependencies (automatically fetched from git)
 - Linux (system tray icon): `libappindicator3` (pkg-config `appindicator3-0.1`) and `gtk3` — the `tray-icon` Linux backend is libappindicator. e.g. `sudo pacman -S libappindicator3 gtk3`
+- To build the Flatpak bundle (see below): `flatpak-builder`, e.g. `sudo apt install flatpak-builder` (Debian/Ubuntu) or `sudo pacman -S flatpak-builder` (Arch). If it's not packaged for your distro, or you can't install system packages, `flatpak install --user flathub org.flatpak.Builder` gives an equivalent CLI — just run `flatpak run org.flatpak.Builder` in place of the `flatpak-builder` binary wherever it's invoked below.
 
 ### Compile
 

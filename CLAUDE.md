@@ -30,6 +30,8 @@ Always use `--release` flag for performance testing.
 
 - `Cargo.toml` `version` is the **single source of truth**; the Flatpak manifest (`dev.jadejitsu.apps.Calendar.yml`) `version` must match it.
 - Every user-facing release: bump both versions + update `CHANGELOG.md` in the same commit, tag `v<version>`, build the bundle (`just flatpak-bundle`), and publish a GitHub Release tagged `v<version>-flatpak` with the `.flatpak` asset.
+- `just flatpak-bundle` (→ `scripts/build-flatpak-bundle.sh`) needs a `flatpak-builder` binary on `$PATH` — not bundled with `flatpak` itself, install separately (`apt`/`pacman`/etc.). Where that's not available (unpackaged distro, no sudo), `flatpak install --user flathub org.flatpak.Builder` + `flatpak run org.flatpak.Builder <same args>` is a confirmed drop-in substitute (same CLI, verified against the same manifest 2026-09-12). The script itself installs the `org.freedesktop.Platform`/`Sdk`/`rust-stable` runtime pieces on demand, but not `flatpak-builder` — that one prerequisite is on the developer.
+- Rebuilding an already-tagged version (e.g. after fixing the build tooling, no code change) doesn't need a new version bump — just re-run `just flatpak-bundle` and `gh release upload v<version>-flatpak dev.jadejitsu.apps.Calendar.flatpak --clobber` to replace the asset in place.
 - Semver: `patch` for fixes, `minor` for new features, `major` for breaking changes.
 - Current version: **0.4.3** (2026-09-12).
 
