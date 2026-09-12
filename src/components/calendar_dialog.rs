@@ -113,23 +113,6 @@ pub fn render_calendar_dialog(active_dialog: &ActiveDialog) -> Element<'_, Messa
         .into()
 }
 
-/// The iCloud CalDAV service's well-known entry point. Clicking the
-/// "iCloud" preset button fills the Server URL field with this.
-const ICLOUD_CALDAV_URL: &str = "https://caldav.icloud.com";
-
-/// Provider-specific help text for the Add CalDAV dialog, chosen by
-/// matching the currently-entered server URL against known providers.
-/// Returns `None` for a blank or unrecognized URL, in which case the
-/// dialog falls back to its generic HTTPS/keyring note.
-fn caldav_help_note(url: &str) -> Option<String> {
-    let host = url::Url::parse(url).ok()?.host_str()?.to_ascii_lowercase();
-    if host == "caldav.icloud.com" {
-        Some(fl!("dialog-add-caldav-icloud-note"))
-    } else {
-        None
-    }
-}
-
 /// Render the add CalDAV account dialog (server URL + username + password).
 /// Takes the active dialog state which should be the AddCalDav variant.
 pub fn render_add_caldav_dialog(active_dialog: &ActiveDialog) -> Element<'_, Message> {
@@ -142,12 +125,6 @@ pub fn render_add_caldav_dialog(active_dialog: &ActiveDialog) -> Element<'_, Mes
         } => (url.as_str(), username.as_str(), password.as_str()),
         _ => return widget::text("").into(), // Should not happen
     };
-
-    // Quick-setup presets: fill the Server URL field for known providers.
-    let preset_control = row([]).spacing(8).push(
-        button::standard(fl!("dialog-add-caldav-preset-icloud"))
-            .on_press(Message::CalDavDialogUrlChanged(ICLOUD_CALDAV_URL.to_string())),
-    );
 
     // Server URL input (must be https://)
     let url_control = column([])
@@ -187,11 +164,8 @@ pub fn render_add_caldav_dialog(active_dialog: &ActiveDialog) -> Element<'_, Mes
             .width(Length::Fill),
         );
 
-    // Note about HTTPS-only + keyring storage, or provider-specific
-    // guidance (e.g. iCloud's app-specific-password requirement) when the
-    // entered URL matches a known provider.
-    let note_text = caldav_help_note(url).unwrap_or_else(|| fl!("dialog-add-caldav-https-note"));
-    let note = widget::text(note_text).size(12);
+    // Note about HTTPS-only + keyring storage.
+    let note = widget::text(fl!("dialog-add-caldav-https-note")).size(12);
 
     // Connect button is only enabled when URL and username are non-empty.
     // (The password may legitimately be empty for servers that use other
@@ -203,7 +177,6 @@ pub fn render_add_caldav_dialog(active_dialog: &ActiveDialog) -> Element<'_, Mes
     dialog()
         .title(fl!("dialog-add-caldav-title"))
         .icon(widget::icon::from_name("emblem-web-symbolic").size(64))
-        .control(preset_control)
         .control(url_control)
         .control(user_control)
         .control(password_control)
@@ -308,36 +281,5 @@ pub fn render_delete_event_dialog(active_dialog: &ActiveDialog) -> Element<'_, M
             )
             .width(Length::Fixed(400.0))
             .into()
-    }
-}
-
-#[cfg(test)]
-mod caldav_help_note_tests {
-    use super::*;
-
-    #[test]
-    fn none_for_empty_url() {
-        assert_eq!(caldav_help_note(""), None);
-    }
-
-    #[test]
-    fn none_for_a_generic_server() {
-        assert_eq!(caldav_help_note("https://cal.example.org/remote.php/dav"), None);
-    }
-
-    #[test]
-    fn icloud_note_for_the_icloud_caldav_host() {
-        assert_eq!(
-            caldav_help_note("https://caldav.icloud.com"),
-            Some(fl!("dialog-add-caldav-icloud-note"))
-        );
-    }
-
-    #[test]
-    fn icloud_note_matches_case_insensitively_and_with_a_path() {
-        assert_eq!(
-            caldav_help_note("https://CalDAV.iCloud.com/some/path"),
-            Some(fl!("dialog-add-caldav-icloud-note"))
-        );
     }
 }

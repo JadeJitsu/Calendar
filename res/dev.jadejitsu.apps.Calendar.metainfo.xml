@@ -54,6 +54,14 @@
   </keywords>
 
   <releases>
+    <release version="0.4.3" date="2026-09-12">
+      <description>
+        <p>Remove iCloud quick setup.</p>
+        <ul>
+          <li>Reverted the "iCloud" preset button and its app-specific-password guidance from the Add CalDAV Account dialog; iCloud is still usable as a standard CalDAV server by entering its URL manually</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.4.2" date="2026-09-11">
       <description>
         <p>Flatpak tray icon fix.</p>

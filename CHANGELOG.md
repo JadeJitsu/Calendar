@@ -10,6 +10,15 @@ All notable changes to the Calendar app are documented here.
 - Bump `patch` for fixes, `minor` for new features, `major` for breaking
   changes. Update this file in the same commit as the version bump.
 
+## [0.4.3] — 2026-09-12
+
+### Removed
+- **iCloud quick-setup preset.** Reverted the v0.4.1 "iCloud" preset button
+  and its Apple-ID-specific help note from the Add CalDAV Account dialog.
+  iCloud is still a standard CalDAV server and remains fully usable — just
+  by entering `https://caldav.icloud.com` manually — this only removes the
+  one-click shortcut and its provider-specific guidance text.
+
 ## [0.4.2] — 2026-09-11
 
 ### Fixed
